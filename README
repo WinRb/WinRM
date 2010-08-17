@@ -30,6 +30,15 @@ gem install -r rubyntlm
 
 gem install -r uuid
 
+
+EXAMPLE:
+require 'winrm'
+WinRM::WinRM.endpoint = 'http://mywinrmhost:5985/wsman'
+WinRM::WinRM.set_auth('user','password')
+winrm = WinRM::WinRM.instance
+output = winrm.winrm.run_powershell_script 'script.ps1'
+puts output[:stdout]
+
 --------------------------------------------------------------------------
 DISCLAIMER:  If you see something that could be done better or would like
 to help out in the development of this code please feel free to clone the

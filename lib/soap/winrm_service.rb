@@ -155,6 +155,7 @@ module WinRM
       # Get the Output of the given shell and command
       # @param [String] shell_id The shell id on the remote machine.  See #open_shell
       # @param [String] command_id The command id on the remote machine.  See #run_command
+      # @return [Hash] :stdout and :stderr
       def get_command_output(shell_id, command_id)
         header = {
           "#{NS_ADDRESSING}:Action" =>
@@ -179,7 +180,7 @@ module WinRM
           next if n.to_s.nil?
           cmd_stderr << Base64.decode64(n.to_s)
         end
-        [cmd_stdout, cmd_stderr]
+        {:stdout => cmd_stdout, :stderr => cmd_stderr}
       end
 
       # Clean-up after a command.
@@ -218,6 +219,8 @@ module WinRM
       end
 
       # Run a Powershell script that resides on the local box.
+      # @param [String] script_file The string representing the path to a Powershell script
+      # @return [Hash] :stdout and :stderr
       def run_powershell_script(script_file)
         script = File.read(script_file)
         script = script.chars.to_a.join("\x00").chomp.encode('ASCII-8BIT')
@@ -230,6 +233,8 @@ module WinRM
         close_shell(shell_id)
         command_output
       end
+
+
 
       # Add a hierarchy of elements from hash data
       # @example Hash to XML
