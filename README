@@ -1,0 +1,42 @@
+--------------------------------------------------------------------------
+              Windows Remote Management (WinRM) for Ruby
+--------------------------------------------------------------------------
+This is a SOAP library that uses the functionality in Windows Remote
+Management(WinRM) to call native object in Windows.  This includes, but is
+not limitted to, running batch scripts, powershell scripts and fetching WMI
+variables.  For more information on WinRM, please visit Microsoft's WinRM
+site: http://msdn.microsoft.com/en-us/library/aa384426(v=VS.85).aspx
+
+
+My Info: 
+BLOG:  http://distributed-frostbite.blogspot.com/
+Add me in LinkedIn:  http://www.linkedin.com/in/danwanek
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+TO USE:
+require 'winrm'
+# See REQUIRED GEMS below
+
+REQUIRED GEMS:
+# Handsoap
+gem install -r handsoap
+# Nokogiri XML Parser
+gem install -r nokogiri
+# HttpClient
+gem install -r httpclient
+# NTLM Library
+gem install -r rubyntlm
+
+gem install -r uuid
+
+--------------------------------------------------------------------------
+DISCLAIMER:  If you see something that could be done better or would like
+to help out in the development of this code please feel free to clone the
+'git' repository and send me patches:
+git clone git://github.com/zenchild/WinRM.git
+or add an issue on GitHub:
+http://github.com/zenchild/WinRM/issues
+
+Cheers!
+--------------------------------------------------------------------------
