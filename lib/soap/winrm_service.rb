@@ -48,16 +48,15 @@ module WinRM
 
       def on_create_document(doc)
         doc.alias NS_ADDRESSING, 'http://schemas.xmlsoap.org/ws/2004/08/addressing'
+        doc.alias NS_ENUM,       'http://schemas.xmlsoap.org/ws/2004/09/enumeration'
         doc.alias NS_WSMAN_DMTF, 'http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd'
         doc.alias NS_WSMAN_MSFT, 'http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd'
         doc.alias NS_SCHEMA_INST,'http://www.w3.org/2001/XMLSchema-instance'
         doc.alias NS_WIN_SHELL,  'http://schemas.microsoft.com/wbem/wsman/1/windows/shell'
+        doc.alias NS_CIMBINDING, 'http://schemas.dmtf.org/wbem/wsman/1/cimbinding.xsd'
 
         header = doc.find('Header')
         header.add("#{NS_ADDRESSING}:To", WinRMWebService.uri)
-        header.add("#{NS_WSMAN_DMTF}:ResourceURI",'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd') {|ruri|
-          ruri.set_attr('mustUnderstand','true')
-        }
         header.add("#{NS_ADDRESSING}:ReplyTo") {|rto|
           rto.add("#{NS_ADDRESSING}:Address",'http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous') {|addr|
             addr.set_attr('mustUnderstand','true')
@@ -86,10 +85,12 @@ module WinRM
       #   Works: http://schemas.xmlsoap.org/soap/envelope/
       def on_response_document(doc)
         doc.add_namespace NS_ADDRESSING, 'http://schemas.xmlsoap.org/ws/2004/08/addressing'
+        doc.add_namespace NS_ENUM,       'http://schemas.xmlsoap.org/ws/2004/09/enumeration'
         doc.add_namespace NS_TRANSFER,   'http://schemas.xmlsoap.org/ws/2004/09/transfer'
         doc.add_namespace NS_WSMAN_DMTF, 'http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd'
         doc.add_namespace NS_WSMAN_MSFT, 'http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd'
         doc.add_namespace NS_WIN_SHELL,  'http://schemas.microsoft.com/wbem/wsman/1/windows/shell'
+        doc.add_namespace NS_CIMBINDING, 'http://schemas.dmtf.org/wbem/wsman/1/cimbinding.xsd'
       end
 
       def on_after_create_http_request(req)
@@ -114,6 +115,7 @@ module WinRM
       # @return [String] The ShellId from the SOAP response.  This is our open shell instance on the remote machine.
       def open_shell(i_stream = 'stdin', o_stream = 'stdout stderr')
         header = {
+          "#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd'},
           "#{NS_ADDRESSING}:Action" => {'mustUnderstand' => 'true', :text => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Create'},
           "#{NS_WSMAN_DMTF}:OptionSet" => [
             {"#{NS_WSMAN_DMTF}:Option" => {:name => 'WINRS_NOPROFILE', :text =>"FALSE"}},
@@ -136,6 +138,7 @@ module WinRM
       # @return [String] The CommandId from the SOAP response.  This is the ID we need to query in order to get output.
       def run_command(shell_id, command)
         header = {
+          "#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd'},
           "#{NS_ADDRESSING}:Action" =>
             {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Command'},
           "#{NS_WSMAN_DMTF}:SelectorSet" =>
@@ -158,6 +161,7 @@ module WinRM
       # @return [Hash] :stdout and :stderr
       def get_command_output(shell_id, command_id)
         header = {
+          "#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd'},
           "#{NS_ADDRESSING}:Action" =>
             {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Receive'},
           "#{NS_WSMAN_DMTF}:SelectorSet" =>
@@ -190,6 +194,7 @@ module WinRM
       # @return [true] This should have more error checking but it just returns true for now.
       def cleanup_command(shell_id, command_id)
         header = {
+          "#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd'},
           "#{NS_ADDRESSING}:Action" =>
           {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Signal'},
             "#{NS_WSMAN_DMTF}:SelectorSet" =>
@@ -208,6 +213,7 @@ module WinRM
       # @return [true] This should have more error checking but it just returns true for now.
       def close_shell(shell_id)
         header = {
+          "#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd'},
           "#{NS_ADDRESSING}:Action" =>
           {'mustUnderstand' => 'true', :text => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Delete'},
             "#{NS_WSMAN_DMTF}:SelectorSet" =>
@@ -235,6 +241,21 @@ module WinRM
       end
 
 
+      def run_enumeration
+        header = {
+          "#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/wmi/root/cimv2/*'},
+          "#{NS_ADDRESSING}:Action" =>
+          {'mustUnderstand' => 'true', :text => 'http://schemas.xmlsoap.org/ws/2004/09/enumeration/Enumerate'}
+        }
+        
+        resp = invoke("#{NS_ENUM}:Enumerate", {:soap_action => :auto, :http_options => nil, :soap_header => header}) do |enum|
+          enum.add("#{NS_WSMAN_DMTF}:OptimizeEnumeration")
+          enum.add("#{NS_WSMAN_DMTF}:MaxElements",'32000')
+          enum.add("#{NS_WSMAN_DMTF}:Filter",'select Name from Win32_Serivce') do |filt|
+            filt.set_attr('Dialect','http://schemas.microsoft.com/wbem/wsman/1/WQL')
+          end
+        end
+      end
 
       # Add a hierarchy of elements from hash data
       # @example Hash to XML

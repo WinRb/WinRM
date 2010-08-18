@@ -1,0 +1,4 @@
+spec/powershell_tests.spec
+--format
+nested
+--color

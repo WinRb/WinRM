@@ -22,6 +22,8 @@ require 'handsoap'
 module WinRM
   module SOAP
     NS_ADDRESSING  ='a'   # http://schemas.xmlsoap.org/ws/2004/08/addressing
+    NS_CIMBINDING  ='b'   # http://schemas.dmtf.org/wbem/wsman/1/cimbinding.xsd
+    NS_ENUM        ='n'   # http://schemas.xmlsoap.org/ws/2004/09/enumeration
     NS_TRANSFER    ='x'   # http://schemas.xmlsoap.org/ws/2004/09/transfer
     NS_WSMAN_DMTF  ='w'   # http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd
     NS_WSMAN_MSFT  ='p'   # http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd
