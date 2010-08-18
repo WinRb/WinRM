@@ -23,6 +23,7 @@ require 'singleton'
 require 'date'
 require 'base64'
 require 'uuid'
+require 'kconv'
 
 # Class Extensions
 require 'extensions/string'

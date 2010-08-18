@@ -96,7 +96,7 @@ module WinRM
       def on_after_create_http_request(req)
         req.set_auth @@user, @@pass
         req.set_header('Content-Type','application/soap+xml;charset=UTF-8')
-        #puts "SOAP DOCUMENT=\n#{req.body}"
+        puts "SOAP DOCUMENT=\n#{req.body}"
       end
 
       def on_http_error(resp)
@@ -251,7 +251,8 @@ module WinRM
         resp = invoke("#{NS_ENUM}:Enumerate", {:soap_action => :auto, :http_options => nil, :soap_header => header}) do |enum|
           enum.add("#{NS_WSMAN_DMTF}:OptimizeEnumeration")
           enum.add("#{NS_WSMAN_DMTF}:MaxElements",'32000')
-          enum.add("#{NS_WSMAN_DMTF}:Filter",'select Name from Win32_Serivce') do |filt|
+          mattr = nil
+          enum.add("#{NS_WSMAN_DMTF}:Filter",'select Name,Status from Win32_Service') do |filt|
             filt.set_attr('Dialect','http://schemas.microsoft.com/wbem/wsman/1/WQL')
           end
         end
