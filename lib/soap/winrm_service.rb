@@ -225,14 +225,18 @@ module WinRM
       # @return [Array<Hash>] Returns an array of Hashes that contain the key/value pairs returned from the query.
       def run_wql(wql)
         header = {}.merge(resource_uri_wmi).merge(action_enumerate)
-        
-        resp = invoke("#{NS_ENUM}:Enumerate", {:soap_action => :auto, :http_options => nil, :soap_header => header}) do |enum|
-          enum.add("#{NS_WSMAN_DMTF}:OptimizeEnumeration")
-          enum.add("#{NS_WSMAN_DMTF}:MaxElements",'32000')
-          mattr = nil
-          enum.add("#{NS_WSMAN_DMTF}:Filter", wql) do |filt|
-            filt.set_attr('Dialect','http://schemas.microsoft.com/wbem/wsman/1/WQL')
+
+        begin
+          resp = invoke("#{NS_ENUM}:Enumerate", {:soap_action => :auto, :http_options => nil, :soap_header => header}) do |enum|
+            enum.add("#{NS_WSMAN_DMTF}:OptimizeEnumeration")
+            enum.add("#{NS_WSMAN_DMTF}:MaxElements",'32000')
+            mattr = nil
+            enum.add("#{NS_WSMAN_DMTF}:Filter", wql) do |filt|
+              filt.set_attr('Dialect','http://schemas.microsoft.com/wbem/wsman/1/WQL')
+            end
           end
+        rescue Handsoap::Fault => e
+          raise WinRMWebServiceError, e.reason
         end
 
         query_response = []
