@@ -18,7 +18,9 @@ TO USE:
 require 'winrm'
 # See REQUIRED GEMS below
 
-REQUIRED GEMS:
+gem install -r winrm
+
+REQUIRED GEMS: (These should automatically install with the winrm gem)
 # Handsoap
 gem install -r handsoap
 # Nokogiri XML Parser
@@ -27,7 +29,7 @@ gem install -r nokogiri
 gem install -r httpclient
 # NTLM Library
 gem install -r rubyntlm
-
+#UUID Library
 gem install -r uuid
 
 
