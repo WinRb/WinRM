@@ -174,6 +174,22 @@ module WinRM
           next if n.to_s.nil?
           cmd_stderr << Base64.decode64(n.to_s)
         end
+
+        # We may need to get additional output if the stream has not finished.
+        # The CommandState will change from Running to Done like so:
+        # @example
+        #   from...
+        #   <rsp:CommandState CommandId="495C3B09-E0B0-442A-9958-83B529F76C2C" State="http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Running"/>
+        #   to...
+        #   <rsp:CommandState CommandId="495C3B09-E0B0-442A-9958-83B529F76C2C" State="http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done">
+        #     <rsp:ExitCode>0</rsp:ExitCode>
+        #   </rsp:CommandState>
+        if((resp/"//#{NS_WIN_SHELL}:ExitCode").empty?)
+          more_out = get_command_output(shell_id,command_id)
+          cmd_stdout << more_out[:stdout]
+          cmd_stderr << more_out[:stderr]
+        end
+
         {:stdout => cmd_stdout, :stderr => cmd_stderr}
       end
 
