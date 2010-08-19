@@ -72,5 +72,18 @@ module WinRM
       @winrm = SOAP::WinRMWebService.new
     end
 
+    # Run a Powershell script
+    # @see WinRM::SOAP::WinRMWebService#run_powershell_script
+    def powershell(script_file)
+      @winrm.run_powershell_script(script_file)
+    end
+
+    # Run a WQL Query
+    # @see WinRM::SOAP::WinRMWebService#run_wql
+    # @see http://msdn.microsoft.com/en-us/library/aa394606(VS.85).aspx
+    def wql(wql)
+      @winrm.run_wql(wql)
+    end
+
   end # class WinRM
 end

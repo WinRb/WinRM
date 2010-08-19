@@ -31,6 +31,7 @@ module WinRM
           @debug = File.new('winrm_debug.out', 'w')
           @debug.sync = true
         end
+        
       end
 
       def self.set_auth(user,pass)
@@ -96,7 +97,7 @@ module WinRM
       def on_after_create_http_request(req)
         req.set_auth @@user, @@pass
         req.set_header('Content-Type','application/soap+xml;charset=UTF-8')
-        puts "SOAP DOCUMENT=\n#{req.body}"
+        #puts "SOAP DOCUMENT=\n#{req.body}"
       end
 
       def on_http_error(resp)
@@ -115,13 +116,11 @@ module WinRM
       # @return [String] The ShellId from the SOAP response.  This is our open shell instance on the remote machine.
       def open_shell(i_stream = 'stdin', o_stream = 'stdout stderr')
         header = {
-          "#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd'},
-          "#{NS_ADDRESSING}:Action" => {'mustUnderstand' => 'true', :text => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Create'},
           "#{NS_WSMAN_DMTF}:OptionSet" => [
             {"#{NS_WSMAN_DMTF}:Option" => {:name => 'WINRS_NOPROFILE', :text =>"FALSE"}},
             {"#{NS_WSMAN_DMTF}:Option" => {:name => 'WINRS_CODEPAGE', :text =>"437"}}
           ]
-        }
+        }.merge(resource_uri_cmd).merge(action_create)
 
         resp = invoke("#{NS_WIN_SHELL}:Shell", {:soap_action => :auto, :http_options => nil, :soap_header => header}) do |shell|
           shell.add("#{NS_WIN_SHELL}:InputStreams", i_stream)
@@ -138,15 +137,11 @@ module WinRM
       # @return [String] The CommandId from the SOAP response.  This is the ID we need to query in order to get output.
       def run_command(shell_id, command)
         header = {
-          "#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd'},
-          "#{NS_ADDRESSING}:Action" =>
-            {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Command'},
-          "#{NS_WSMAN_DMTF}:SelectorSet" =>
-            {"#{NS_WSMAN_DMTF}:Selector" => {:name => 'ShellId', :text => shell_id}},
           "#{NS_WSMAN_DMTF}:OptionSet" => {
             "#{NS_WSMAN_DMTF}:Option" => {:name => 'WINRS_CONSOLEMODE_STDIN', :text =>"TRUE"},
           }
-        }
+        }.merge(resource_uri_cmd).merge(action_command).merge(selector_shell_id(shell_id))
+
         # Issue the Command
         resp = invoke("#{NS_WIN_SHELL}:CommandLine", {:soap_action => :auto, :http_options => nil, :soap_header => header}) do |cli|
           cli.add("#{NS_WIN_SHELL}:Command","\"#{command}\"")
@@ -160,13 +155,8 @@ module WinRM
       # @param [String] command_id The command id on the remote machine.  See #run_command
       # @return [Hash] :stdout and :stderr
       def get_command_output(shell_id, command_id)
-        header = {
-          "#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd'},
-          "#{NS_ADDRESSING}:Action" =>
-            {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Receive'},
-          "#{NS_WSMAN_DMTF}:SelectorSet" =>
-            {"#{NS_WSMAN_DMTF}:Selector" => {:name => 'ShellId', :text => shell_id}}
-        }
+        header = {}.merge(resource_uri_cmd).merge(action_receive).merge(selector_shell_id(shell_id))
+
         # Get Command Output
         resp = invoke("#{NS_WIN_SHELL}:Receive", {:soap_action => :auto, :http_options => nil, :soap_header => header}) do |rec|
           rec.add("#{NS_WIN_SHELL}:DesiredStream",'stdout stderr') do |ds|
@@ -193,13 +183,7 @@ module WinRM
       # @param [String] command_id The command id on the remote machine.  See #run_command
       # @return [true] This should have more error checking but it just returns true for now.
       def cleanup_command(shell_id, command_id)
-        header = {
-          "#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd'},
-          "#{NS_ADDRESSING}:Action" =>
-          {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Signal'},
-            "#{NS_WSMAN_DMTF}:SelectorSet" =>
-          {"#{NS_WSMAN_DMTF}:Selector" => {:name => 'ShellId', :text => shell_id}}
-        }
+        header = {}.merge(resource_uri_cmd).merge(action_signal).merge(selector_shell_id(shell_id))
         # Signal the Command references to terminate (close stdout/stderr)
         resp = invoke("#{NS_WIN_SHELL}:Signal", {:soap_action => :auto, :http_options => nil, :soap_header => header}) do |sig|
           sig.set_attr('CommandId', command_id)
@@ -212,13 +196,7 @@ module WinRM
       # @param [String] shell_id The shell id on the remote machine.  See #open_shell
       # @return [true] This should have more error checking but it just returns true for now.
       def close_shell(shell_id)
-        header = {
-          "#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd'},
-          "#{NS_ADDRESSING}:Action" =>
-          {'mustUnderstand' => 'true', :text => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Delete'},
-            "#{NS_WSMAN_DMTF}:SelectorSet" =>
-          {"#{NS_WSMAN_DMTF}:Selector" => {:name => 'ShellId', :text => shell_id}}
-        }
+        header = {}.merge(resource_uri_cmd).merge(action_delete).merge(selector_shell_id(shell_id))
         # Delete the Shell reference
         resp = invoke(:nil_body, {:soap_action => nil, :soap_body => true, :http_options => nil, :soap_header => header})
         true
@@ -241,22 +219,41 @@ module WinRM
       end
 
 
-      def run_enumeration
-        header = {
-          "#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/wmi/root/cimv2/*'},
-          "#{NS_ADDRESSING}:Action" =>
-          {'mustUnderstand' => 'true', :text => 'http://schemas.xmlsoap.org/ws/2004/09/enumeration/Enumerate'}
-        }
+      # Run a WQL Query
+      # @see http://msdn.microsoft.com/en-us/library/aa394606(VS.85).aspx
+      # @param [String] wql The WQL query
+      # @return [Array<Hash>] Returns an array of Hashes that contain the key/value pairs returned from the query.
+      def run_wql(wql)
+        header = {}.merge(resource_uri_wmi).merge(action_enumerate)
         
         resp = invoke("#{NS_ENUM}:Enumerate", {:soap_action => :auto, :http_options => nil, :soap_header => header}) do |enum|
           enum.add("#{NS_WSMAN_DMTF}:OptimizeEnumeration")
           enum.add("#{NS_WSMAN_DMTF}:MaxElements",'32000')
           mattr = nil
-          enum.add("#{NS_WSMAN_DMTF}:Filter",'select Name,Status from Win32_Service') do |filt|
+          enum.add("#{NS_WSMAN_DMTF}:Filter", wql) do |filt|
             filt.set_attr('Dialect','http://schemas.microsoft.com/wbem/wsman/1/WQL')
           end
         end
+
+        query_response = []
+        (resp/"//#{NS_ENUM}:EnumerateResponse//#{NS_WSMAN_DMTF}:Items/*").each do |i|
+          qitem = {}
+          (i/'*').each do |si|
+            qitem[si.node_name] = si.to_s
+          end
+          query_response << qitem
+        end
+        query_response
       end
+
+
+      # To create an empty body set :soap_body => true in the invoke options and set the action to :nil_body
+      def iterate_hash_array(element, hash_array)
+        add_hierarchy!(element, hash_array, nil) unless hash_array.key?(:nil_body)
+      end
+
+
+      protected
 
       # Add a hierarchy of elements from hash data
       # @example Hash to XML
@@ -288,12 +285,6 @@ module WinRM
       end
 
 
-      # To create an empty body set :soap_body => true in the invoke options and set the action to :nil_body
-      def iterate_hash_array(element, hash_array)
-        add_hierarchy!(element, hash_array, nil) unless hash_array.key?(:nil_body)
-      end
-
-
       # Private Methods (Builders and Parsers)
       private
 
@@ -304,6 +295,45 @@ module WinRM
       def parse!(response, opts = {})
         return response if @@raw_soap
         #EwsParser.new(response).parse(opts)
+      end
+
+
+      # Helper methods for SOAP Headers
+
+      def resource_uri_cmd
+        {"#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd'}}
+      end
+
+      def resource_uri_wmi(namespace = 'root/cimv2/*')
+        {"#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => 'true', :text => "http://schemas.microsoft.com/wbem/wsman/1/wmi/#{namespace}"}}
+      end
+
+      def action_create
+        {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => 'true', :text => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Create'}}
+      end
+
+      def action_delete
+        {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => 'true', :text => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Delete'}}
+      end
+
+      def action_command
+        {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Command'}}
+      end
+
+      def action_receive
+        {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Receive'}}
+      end
+
+      def action_signal
+        {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => 'true', :text => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Signal'}}
+      end
+
+      def action_enumerate
+        {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => 'true', :text => 'http://schemas.xmlsoap.org/ws/2004/09/enumeration/Enumerate'}}
+      end
+
+      def selector_shell_id(shell_id)
+        {"#{NS_WSMAN_DMTF}:SelectorSet" => {"#{NS_WSMAN_DMTF}:Selector" => {:name => 'ShellId', :text => shell_id}}}
       end
 
     end # class WinRMWebService

@@ -7,7 +7,7 @@ require 'json'
 #   {"user":"myuser","pass":"mypass","endpoint":"http://mysys.com/wsman"}
 
 
-describe "Test remote Powershell features via WinRM" do
+describe "Test remote WQL features via WinRM" do
   before(:all) do
     creds = JSON.load(File.open('spec/creds.json','r'))
     WinRM::WinRM.endpoint = creds['endpoint']
@@ -15,10 +15,9 @@ describe "Test remote Powershell features via WinRM" do
     WinRM::WinRM.instance
   end
 
-  it 'should run a test Powershell script' do
+  it 'should run a WQL query against Win32_Service' do
     winrm = WinRM::WinRM.instance
-    output = winrm.powershell('spec/test.ps1')
-    output[:stdout].should_not be_empty
+    output = winrm.wql('select Name,Status from Win32_Service')
+    output.should_not be_empty
   end
-
 end
