@@ -72,6 +72,12 @@ module WinRM
       @winrm = SOAP::WinRMWebService.new
     end
 
+    # Run a CMD command
+    # @see WinRM::SOAP::WinRMWebService#run_cmd
+    def cmd(command)
+      @winrm.run_cmd(command)
+    end
+
     # Run a Powershell script
     # @see WinRM::SOAP::WinRMWebService#run_powershell_script
     def powershell(script_file)

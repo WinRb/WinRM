@@ -218,6 +218,19 @@ module WinRM
         true
       end
 
+      # Run a CMD command
+      # @param [String] command The command to run on the remote system
+      # @return [Hash] :stdout and :stderr
+      def run_cmd(command)
+        shell_id = open_shell
+        command_id =  run_command(shell_id, command)
+        command_output = get_command_output(shell_id, command_id)
+        cleanup_command(shell_id, command_id)
+        close_shell(shell_id)
+        command_output
+      end
+
+
       # Run a Powershell script that resides on the local box.
       # @param [String] script_file The string representing the path to a Powershell script
       # @return [Hash] :stdout and :stderr
