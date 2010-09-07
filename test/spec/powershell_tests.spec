@@ -18,7 +18,7 @@ describe "Test remote Powershell features via WinRM" do
   it 'should run a test Powershell script' do
     winrm = WinRM::WinRM.instance
     output = winrm.powershell('spec/test.ps1')
-    output[:stdout].should_not be_empty
+    output[:exitcode].should eql(0)
   end
 
 end

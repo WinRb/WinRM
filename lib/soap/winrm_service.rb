@@ -153,7 +153,9 @@ module WinRM
       # Get the Output of the given shell and command
       # @param [String] shell_id The shell id on the remote machine.  See #open_shell
       # @param [String] command_id The command id on the remote machine.  See #run_command
-      # @return [Hash] :stdout and :stderr
+      # @return [Hash] Returns a Hash with a key :exitcode and :data.  Data is an Array of Hashes where the cooresponding key
+      #   is either :stdout or :stderr.  The reason it is in an Array so so we can get the output in the order it ocurrs on
+      #   the console.
       def get_command_output(shell_id, command_id)
         header = {}.merge(resource_uri_cmd).merge(action_receive).merge(selector_shell_id(shell_id))
 
@@ -164,15 +166,10 @@ module WinRM
           end
         end
 
-        cmd_stdout = ''
-        cmd_stderr = ''
-        (resp/"//*[@Name='stdout']").each do |n|
+        output = {:data => []}
+        (resp/"//#{NS_WIN_SHELL}:Stream").each do |n|
           next if n.to_s.nil?
-          cmd_stdout << Base64.decode64(n.to_s)
-        end
-        (resp/"//*[@Name='stderr']").each do |n|
-          next if n.to_s.nil?
-          cmd_stderr << Base64.decode64(n.to_s)
+          output[:data] << {n['Name'].to_sym => Base64.decode64(n.to_s)}
         end
 
         # We may need to get additional output if the stream has not finished.
@@ -185,12 +182,13 @@ module WinRM
         #     <rsp:ExitCode>0</rsp:ExitCode>
         #   </rsp:CommandState>
         if((resp/"//#{NS_WIN_SHELL}:ExitCode").empty?)
-          more_out = get_command_output(shell_id,command_id)
-          cmd_stdout << more_out[:stdout]
-          cmd_stderr << more_out[:stderr]
+          output.merge!(get_command_output(shell_id,command_id)) do |key, old_data, new_data|
+            old_data += new_data
+          end
+        else
+          output[:exitcode] = (resp/"//#{NS_WIN_SHELL}:ExitCode").first.to_i
         end
-
-        {:stdout => cmd_stdout, :stderr => cmd_stderr}
+        output
       end
 
       # Clean-up after a command.
@@ -236,8 +234,11 @@ module WinRM
       # @return [Hash] :stdout and :stderr
       def run_powershell_script(script_file)
         script = File.read(script_file)
-        script = script.chars.to_a.join("\x00").chomp.encode('ASCII-8BIT')
-        script = Base64.strict_encode64(script)
+        script = script.chars.to_a.join("\x00").chomp
+        if(defined?(script.encode))
+          script = script.encode('ASCII-8BIT')
+        end
+        script = Base64.encode64(script)
 
         shell_id = open_shell
         command_id =  run_command(shell_id, "powershell -encodedCommand #{script}")
