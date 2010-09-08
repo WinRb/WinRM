@@ -38,8 +38,11 @@ require 'winrm'
 WinRM::WinRM.endpoint = 'http://mywinrmhost:5985/wsman'
 WinRM::WinRM.set_auth('user','password')
 winrm = WinRM::WinRM.instance
-output = winrm.winrm.run_powershell_script 'script.ps1'
-puts output[:stdout]
+outputps = winrm.powershell 'script.ps1'
+outputcmd = winrm.cmd 'ipconfig'
+
+To specify manually where your CA certificate store is use this:
+WinRM::WinRM.set_ca_trust_path('/etc/ssl/certs')
 
 --------------------------------------------------------------------------
 DISCLAIMER:  If you see something that could be done better or would like
