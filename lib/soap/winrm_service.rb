@@ -39,6 +39,10 @@ module WinRM
         @@pass = pass
       end
 
+      def self.set_ca_trust_path(file_or_dir)
+        @@ca_trust_store = file_or_dir
+      end
+
       # Turn off parsing and just return the soap response
       def self.raw_soap!
         @@raw_soap = true
@@ -97,6 +101,7 @@ module WinRM
       def on_after_create_http_request(req)
         req.set_auth @@user, @@pass
         req.set_header('Content-Type','application/soap+xml;charset=UTF-8')
+        req.set_trust_ca_file(@@ca_trust_store) if defined?(@@ca_trust_store)
         #puts "SOAP DOCUMENT=\n#{req.body}"
       end
 

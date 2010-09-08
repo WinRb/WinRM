@@ -61,6 +61,10 @@ module WinRM
       SOAP::WinRMWebService.set_auth(user,pass)
     end
 
+    def self.set_ca_trust_path(path)
+      SOAP::WinRMWebService.set_ca_trust_path(path)
+    end
+
     # Set the http driver that the SOAP back-end will use.
     # @param [Symbol] driver The HTTP driver.  Available drivers:
     #   :curb, :net_http, :http_client(Default)
