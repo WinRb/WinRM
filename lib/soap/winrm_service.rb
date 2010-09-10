@@ -242,8 +242,11 @@ module WinRM
         script = script.chars.to_a.join("\x00").chomp
         if(defined?(script.encode))
           script = script.encode('ASCII-8BIT')
+          script = Base64.strict_encode64(script)
+        else
+          script = Base64.encode64(script).chomp
         end
-        script = Base64.encode64(script)
+
 
         shell_id = open_shell
         command_id =  run_command(shell_id, "powershell -encodedCommand #{script}")
