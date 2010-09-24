@@ -7,6 +7,10 @@ not limitted to, running batch scripts, powershell scripts and fetching WMI
 variables.  For more information on WinRM, please visit Microsoft's WinRM
 site: http://msdn.microsoft.com/en-us/library/aa384426(v=VS.85).aspx
 
+* This version does not currently support encryption of messages via
+  Kerberos so it is highly recommended to use SSL when configuring WinRM.
+  'winrm quickconfig -transport:https'
+
 
 My Info: 
 BLOG:  http://distributed-frostbite.blogspot.com/
@@ -35,7 +39,7 @@ gem install -r uuid
 
 EXAMPLE:
 require 'winrm'
-WinRM::WinRM.endpoint = 'http://mywinrmhost:5985/wsman'
+WinRM::WinRM.endpoint = 'https://mywinrmhost:5986/wsman'
 WinRM::WinRM.set_auth('user','password')
 winrm = WinRM::WinRM.instance
 outputps = winrm.powershell 'script.ps1'
