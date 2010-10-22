@@ -31,16 +31,17 @@ module WinRM
           @debug = File.new('winrm_debug.out', 'w')
           @debug.sync = true
         end
-        
       end
 
       def self.set_auth(user,pass)
         @@user = user
         @@pass = pass
+        true
       end
 
       def self.set_ca_trust_path(file_or_dir)
         @@ca_trust_store = file_or_dir
+        true
       end
 
       # Turn off parsing and just return the soap response
@@ -106,9 +107,12 @@ module WinRM
       end
 
       def on_http_error(resp)
-        puts "HTTP ERROR: #{resp.status}"
-        puts "HEADERS=\n#{resp.headers}"
-        puts "BODY=\n#{resp.body}"
+        case resp.status
+        when 401
+          raise WinRMAuthorizationError, "#{resp.headers}\n------\n#{resp.body}"
+        else
+          raise WinRMWebServiceError, "#{resp.headers}\n------\n#{resp.body}"
+        end
       end
 
 

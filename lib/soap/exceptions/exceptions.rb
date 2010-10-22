@@ -23,6 +23,10 @@ module WinRM
     # Generic WinRM SOAP Error
     class WinRMWebServiceError < StandardError
     end
+
+    # Authorization Error
+    class WinRMAuthorizationError < StandardError
+    end
   end # SOAP
 end # WinRM
  

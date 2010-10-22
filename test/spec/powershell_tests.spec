@@ -12,6 +12,7 @@ describe "Test remote Powershell features via WinRM" do
     creds = JSON.load(File.open('spec/creds.json','r'))
     WinRM::WinRM.endpoint = creds['endpoint']
     WinRM::WinRM.set_auth(creds['user'],creds['pass'])
+    WinRM::WinRM.set_ca_trust_path('/etc/ssl/certs')
     WinRM::WinRM.instance
   end
 
