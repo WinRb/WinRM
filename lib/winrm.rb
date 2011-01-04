@@ -28,6 +28,9 @@ require 'kconv'
 # Class Extensions
 require 'extensions/string'
 
+# Misc Helpers
+require 'helpers/iso8601_duration'
+
 # Load the backend SOAP infrastructure.  Today this is Handsoap.
 require 'soap/soap_provider'
 
@@ -65,6 +68,12 @@ module WinRM
       SOAP::WinRMWebService.set_ca_trust_path(path)
     end
 
+    # Set the command timeout
+    # @param [Fixnum] seconds the amount of seconds until a command times out.
+    def self.set_timeout(seconds)
+      SOAP::WinRMWebService.set_cmd_timeout(Iso8601Duration.sec_to_dur(seconds))
+    end
+
     # Set the http driver that the SOAP back-end will use.
     # @param [Symbol] driver The HTTP driver.  Available drivers:
     #   :curb, :net_http, :http_client(Default)
@@ -78,6 +87,7 @@ module WinRM
 
     # Run a CMD command
     # @see WinRM::SOAP::WinRMWebService#run_cmd
+    # @param [String] command the comand to run
     def cmd(command)
       @winrm.run_cmd(command)
     end

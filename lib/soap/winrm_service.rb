@@ -25,6 +25,7 @@ module WinRM
       include SOAP
 
       @@raw_soap = false
+      @@timeout = 'PT60S'
 
       def initialize()
         if $DEBUG
@@ -47,6 +48,11 @@ module WinRM
       # Turn off parsing and just return the soap response
       def self.raw_soap!
         @@raw_soap = true
+      end
+
+      # Set the timeout for the WinRM command
+      def self.set_cmd_timeout(iso8601_duration)
+        @@timeout = iso8601_duration
       end
 
 
@@ -80,7 +86,7 @@ module WinRM
           loc.set_attr('xml:lang','en-US')
           loc.set_attr('mustUnderstand','false')
         }
-        header.add("#{NS_WSMAN_DMTF}:OperationTimeout",'PT60.000S')
+        header.add("#{NS_WSMAN_DMTF}:OperationTimeout", @@timeout)
       end
 
       # Adds knowledge of namespaces to the response object.  These have to be identical to the 
@@ -103,7 +109,7 @@ module WinRM
         req.set_auth @@user, @@pass
         req.set_header('Content-Type','application/soap+xml;charset=UTF-8')
         req.set_trust_ca_file(@@ca_trust_store) if defined?(@@ca_trust_store)
-        #puts "SOAP DOCUMENT=\n#{req.body}"
+        puts "SOAP DOCUMENT=\n#{req.body}"
       end
 
       def on_http_error(resp)
