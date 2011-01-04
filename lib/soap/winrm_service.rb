@@ -109,7 +109,7 @@ module WinRM
         req.set_auth @@user, @@pass
         req.set_header('Content-Type','application/soap+xml;charset=UTF-8')
         req.set_trust_ca_file(@@ca_trust_store) if defined?(@@ca_trust_store)
-        puts "SOAP DOCUMENT=\n#{req.body}"
+        #puts "SOAP DOCUMENT=\n#{req.body}"
       end
 
       def on_http_error(resp)
