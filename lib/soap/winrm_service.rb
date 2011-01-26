@@ -92,7 +92,7 @@ module WinRM
 
         output = {:data => []}
         (resp/"//#{NS_WIN_SHELL}:Stream").each do |n|
-          next if n.text.nil?
+          next if n.text.nil? || n.text.empty?
           output[:data] << {n['Name'].to_sym => Base64.decode64(n.text)}
         end
 
@@ -110,7 +110,7 @@ module WinRM
             old_data += new_data
           end
         else
-          output[:exitcode] = (resp/"//#{NS_WIN_SHELL}:ExitCode")
+          output[:exitcode] = (resp/"//#{NS_WIN_SHELL}:ExitCode").text.to_i
         end
         output
       end
