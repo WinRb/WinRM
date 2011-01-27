@@ -21,9 +21,7 @@
 # We only what one instance of this class so include Singleton
 require 'singleton'
 require 'date'
-require 'base64'
-require 'uuid'
-require 'kconv'
+require 'kconv' if(RUBY_VERSION.start_with? '1.9') # bug in rubyntlm with ruby 1.9.x
 
 # Class Extensions
 require 'extensions/string'

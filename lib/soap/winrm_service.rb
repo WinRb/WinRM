@@ -1,32 +1,24 @@
-require 'httpclient'
-require 'savon/soap/xml'
-require 'uuid'
-require 'gssapi'
-require 'base64'
-require 'nokogiri'
-
 module WinRM
   module SOAP
-    NS_ADDRESSING  ='a'   # http://schemas.xmlsoap.org/ws/2004/08/addressing
-    NS_CIMBINDING  ='b'   # http://schemas.dmtf.org/wbem/wsman/1/cimbinding.xsd
-    NS_ENUM        ='n'   # http://schemas.xmlsoap.org/ws/2004/09/enumeration
-    NS_TRANSFER    ='x'   # http://schemas.xmlsoap.org/ws/2004/09/transfer
-    NS_WSMAN_DMTF  ='w'   # http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd
-    NS_WSMAN_MSFT  ='p'   # http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd
-    NS_SCHEMA_INST ='xsi' # http://www.w3.org/2001/XMLSchema-instance
-    NS_WIN_SHELL   ='rsp' # http://schemas.microsoft.com/wbem/wsman/1/windows/shell
-    NS_WSMAN_FAULT = 'f'  # http://schemas.microsoft.com/wbem/wsman/1/wsmanfault
-
+    # This is the main class that does the SOAP request/response logic. There are a few helper classes, but pretty
+    #   much everything comes through here first.
     class WinRMWebService
 
       # @param [String,URI] endpoint the WinRM webservice endpoint
-      def initialize(endpoint, transport = :kerberos, realm = nil)
-        @endpoint = endpoint.is_a?(String) ? URI.parse(endpoint) : endpoint
-        @httpcli = HTTPClient.new(:agent_name => 'Ruby WinRM Client')
-
-        if(transport == :kerberos)
-          @service = "HTTP/#{@endpoint.host}@#{realm}"
-          init_krb
+      # @param [Symbol] transport either :kerberos(default)/:ssl/:plaintext
+      # @param [Hash] opts Misc opts for the various transports.
+      #   @see WinRM::SOAP::HttpTransport
+      #   @see WinRM::SOAP::HttpGSSAPI
+      #   @see WinRM::SOAP::HttpSSL
+      def initialize(endpoint, transport = :kerberos, opts = {})
+        case transport
+        when :kerberos
+          # TODO: check fo keys and throw error if missing
+          @xfer = HttpGSSAPI.new(endpoint, opts[:realm], opts[:service], opts[:keytab])
+        when :plaintext
+          @xfer = HttpTransport.new(endpoint)
+        when :ssl
+          @xfer = HttpSSL.new(endpoint, opts[:ca_trust_path])
         end
       end
 
@@ -183,22 +175,6 @@ module WinRM
 
       private
 
-      def init_krb
-        @gsscli = GSSAPI::Simple.new(@endpoint.host, @service)
-        token = @gsscli.init_context
-        auth = Base64.strict_encode64 token
-
-        ext_head = {"Authorization" => "Kerberos #{auth}",
-          "Connection" => "Keep-Alive",
-          "Content-Type" => "application/soap+xml;charset=UTF-8"
-        }
-        r = @httpcli.post(@endpoint, '', ext_head)
-        itok = r.header["WWW-Authenticate"].pop
-        itok = itok.split.last
-        itok = Base64.strict_decode64(itok)
-        @gsscli.init_context(itok)
-      end
-
       def namespaces
         {'xmlns:a' => 'http://schemas.xmlsoap.org/ws/2004/08/addressing',
           'xmlns:b' => 'http://schemas.dmtf.org/wbem/wsman/1/cimbinding.xsd',
@@ -210,7 +186,7 @@ module WinRM
       end
 
       def header
-        { "#{NS_ADDRESSING}:To" => "#{@endpoint.to_s}",
+        { "#{NS_ADDRESSING}:To" => "#{@xfer.endpoint.to_s}",
           "#{NS_ADDRESSING}:ReplyTo" => {
           "#{NS_ADDRESSING}:Address" => 'http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous',
             :attributes! => {"#{NS_ADDRESSING}:Address" => {'mustUnderstand' => true}}},
@@ -226,88 +202,6 @@ module WinRM
           }}
       end
 
-      # @return [String] the encrypted request string
-      def winrm_encrypt(str)
-        iov_cnt = 2
-        iov = FFI::MemoryPointer.new(GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * iov_cnt)
-
-        iov0 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(FFI::Pointer.new(iov.address))
-        iov0[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_HEADER | GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_FLAG_ALLOCATE)
-
-        iov1 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 1)))
-        iov1[:type] =  (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA)
-        iov1[:buffer].value = str
-
-        conf_state = FFI::MemoryPointer.new :uint32
-        min_stat = FFI::MemoryPointer.new :uint32
-
-        maj_stat = GSSAPI::LibGSSAPI.gss_wrap_iov(min_stat, @gsscli.context, 1, 0, conf_state, iov, iov_cnt)
-
-        #puts "MAJ WRAP: #{maj_stat}"
-        #puts "MAJ WRAP: #{GSSAPI::LibGSSAPI::GSS_C_ROUTINE_ERRORS[maj_stat]}"
-        #puts "MIN WRAP: #{min_stat.read_int}"
-        #puts "CONF_STATE: #{conf_state.read_int}"
-
-        token = [iov0[:buffer].length].pack('L')
-        token += iov0[:buffer].value
-        token += iov1[:buffer].value
-      end
-
-
-      # @return [String] the unencrypted response string
-      def winrm_decrypt(str)
-        iov_cnt = 2
-        iov = FFI::MemoryPointer.new(GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * iov_cnt)
-
-        iov0 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(FFI::Pointer.new(iov.address))
-        iov0[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_HEADER | GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_FLAG_ALLOCATE)
-
-        iov1 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 1)))
-        iov1[:type] =  (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA)
-
-        str.force_encoding('BINARY')
-        str.sub!(/^.*Content-Type: application\/octet-stream\r\n(.*)--Encrypted.*$/m, '\1')
-
-        len = str.unpack("L").first
-        iov_data = str.unpack("LA#{len}A*")
-        iov0[:buffer].value = iov_data[1]
-        iov1[:buffer].value = iov_data[2]
-
-        min_stat = FFI::MemoryPointer.new :uint32
-        conf_state = FFI::MemoryPointer.new :uint32
-        conf_state.write_int(1)
-        qop_state = FFI::MemoryPointer.new :uint32
-        qop_state.write_int(0)
-
-        maj_stat = GSSAPI::LibGSSAPI.gss_unwrap_iov(min_stat, @gsscli.context, conf_state, qop_state, iov, iov_cnt)
-
-        Nokogiri::XML(iov1[:buffer].value)
-      end
-
-      def send_message(msg)
-        original_length = msg.length
-        emsg = winrm_encrypt(msg)
-        ext_head = {
-          "Connection" => "Keep-Alive",
-          "Content-Type" => "multipart/encrypted;protocol=\"application/HTTP-Kerberos-session-encrypted\";boundary=\"Encrypted Boundary\""
-        }
-
-        body = <<-EOF
---Encrypted Boundary\r
-Content-Type: application/HTTP-Kerberos-session-encrypted\r
-OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{original_length}\r
---Encrypted Boundary\r
-Content-Type: application/octet-stream\r
-#{emsg}--Encrypted Boundary\r
-        EOF
-
-        r = @httpcli.post(@endpoint, body, ext_head)
-
-        winrm_decrypt(r.body.content)
-      end
-
-
-
       # merge the various header hashes and make sure we carry all of the attributes
       #   through instead of overwriting them.
       def merge_headers(*headers)
@@ -320,6 +214,9 @@ Content-Type: application/octet-stream\r
         hdr
       end
 
+      def send_message(message)
+        @xfer.send_request(message)
+      end
 
       # Helper methods for SOAP Headers
 
