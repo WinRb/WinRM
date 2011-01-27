@@ -26,19 +26,17 @@ require 'base64'
 require 'nokogiri'
 
 module WinRM
-  module SOAP
-    NS_ADDRESSING  ='a'   # http://schemas.xmlsoap.org/ws/2004/08/addressing
-    NS_CIMBINDING  ='b'   # http://schemas.dmtf.org/wbem/wsman/1/cimbinding.xsd
-    NS_ENUM        ='n'   # http://schemas.xmlsoap.org/ws/2004/09/enumeration
-    NS_TRANSFER    ='x'   # http://schemas.xmlsoap.org/ws/2004/09/transfer
-    NS_WSMAN_DMTF  ='w'   # http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd
-    NS_WSMAN_MSFT  ='p'   # http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd
-    NS_SCHEMA_INST ='xsi' # http://www.w3.org/2001/XMLSchema-instance
-    NS_WIN_SHELL   ='rsp' # http://schemas.microsoft.com/wbem/wsman/1/windows/shell
-    NS_WSMAN_FAULT = 'f'  # http://schemas.microsoft.com/wbem/wsman/1/wsmanfault
-  end
+  NS_ADDRESSING  ='a'   # http://schemas.xmlsoap.org/ws/2004/08/addressing
+  NS_CIMBINDING  ='b'   # http://schemas.dmtf.org/wbem/wsman/1/cimbinding.xsd
+  NS_ENUM        ='n'   # http://schemas.xmlsoap.org/ws/2004/09/enumeration
+  NS_TRANSFER    ='x'   # http://schemas.xmlsoap.org/ws/2004/09/transfer
+  NS_WSMAN_DMTF  ='w'   # http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd
+  NS_WSMAN_MSFT  ='p'   # http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd
+  NS_SCHEMA_INST ='xsi' # http://www.w3.org/2001/XMLSchema-instance
+  NS_WIN_SHELL   ='rsp' # http://schemas.microsoft.com/wbem/wsman/1/windows/shell
+  NS_WSMAN_FAULT = 'f'  # http://schemas.microsoft.com/wbem/wsman/1/wsmanfault
 end
 
-require 'soap/exceptions/exceptions'
-require 'soap/winrm_service'
-require 'soap/http_transport'
+require 'winrm/exceptions/exceptions'
+require 'winrm/winrm_service'
+require 'winrm/http/transport'

@@ -19,14 +19,12 @@
 #############################################################################
 
 module WinRM
-  module SOAP
-    # Generic WinRM SOAP Error
-    class WinRMWebServiceError < StandardError
-    end
+  # Generic WinRM SOAP Error
+  class WinRMWebServiceError < StandardError
+  end
 
-    # Authorization Error
-    class WinRMAuthorizationError < StandardError
-    end
-  end # SOAP
+  # Authorization Error
+  class WinRMAuthorizationError < StandardError
+  end
 end # WinRM
- 
+
