@@ -4,6 +4,10 @@ module WinRM
     #   much everything comes through here first.
     class WinRMWebService
 
+      DEFAULT_TIMEOUT = 'PT60S'
+      DEFAULT_MAX_ENV_SIZE = 153600
+      DEFAULT_LOCALE = 'en-US'
+
       # @param [String,URI] endpoint the WinRM webservice endpoint
       # @param [Symbol] transport either :kerberos(default)/:ssl/:plaintext
       # @param [Hash] opts Misc opts for the various transports.
@@ -11,6 +15,9 @@ module WinRM
       #   @see WinRM::SOAP::HttpGSSAPI
       #   @see WinRM::SOAP::HttpSSL
       def initialize(endpoint, transport = :kerberos, opts = {})
+        @timeout = DEFAULT_TIMEOUT
+        @max_env_sz = DEFAULT_MAX_ENV_SIZE 
+        @locale = DEFAULT_LOCALE
         case transport
         when :kerberos
           # TODO: check fo keys and throw error if missing
@@ -20,6 +27,21 @@ module WinRM
         when :ssl
           @xfer = HttpSSL.new(endpoint, opts[:ca_trust_path])
         end
+      end
+
+      # Operation timeout
+      def op_timeout(sec)
+        @timeout = Iso8601Duration.sec_to_dur(sec)
+      end
+
+      # Max envelope size
+      def max_env_size(sz)
+        @max_env_sz = sz
+      end
+
+      # Default locale
+      def locale(locale)
+        @locale = locale
       end
 
       # Create a Shell on the destination host
@@ -190,15 +212,15 @@ module WinRM
           "#{NS_ADDRESSING}:ReplyTo" => {
           "#{NS_ADDRESSING}:Address" => 'http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous',
             :attributes! => {"#{NS_ADDRESSING}:Address" => {'mustUnderstand' => true}}},
-          "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => 153600,
+          "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => @max_env_sz,
           "#{NS_ADDRESSING}:MessageID" => "uuid:#{UUID.generate.upcase}",
           "#{NS_WSMAN_DMTF}:Locale/" => '',
           "#{NS_WSMAN_MSFT}:DataLocale/" => '',
-          "#{NS_WSMAN_DMTF}:OperationTimeout" => 'PT60S',
+          "#{NS_WSMAN_DMTF}:OperationTimeout" => @timeout,
           :attributes! => {
             "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => {'mustUnderstand' => true},
-            "#{NS_WSMAN_DMTF}:Locale/" => {'xml:lang' => 'en-US', 'mustUnderstand' => false},
-            "#{NS_WSMAN_MSFT}:DataLocale/" => {'xml:lang' => 'en-US', 'mustUnderstand' => false}
+            "#{NS_WSMAN_DMTF}:Locale/" => {'xml:lang' => @locale, 'mustUnderstand' => false},
+            "#{NS_WSMAN_MSFT}:DataLocale/" => {'xml:lang' => @locale, 'mustUnderstand' => false}
           }}
       end
 
