@@ -29,6 +29,7 @@ module WinRM
       def initialize(endpoint, user, pass)
         super(endpoint)
         @httpcli.set_auth(nil, user, pass)
+        fix_auth!(@httpcli.www_auth.instance_variable_get('@authenticator'))
       end
     end
 
@@ -38,6 +39,7 @@ module WinRM
         super(endpoint)
         @httpcli.set_auth(endpoint, user, pass)
         @httpcli.ssl_config.set_trust_ca(ca_trust_path) unless ca_trust_path.nil?
+        fix_auth!(@httpcli.www_auth.instance_variable_get('@authenticator'))
       end
     end
 
@@ -82,6 +84,13 @@ Content-Type: application/octet-stream\r
 
 
       private 
+
+
+      # This will remove Negotiate authentication for plaintext and SSL because it supercedes Basic
+      # when it shouldn't for these types of transports.
+      def fix_auth!(auths)
+        auths.delete_if {|i| i.scheme !~ /basic/i}
+      end
 
       def init_krb
         @gsscli = GSSAPI::Simple.new(@endpoint.host, @service)

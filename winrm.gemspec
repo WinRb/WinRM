@@ -24,9 +24,10 @@ Gem::Specification.new do |s|
   s.extra_rdoc_files = %w(README COPYING.txt)
 
   s.required_ruby_version	= '>= 1.8.7'
-  s.add_runtime_dependency  'handsoap'
+  s.add_runtime_dependency  'gssapi'
   s.add_runtime_dependency  'nokogiri'
   s.add_runtime_dependency  'httpclient'
   s.add_runtime_dependency  'rubyntlm'
   s.add_runtime_dependency  'uuid'
+  s.add_runtime_dependency  'savon'
 end
