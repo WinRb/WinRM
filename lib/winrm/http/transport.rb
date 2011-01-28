@@ -14,13 +14,30 @@ module WinRM
       end
 
       def send_request(message)
+        hdr = {'Content-Type' => 'application/soap+xml;charset=UTF-8', 'Content-Length' => message.length}
+        resp = @httpcli.post(@endpoint, message, hdr)
+        if(resp.status == 200)
+          return Nokogiri::XML(resp.body.content)
+        else
+          puts "RESPONSE was #{resp.status}"
+          # TODO: raise error
+        end
+      end
+    end
+
+    class HttpPlaintext < HttpTransport
+      def initialize(endpoint, user, pass)
+        super(endpoint)
+        @httpcli.set_auth(nil, user, pass)
       end
     end
 
     # Uses SSL to secure the transport
     class HttpSSL < HttpTransport
-      def initialize(endpoint, ca_trust_path = nil)
+      def initialize(endpoint, user, pass, ca_trust_path = nil)
         super(endpoint)
+        @httpcli.set_auth(endpoint, user, pass)
+        @httpcli.ssl_config.set_trust_ca(ca_trust_path) unless ca_trust_path.nil?
       end
     end
 
@@ -44,7 +61,7 @@ module WinRM
       def send_request(msg)
         original_length = msg.length
         emsg = winrm_encrypt(msg)
-        ext_head = {
+        hdr = {
           "Connection" => "Keep-Alive",
           "Content-Type" => "multipart/encrypted;protocol=\"application/HTTP-Kerberos-session-encrypted\";boundary=\"Encrypted Boundary\""
         }
@@ -58,7 +75,7 @@ Content-Type: application/octet-stream\r
 #{emsg}--Encrypted Boundary\r
         EOF
 
-        r = @httpcli.post(@endpoint, body, ext_head)
+        r = @httpcli.post(@endpoint, body, hdr)
 
         winrm_decrypt(r.body.content)
       end
@@ -71,11 +88,11 @@ Content-Type: application/octet-stream\r
         token = @gsscli.init_context
         auth = Base64.strict_encode64 token
 
-        ext_head = {"Authorization" => "Kerberos #{auth}",
+        hdr = {"Authorization" => "Kerberos #{auth}",
           "Connection" => "Keep-Alive",
           "Content-Type" => "application/soap+xml;charset=UTF-8"
         }
-        r = @httpcli.post(@endpoint, '', ext_head)
+        r = @httpcli.post(@endpoint, '', hdr)
         itok = r.header["WWW-Authenticate"].pop
         itok = itok.split.last
         itok = Base64.strict_decode64(itok)

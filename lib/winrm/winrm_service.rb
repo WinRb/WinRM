@@ -22,9 +22,9 @@ module WinRM
         # TODO: check fo keys and throw error if missing
         @xfer = HTTP::HttpGSSAPI.new(endpoint, opts[:realm], opts[:service], opts[:keytab])
       when :plaintext
-        @xfer = HTTP::HttpTransport.new(endpoint)
+        @xfer = HTTP::HttpPlaintext.new(endpoint, opts[:user], opts[:pass])
       when :ssl
-        @xfer = HTTP::HttpSSL.new(endpoint, opts[:ca_trust_path])
+        @xfer = HTTP::HttpSSL.new(endpoint, opts[:user], opts[:pass], opts[:ca_trust_path])
       end
     end
 
@@ -192,6 +192,62 @@ module WinRM
       close_shell(shell_id)
       command_output
     end
+
+
+    # Run a Powershell script that resides on the local box.
+    # @param [String] script_file The string representing the path to a Powershell script
+    # @return [Hash] :stdout and :stderr
+    def run_powershell_script(script_file)
+      script = File.read(script_file)
+      script = script.chars.to_a.join("\x00").chomp
+      if(defined?(script.encode))
+        script = script.encode('ASCII-8BIT')
+        script = Base64.strict_encode64(script)
+      else
+        script = Base64.encode64(script).chomp
+      end
+
+
+      shell_id = open_shell
+      command_id = run_command(shell_id, "powershell -encodedCommand #{script}")
+      command_output = get_command_output(shell_id, command_id)
+      cleanup_command(shell_id, command_id)
+      close_shell(shell_id)
+      command_output
+    end
+
+
+    # Run a WQL Query
+    # @see http://msdn.microsoft.com/en-us/library/aa394606(VS.85).aspx
+    # @param [String] wql The WQL query
+    # @return [Array<Hash>] Returns an array of Hashes that contain the key/value pairs returned from the query.
+    def run_wql(wql)
+      header = {}.merge(resource_uri_wmi).merge(action_enumerate)
+
+      begin
+        resp = invoke("#{NS_ENUM}:Enumerate", {:soap_action => :auto, :http_options => nil, :soap_header => header}) do |enum|
+          enum.add("#{NS_WSMAN_DMTF}:OptimizeEnumeration")
+          enum.add("#{NS_WSMAN_DMTF}:MaxElements",'32000')
+          mattr = nil
+          enum.add("#{NS_WSMAN_DMTF}:Filter", wql) do |filt|
+            filt.set_attr('Dialect','http://schemas.microsoft.com/wbem/wsman/1/WQL')
+          end
+        end
+      rescue Handsoap::Fault => e
+        raise WinRMWebServiceError, e.reason
+      end
+
+      query_response = []
+      (resp/"//#{NS_ENUM}:EnumerateResponse//#{NS_WSMAN_DMTF}:Items/*").each do |i|
+        qitem = {}
+        (i/'*').each do |si|
+          qitem[si.node_name] = si.to_s
+        end
+        query_response << qitem
+      end
+      query_response
+    end
+
 
 
     private
