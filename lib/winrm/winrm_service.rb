@@ -74,8 +74,8 @@ module WinRM
       s.version = 2
       s.namespaces.merge!(namespaces)
       h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => {
-        "#{NS_WSMAN_DMTF}:Option" => ['TRUE'],
-        :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_CONSOLEMODE_STDIN']}}}}
+        "#{NS_WSMAN_DMTF}:Option" => ['TRUE','FALSE'],
+        :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_CONSOLEMODE_STDIN','WINRS_SKIP_CMD_SHELL']}}}}
         s.header.merge!(merge_headers(header,resource_uri_cmd,action_command,h_opts,selector_shell_id(shell_id)))
         s.input = "#{NS_WIN_SHELL}:CommandLine"
         s.body = { "#{NS_WIN_SHELL}:Command" => "\"#{command}\"" }
