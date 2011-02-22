@@ -17,7 +17,13 @@ module WinRM
         hdr = {'Content-Type' => 'application/soap+xml;charset=UTF-8', 'Content-Length' => message.length}
         resp = @httpcli.post(@endpoint, message, hdr)
         if(resp.status == 200)
-          return Nokogiri::XML(resp.body.content)
+          # Version 1.1 of WinRM adds the namespaces in the document instead of the envelope so we have to
+          # add them ourselves here. This should have no affect version 2.
+          doc = Nokogiri::XML(resp.body.content)
+          doc.collect_namespaces.each_pair do |k,v|
+            doc.root.add_namespace((k.split(/:/).last),v) unless doc.namespaces.has_key?(k)
+          end
+          return doc
         else
           puts "RESPONSE was #{resp.status}"
           # TODO: raise error
