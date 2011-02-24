@@ -192,6 +192,7 @@ module WinRM
       close_shell(shell_id)
       command_output
     end
+    alias :cmd :run_cmd
 
 
     # Run a Powershell script that resides on the local box.
