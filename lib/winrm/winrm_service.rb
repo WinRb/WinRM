@@ -196,10 +196,13 @@ module WinRM
 
 
     # Run a Powershell script that resides on the local box.
-    # @param [String] script_file The string representing the path to a Powershell script
+    # @param [IO] script_file an IO reference for reading the Powershell script or the actual file contents
     # @return [Hash] :stdout and :stderr
     def run_powershell_script(script_file)
-      script = File.read(script_file)
+      # if an IO object is passed read it..otherwise 
+      # assume the contents of the file were passed
+      script = script_file.kind_of?(IO) ? script_file.read : script_file
+
       script = script.chars.to_a.join("\x00").chomp
       if(defined?(script.encode))
         script = script.encode('ASCII-8BIT')
