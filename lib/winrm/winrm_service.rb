@@ -125,6 +125,10 @@ module WinRM
       else
         output[:exitcode] = (resp/"//#{NS_WIN_SHELL}:ExitCode").text.to_i
       end
+
+      if block_given?
+        yield output
+      end
       output
     end
 
