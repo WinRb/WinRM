@@ -181,10 +181,10 @@ module WinRM
     # Run a CMD command
     # @param [String] command The command to run on the remote system
     # @return [Hash] :stdout and :stderr
-    def run_cmd(command)
+    def run_cmd(command, &block)
       shell_id = open_shell
       command_id =  run_command(shell_id, command)
-      command_output = get_command_output(shell_id, command_id)
+      command_output = get_command_output(shell_id, command_id, &block)
       cleanup_command(shell_id, command_id)
       close_shell(shell_id)
       command_output
@@ -195,7 +195,7 @@ module WinRM
     # Run a Powershell script that resides on the local box.
     # @param [IO,String] script_file an IO reference for reading the Powershell script or the actual file contents
     # @return [Hash] :stdout and :stderr
-    def run_powershell_script(script_file)
+    def run_powershell_script(script_file, &block)
       # if an IO object is passed read it..otherwise assume the contents of the file were passed
       script = script_file.kind_of?(IO) ? script_file.read : script_file
 
@@ -207,10 +207,9 @@ module WinRM
         script = Base64.encode64(script).chomp
       end
 
-
       shell_id = open_shell
       command_id = run_command(shell_id, "powershell -encodedCommand #{script}")
-      command_output = get_command_output(shell_id, command_id)
+      command_output = get_command_output(shell_id, command_id, &block)
       cleanup_command(shell_id, command_id)
       close_shell(shell_id)
       command_output
