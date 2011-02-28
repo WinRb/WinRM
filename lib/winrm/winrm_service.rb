@@ -295,7 +295,16 @@ module WinRM
     end
 
     def send_message(message)
-      @xfer.send_request(message)
+      resp = @xfer.send_request(message)
+
+      errors = resp/"//#{NS_SOAP_ENV}:Body/#{NS_SOAP_ENV}:Fault/*"
+      if errors.empty?
+        return resp
+      else
+        resp.root.add_namespace(NS_WSMAN_FAULT,'http://schemas.microsoft.com/wbem/wsman/1/wsmanfault')
+        fault = (errors/"//#{NS_WSMAN_FAULT}:WSManFault").first
+        raise WinRMWSManFault, "[WSMAN ERROR CODE: #{fault['Code']}]: #{fault.text}"
+      end
     end
 
     # Helper methods for SOAP Headers

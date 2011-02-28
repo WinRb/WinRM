@@ -26,6 +26,7 @@ require 'base64'
 require 'nokogiri'
 
 module WinRM
+  NS_SOAP_ENV    ='s'   # http://www.w3.org/2003/05/soap-envelope
   NS_ADDRESSING  ='a'   # http://schemas.xmlsoap.org/ws/2004/08/addressing
   NS_CIMBINDING  ='b'   # http://schemas.dmtf.org/wbem/wsman/1/cimbinding.xsd
   NS_ENUM        ='n'   # http://schemas.xmlsoap.org/ws/2004/09/enumeration

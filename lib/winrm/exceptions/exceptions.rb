@@ -26,5 +26,8 @@ module WinRM
   # Authorization Error
   class WinRMAuthorizationError < StandardError
   end
+
+  # A Fault returned in the SOAP response. The XML node is a WSManFault
+  class WinRMWSManFault < StandardError; end
 end # WinRM
 
