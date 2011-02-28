@@ -51,17 +51,14 @@ module WinRM
       s = Savon::SOAP::XML.new
       s.version = 2
       s.namespaces.merge!(namespaces)
-
       h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => { "#{NS_WSMAN_DMTF}:Option" => ['FALSE',437],
         :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_NOPROFILE','WINRS_CODEPAGE']}}}}
       s.header.merge!(merge_headers(header,resource_uri_cmd,action_create,h_opts))
-
       s.input = "#{NS_WIN_SHELL}:Shell"
       s.body = { "#{NS_WIN_SHELL}:InputStreams" => i_stream,
         "#{NS_WIN_SHELL}:OutputStreams" => o_stream}
 
       resp = send_message(s.to_xml)
-
       (resp/"//*[@Name='ShellId']").text
     end
 
@@ -75,13 +72,14 @@ module WinRM
       s.namespaces.merge!(namespaces)
       h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => {
         "#{NS_WSMAN_DMTF}:Option" => ['TRUE','FALSE'],
-        :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_CONSOLEMODE_STDIN','WINRS_SKIP_CMD_SHELL']}}}}
-        s.header.merge!(merge_headers(header,resource_uri_cmd,action_command,h_opts,selector_shell_id(shell_id)))
-        s.input = "#{NS_WIN_SHELL}:CommandLine"
-        s.body = { "#{NS_WIN_SHELL}:Command" => "\"#{command}\"" }
-        resp = send_message(s.to_xml)
+        :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_CONSOLEMODE_STDIN','WINRS_SKIP_CMD_SHELL']}}}
+      }
+      s.header.merge!(merge_headers(header,resource_uri_cmd,action_command,h_opts,selector_shell_id(shell_id)))
+      s.input = "#{NS_WIN_SHELL}:CommandLine"
+      s.body = { "#{NS_WIN_SHELL}:Command" => "\"#{command}\"" }
 
-        (resp/"//#{NS_WIN_SHELL}:CommandId").text
+      resp = send_message(s.to_xml)
+      (resp/"//#{NS_WIN_SHELL}:CommandId").text
     end
 
     # Get the Output of the given shell and command
@@ -90,36 +88,35 @@ module WinRM
     # @return [Hash] Returns a Hash with a key :exitcode and :data.  Data is an Array of Hashes where the cooresponding key
     #   is either :stdout or :stderr.  The reason it is in an Array so so we can get the output in the order it ocurrs on
     #   the console.
-    def get_command_output(shell_id, command_id)
+    def get_command_output(shell_id, command_id, &block)
       s = Savon::SOAP::XML.new
       s.version = 2
       s.namespaces.merge!(namespaces)
       s.header.merge!(merge_headers(header,resource_uri_cmd,action_receive,selector_shell_id(shell_id)))
-
       s.input = "#{NS_WIN_SHELL}:Receive"
-
       s.body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout stderr',
         :attributes! => {"#{NS_WIN_SHELL}:DesiredStream" => {'CommandId' => command_id}}}
 
       resp = send_message(s.to_xml)
-
       output = {:data => []}
       (resp/"//#{NS_WIN_SHELL}:Stream").each do |n|
         next if n.text.nil? || n.text.empty?
-        output[:data] << {n['Name'].to_sym => Base64.decode64(n.text)}
+        stream = {n['Name'].to_sym => Base64.decode64(n.text)}
+        output[:data] << stream
+        yield stream[:stdout], stream[:stderr] if block_given?
       end
 
       # We may need to get additional output if the stream has not finished.
       # The CommandState will change from Running to Done like so:
       # @example
       #   from...
-      #   <rsp:CommandState CommandId="495C3B09-E0B0-442A-9958-83B529F76C2C" State="http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Running"/>
+      #   <rsp:CommandState CommandId="..." State="http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Running"/>
       #   to...
-      #   <rsp:CommandState CommandId="495C3B09-E0B0-442A-9958-83B529F76C2C" State="http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done">
+      #   <rsp:CommandState CommandId="..." State="http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done">
       #     <rsp:ExitCode>0</rsp:ExitCode>
       #   </rsp:CommandState>
       if((resp/"//#{NS_WIN_SHELL}:ExitCode").empty?)
-        output.merge!(get_command_output(shell_id,command_id)) do |key, old_data, new_data|
+        output.merge!(get_command_output(shell_id,command_id,&block)) do |key, old_data, new_data|
           old_data += new_data
         end
       else
