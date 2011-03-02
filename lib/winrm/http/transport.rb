@@ -30,8 +30,8 @@ module WinRM
         end
       end
 
-      # This will remove Negotiate authentication for plaintext and SSL because it supercedes Basic
-      # when it shouldn't for these types of transports.
+      # We'll need this to force basic authentication if desired
+      # TODO: implement this for basic auth needs
       def basic_auth_only!
         auths = @httpcli.www_auth.instance_variable_get('@authenticator')
         auths.delete_if {|i| i.scheme !~ /basic/i}
@@ -42,7 +42,6 @@ module WinRM
       def initialize(endpoint, user, pass)
         super(endpoint)
         @httpcli.set_auth(nil, user, pass)
-        basic_auth_only!
       end
     end
 
@@ -52,7 +51,6 @@ module WinRM
         super(endpoint)
         @httpcli.set_auth(endpoint, user, pass)
         @httpcli.ssl_config.set_trust_ca(ca_trust_path) unless ca_trust_path.nil?
-        basic_auth_only!
       end
     end
 
