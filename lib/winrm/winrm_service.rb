@@ -7,6 +7,8 @@ module WinRM
     DEFAULT_MAX_ENV_SIZE = 153600
     DEFAULT_LOCALE = 'en-US'
 
+    attr_reader :endpoint
+
     # @param [String,URI] endpoint the WinRM webservice endpoint
     # @param [Symbol] transport either :kerberos(default)/:ssl/:plaintext
     # @param [Hash] opts Misc opts for the various transports.
@@ -14,6 +16,7 @@ module WinRM
     #   @see WinRM::HTTP::HttpGSSAPI
     #   @see WinRM::HTTP::HttpSSL
     def initialize(endpoint, transport = :kerberos, opts = {})
+      @endpoint = endpoint
       @timeout = DEFAULT_TIMEOUT
       @max_env_sz = DEFAULT_MAX_ENV_SIZE 
       @locale = DEFAULT_LOCALE
@@ -115,7 +118,7 @@ module WinRM
       #   <rsp:CommandState CommandId="..." State="http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done">
       #     <rsp:ExitCode>0</rsp:ExitCode>
       #   </rsp:CommandState>
-      if((resp/"//#{NS_WIN_SHELL}:ExitCode").empty?)
+      if((resp/"//*[@State='http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done']").empty?)
         output.merge!(get_command_output(shell_id,command_id,&block)) do |key, old_data, new_data|
           old_data += new_data
         end
