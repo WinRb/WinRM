@@ -73,7 +73,7 @@ module WinRM
 
       def send_request(msg)
         original_length = msg.length
-        emsg = winrm_encrypt(msg)
+        pad_len, emsg = winrm_encrypt(msg)
         hdr = {
           "Connection" => "Keep-Alive",
           "Content-Type" => "multipart/encrypted;protocol=\"application/HTTP-Kerberos-session-encrypted\";boundary=\"Encrypted Boundary\""
@@ -82,7 +82,7 @@ module WinRM
         body = <<-EOF
 --Encrypted Boundary\r
 Content-Type: application/HTTP-Kerberos-session-encrypted\r
-OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{original_length}\r
+OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{original_length + pad_len}\r
 --Encrypted Boundary\r
 Content-Type: application/octet-stream\r
 #{emsg}--Encrypted Boundary\r
@@ -115,7 +115,7 @@ Content-Type: application/octet-stream\r
 
       # @return [String] the encrypted request string
       def winrm_encrypt(str)
-        iov_cnt = 2
+        iov_cnt = 3
         iov = FFI::MemoryPointer.new(GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * iov_cnt)
 
         iov0 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(FFI::Pointer.new(iov.address))
@@ -125,20 +125,26 @@ Content-Type: application/octet-stream\r
         iov1[:type] =  (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA)
         iov1[:buffer].value = str
 
+        iov2 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 2)))
+        iov2[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_PADDING | GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_FLAG_ALLOCATE)
+
         conf_state = FFI::MemoryPointer.new :uint32
         min_stat = FFI::MemoryPointer.new :uint32
 
-        maj_stat = GSSAPI::LibGSSAPI.gss_wrap_iov(min_stat, @gsscli.context, 1, 0, conf_state, iov, iov_cnt)
+        maj_stat = GSSAPI::LibGSSAPI.gss_wrap_iov(min_stat, @gsscli.context, 1, GSSAPI::LibGSSAPI::GSS_C_QOP_DEFAULT, conf_state, iov, iov_cnt)
 
         token = [iov0[:buffer].length].pack('L')
         token += iov0[:buffer].value
         token += iov1[:buffer].value
+        pad_len = iov2[:buffer].length
+        token += iov2[:buffer].value if pad_len > 0
+        [pad_len, token]
       end
 
 
       # @return [String] the unencrypted response string
       def winrm_decrypt(str)
-        iov_cnt = 2
+        iov_cnt = 3
         iov = FFI::MemoryPointer.new(GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * iov_cnt)
 
         iov0 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(FFI::Pointer.new(iov.address))
@@ -146,6 +152,9 @@ Content-Type: application/octet-stream\r
 
         iov1 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 1)))
         iov1[:type] =  (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA)
+
+        iov2 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 2)))
+        iov2[:type] =  (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA)
 
         str.force_encoding('BINARY')
         str.sub!(/^.*Content-Type: application\/octet-stream\r\n(.*)--Encrypted.*$/m, '\1')
