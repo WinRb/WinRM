@@ -222,34 +222,32 @@ module WinRM
     # Run a WQL Query
     # @see http://msdn.microsoft.com/en-us/library/aa394606(VS.85).aspx
     # @param [String] wql The WQL query
-    # @return [Array<Hash>] Returns an array of Hashes that contain the key/value pairs returned from the query.
+    # @return [Hash] Returns a Hash that contain the key/value pairs returned from the query.
     def run_wql(wql)
-      header = {}.merge(resource_uri_wmi).merge(action_enumerate)
+      s = Savon::SOAP::XML.new
+      s.version = 2
+      s.namespaces.merge!(namespaces)
+      s.header.merge!(merge_headers(header,resource_uri_wmi,action_enumerate))
+      s.input = "#{NS_ENUM}:Enumerate"
+      s.body = { "#{NS_WSMAN_DMTF}:OptimizeEnumeration" => nil,
+        "#{NS_WSMAN_DMTF}:MaxElements" => '32000',
+        "#{NS_WSMAN_DMTF}:Filter" => wql,
+        :attributes! => { "#{NS_WSMAN_DMTF}:Filter" => {'Dialect' => 'http://schemas.microsoft.com/wbem/wsman/1/WQL'}}
+      }
 
-      begin
-        resp = invoke("#{NS_ENUM}:Enumerate", {:soap_action => :auto, :http_options => nil, :soap_header => header}) do |enum|
-          enum.add("#{NS_WSMAN_DMTF}:OptimizeEnumeration")
-          enum.add("#{NS_WSMAN_DMTF}:MaxElements",'32000')
-          mattr = nil
-          enum.add("#{NS_WSMAN_DMTF}:Filter", wql) do |filt|
-            filt.set_attr('Dialect','http://schemas.microsoft.com/wbem/wsman/1/WQL')
-          end
+      resp = send_message(s.to_xml)
+      hresp = Savon::SOAP::XML.to_hash resp.to_xml
+      # Normalize items so the type always has an array even if it's just a single item.
+      items = {}
+      hresp[:enumerate_response][:items].each_pair do |k,v|
+        if v.is_a?(Array)
+          items[k] = v
+        else
+          items[k] = [v]
         end
-      rescue Handsoap::Fault => e
-        raise WinRMWebServiceError, e.reason
       end
-
-      query_response = []
-      (resp/"//#{NS_ENUM}:EnumerateResponse//#{NS_WSMAN_DMTF}:Items/*").each do |i|
-        qitem = {}
-        (i/'*').each do |si|
-          qitem[si.node_name] = si.to_s
-        end
-        query_response << qitem
-      end
-      query_response
+      items
     end
-
 
 
     private
