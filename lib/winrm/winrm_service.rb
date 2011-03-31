@@ -23,11 +23,11 @@ module WinRM
       case transport
       when :kerberos
         # TODO: check fo keys and throw error if missing
-        @xfer = HTTP::HttpGSSAPI.new(endpoint, opts[:realm], opts[:service], opts[:keytab])
+        @xfer = HTTP::HttpGSSAPI.new(endpoint, opts[:realm], opts[:service], opts[:keytab], opts)
       when :plaintext
-        @xfer = HTTP::HttpPlaintext.new(endpoint, opts[:user], opts[:pass])
+        @xfer = HTTP::HttpPlaintext.new(endpoint, opts[:user], opts[:pass], opts)
       when :ssl
-        @xfer = HTTP::HttpSSL.new(endpoint, opts[:user], opts[:pass], opts[:ca_trust_path])
+        @xfer = HTTP::HttpSSL.new(endpoint, opts[:user], opts[:pass], opts[:ca_trust_path], opts)
       end
     end
 

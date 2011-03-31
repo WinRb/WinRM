@@ -39,18 +39,20 @@ module WinRM
     end
 
     class HttpPlaintext < HttpTransport
-      def initialize(endpoint, user, pass)
+      def initialize(endpoint, user, pass, opts)
         super(endpoint)
         @httpcli.set_auth(nil, user, pass)
+        basic_auth_only! if opts[:basic_only]
       end
     end
 
     # Uses SSL to secure the transport
     class HttpSSL < HttpTransport
-      def initialize(endpoint, user, pass, ca_trust_path = nil)
+      def initialize(endpoint, user, pass, ca_trust_path = nil, opts)
         super(endpoint)
         @httpcli.set_auth(endpoint, user, pass)
         @httpcli.ssl_config.set_trust_ca(ca_trust_path) unless ca_trust_path.nil?
+        basic_auth_only! if opts[:basic_only]
       end
     end
 
@@ -60,7 +62,7 @@ module WinRM
       # @param [String] realm the Kerberos realm we are authenticating to
       # @param [String<optional>] service the service name, default is HTTP
       # @param [String<optional>] keytab the path to a keytab file if you are using one
-      def initialize(endpoint, realm, service = nil, keytab = nil)
+      def initialize(endpoint, realm, service = nil, keytab = nil, opts)
         super(endpoint)
         service ||= 'HTTP'
         @service = "#{service}/#{@endpoint.host}@#{realm}"
