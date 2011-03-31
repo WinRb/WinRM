@@ -1,3 +1,6 @@
 *.swp
 *.gem
 pkg/*
+.rvmrc
+test/spec/creds.json
+traces/
