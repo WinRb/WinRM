@@ -20,7 +20,7 @@
 
 require 'httpclient'
 require 'savon/soap/xml'
-require 'uuid'
+require 'uuidtools'
 require 'gssapi'
 require 'base64'
 require 'nokogiri'
