@@ -68,8 +68,9 @@ module WinRM
     # Run a command on a machine with an open shell
     # @param [String] shell_id The shell id on the remote machine.  See #open_shell
     # @param [String] command The command to run on the remote machine
+    # @param [Array<String>] arguments An array of arguments for this command
     # @return [String] The CommandId from the SOAP response.  This is the ID we need to query in order to get output.
-    def run_command(shell_id, command)
+    def run_command(shell_id, command, arguments = [])
       s = Savon::SOAP::XML.new
       s.version = 2
       s.namespaces.merge!(namespaces)
@@ -79,7 +80,7 @@ module WinRM
       }
       s.header.merge!(merge_headers(header,resource_uri_cmd,action_command,h_opts,selector_shell_id(shell_id)))
       s.input = "#{NS_WIN_SHELL}:CommandLine"
-      s.body = { "#{NS_WIN_SHELL}:Command" => "\"#{command}\"" }
+      s.body = { "#{NS_WIN_SHELL}:Command" => "\"#{command}\"", "#{NS_WIN_SHELL}:Arguments" => arguments}
 
       resp = send_message(s.to_xml)
       (resp/"//#{NS_WIN_SHELL}:CommandId").text
@@ -183,10 +184,11 @@ module WinRM
 
     # Run a CMD command
     # @param [String] command The command to run on the remote system
+    # @param [Array <String>] arguments arguments to the command
     # @return [Hash] :stdout and :stderr
-    def run_cmd(command, &block)
+    def run_cmd(command, arguments = [], &block)
       shell_id = open_shell
-      command_id =  run_command(shell_id, command)
+      command_id =  run_command(shell_id, command, arguments)
       command_output = get_command_output(shell_id, command_id, &block)
       cleanup_command(shell_id, command_id)
       close_shell(shell_id)
