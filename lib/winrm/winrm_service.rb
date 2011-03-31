@@ -177,9 +177,7 @@ module WinRM
       end
 
       resp = send_message(s.to_xml)
-
-      resp.remove_namespaces!
-      (resp/"//Fault").empty?
+      true
     end
 
     # Run a CMD command
