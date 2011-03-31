@@ -42,7 +42,7 @@ module WinRM
       def initialize(endpoint, user, pass, opts)
         super(endpoint)
         @httpcli.set_auth(nil, user, pass)
-        basic_auth_only! if opts[:basic_only]
+        basic_auth_only! if opts[:basic_auth_only]
       end
     end
 
@@ -52,7 +52,7 @@ module WinRM
         super(endpoint)
         @httpcli.set_auth(endpoint, user, pass)
         @httpcli.ssl_config.set_trust_ca(ca_trust_path) unless ca_trust_path.nil?
-        basic_auth_only! if opts[:basic_only]
+        basic_auth_only! if opts[:basic_auth_only]
       end
     end
 

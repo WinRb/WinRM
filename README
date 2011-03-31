@@ -63,10 +63,14 @@ end
 
 CONNECTION TYPES:
 
-BASIC:
+PLAINTEXT:
   WinRM::WinRMWebService.new(endpoint, :plaintext, :user => myuser, :pass => mypass)
-BASIC + SSL:
+  # Same but force basic authentication
+  WinRM::WinRMWebService.new(endpoint, :plaintext, :user => myuser, :pass => mypass, :basic_auth_only => true)
+SSL:
   WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass)
+  # Same but force basic authentication
+  WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :basic_auth_only => true)
 KERBEROS:
   WinRM::WinRMWebService.new(endpoint, :kerberos, :realm => 'MYREALM.COM')
 
@@ -80,3 +84,7 @@ http://github.com/zenchild/WinRM/issues
 
 Cheers!
 --------------------------------------------------------------------------
+
+
+Thurs : #9 5:30-6:30
+
