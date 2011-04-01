@@ -7,7 +7,7 @@ module WinRM
     DEFAULT_MAX_ENV_SIZE = 153600
     DEFAULT_LOCALE = 'en-US'
 
-    attr_reader :endpoint
+    attr_reader :endpoint, :timeout
 
     # @param [String,URI] endpoint the WinRM webservice endpoint
     # @param [Symbol] transport either :kerberos(default)/:ssl/:plaintext
@@ -32,25 +32,38 @@ module WinRM
     end
 
     # Operation timeout
-    def op_timeout(sec)
+    # @see http://msdn.microsoft.com/en-us/library/ee916629(v=PROT.13).aspx
+    # @param [Fixnum] sec the number of seconds to set the timeout to. It will be converted to an ISO8601 format.
+    def set_timeout(sec)
       @timeout = Iso8601Duration.sec_to_dur(sec)
     end
+    alias :op_timeout :set_timeout
 
     # Max envelope size
-    def max_env_size(sz)
-      @max_env_sz = sz
+    # @see http://msdn.microsoft.com/en-us/library/ee916127(v=PROT.13).aspx
+    # @param [Fixnum] byte_sz the max size in bytes to allow for the response
+    def max_env_size(byte_sz)
+      @max_env_sz = byte_sz
     end
 
-    # Default locale
+    # Set the locale
+    # @see http://msdn.microsoft.com/en-us/library/gg567404(v=PROT.13).aspx
+    # @param [String] locale the locale to set for future messages
     def locale(locale)
       @locale = locale
     end
 
     # Create a Shell on the destination host
-    # @param [String<optional>] i_stream Which input stream to open.  Leave this alone unless you know what you're doing
-    # @param [String<optional>] o_stream Which output stream to open.  Leave this alone unless you know what you're doing
+    # @param [Hash<optional>] shell_opts additional shell options you can pass
+    # @option shell_opts [String] :i_stream Which input stream to open.  Leave this alone unless you know what you're doing (default: stdin)
+    # @option shell_opts [String] :o_stream Which output stream to open.  Leave this alone unless you know what you're doing (default: stdout stderr)
+    # @option shell_opts [String] :working_directory the directory to create the shell in
+    # @option shell_opts [Hash] :env_vars environment variables to set for the shell. For instance;
+    #   :env_vars => {:myvar1 => 'val1', :myvar2 => 'var2'}
     # @return [String] The ShellId from the SOAP response.  This is our open shell instance on the remote machine.
-    def open_shell(i_stream = 'stdin', o_stream = 'stdout stderr')
+    def open_shell(shell_opts = {})
+      i_stream = shell_opts.has_key?(:i_stream) ? shell_opts[:i_stream] : 'stdin'
+      o_stream = shell_opts.has_key?(:o_stream) ? shell_opts[:o_stream] : 'stdout stderr'
       s = Savon::SOAP::XML.new
       s.version = 2
       s.namespaces.merge!(namespaces)
@@ -58,8 +71,21 @@ module WinRM
         :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_NOPROFILE','WINRS_CODEPAGE']}}}}
       s.header.merge!(merge_headers(header,resource_uri_cmd,action_create,h_opts))
       s.input = "#{NS_WIN_SHELL}:Shell"
-      s.body = { "#{NS_WIN_SHELL}:InputStreams" => i_stream,
-        "#{NS_WIN_SHELL}:OutputStreams" => o_stream}
+      s.body = {
+        "#{NS_WIN_SHELL}:InputStreams" => i_stream,
+        "#{NS_WIN_SHELL}:OutputStreams" => o_stream
+      }
+      s.body["#{NS_WIN_SHELL}:WorkingDirectory"] = shell_opts[:working_directory] if shell_opts.has_key?(:working_directory)
+      # TODO: research Lifetime a bit more: http://msdn.microsoft.com/en-us/library/cc251546(v=PROT.13).aspx
+      #s.body["#{NS_WIN_SHELL}:Lifetime"] = Iso8601Duration.sec_to_dur(shell_opts[:lifetime]) if(shell_opts.has_key?(:lifetime) && shell_opts[:lifetime].is_a?(Fixnum))
+      if(shell_opts.has_key?(:env_vars) && shell_opts[:env_vars].is_a?(Hash))
+        keys = shell_opts[:env_vars].keys
+        vals = shell_opts[:env_vars].values
+        s.body["#{NS_WIN_SHELL}:Environment"] = {
+          "#{NS_WIN_SHELL}:Variable" => vals,
+          :attributes! => {"#{NS_WIN_SHELL}:Variable" => {'Name' => keys}}
+        }
+      end
 
       resp = send_message(s.to_xml)
       (resp/"//*[@Name='ShellId']").text
