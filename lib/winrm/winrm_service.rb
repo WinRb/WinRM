@@ -217,6 +217,7 @@ module WinRM
       close_shell(shell_id)
       command_output
     end
+    alias :powershell :run_powershell_script
 
 
     # Run a WQL Query
@@ -248,6 +249,7 @@ module WinRM
       end
       items
     end
+    alias :wql :run_wql
 
 
     private
