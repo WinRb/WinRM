@@ -29,5 +29,8 @@ module WinRM
 
   # A Fault returned in the SOAP response. The XML node is a WSManFault
   class WinRMWSManFault < StandardError; end
+
+  # Bad HTTP Transport
+  class WinRMHTTPTransportError < StandardError; end
 end # WinRM
 

@@ -25,13 +25,11 @@ module WinRM
           end
           return doc
         else
-          puts "RESPONSE was #{resp.status}"
-          # TODO: raise error
+          raise WinRMHTTPTransportError, "Bad HTTP response returned from server (#{resp.status})."
         end
       end
 
       # We'll need this to force basic authentication if desired
-      # TODO: implement this for basic auth needs
       def basic_auth_only!
         auths = @httpcli.www_auth.instance_variable_get('@authenticator')
         auths.delete_if {|i| i.scheme !~ /basic/i}

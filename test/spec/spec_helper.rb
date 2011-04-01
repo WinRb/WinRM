@@ -10,6 +10,8 @@ module ConnectionHelper
   def winrm_connection
     creds = JSON.load(File.open(CREDS_FILE,'r'))
     winrm = WinRM::WinRMWebService.new(creds['endpoint'], :kerberos, :realm => creds['realm'])
+    #winrm = WinRM::WinRMWebService.new(creds['endpoint'], :plaintext, :user => creds['user'], :pass => creds['pass'])
+    #winrm = WinRM::WinRMWebService.new(creds['endpoint'], :plaintext, :user => creds['user'], :pass => creds['pass'], :basic_auth_only => true)
     winrm
   end
 end

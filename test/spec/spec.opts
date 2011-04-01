@@ -1,5 +1,0 @@
-spec/powershell_tests.spec
-spec/wql_tests.spec
---format
-nested
---color
