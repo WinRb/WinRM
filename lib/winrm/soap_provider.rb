@@ -36,6 +36,7 @@ module WinRM
   NS_SCHEMA_INST ='xsi' # http://www.w3.org/2001/XMLSchema-instance
   NS_WIN_SHELL   ='rsp' # http://schemas.microsoft.com/wbem/wsman/1/windows/shell
   NS_WSMAN_FAULT = 'f'  # http://schemas.microsoft.com/wbem/wsman/1/wsmanfault
+  NS_WSMAN_CONF  = 'cfg'# http://schemas.microsoft.com/wbem/wsman/1/config
 end
 
 require 'winrm/exceptions/exceptions'

@@ -34,10 +34,11 @@ module WinRM
     # Operation timeout
     # @see http://msdn.microsoft.com/en-us/library/ee916629(v=PROT.13).aspx
     # @param [Fixnum] sec the number of seconds to set the timeout to. It will be converted to an ISO8601 format.
-    def set_timeout(sec)
+    def set_ttimeout(sec)
+      #@xfer.set_ttimeout(sec)
       @timeout = Iso8601Duration.sec_to_dur(sec)
     end
-    alias :op_timeout :set_timeout
+    alias :op_timeout :set_ttimeout
 
     # Max envelope size
     # @see http://msdn.microsoft.com/en-us/library/ee916127(v=PROT.13).aspx
@@ -291,7 +292,9 @@ module WinRM
         'xmlns:x' => 'http://schemas.xmlsoap.org/ws/2004/09/transfer',
         'xmlns:w' => 'http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd',
         'xmlns:p' => 'http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd',
-        'xmlns:rsp' => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell'}
+        'xmlns:rsp' => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell',
+        'xmlns:cfg' => 'http://schemas.microsoft.com/wbem/wsman/1/config',
+      }
     end
 
     def header
@@ -303,6 +306,7 @@ module WinRM
         "#{NS_ADDRESSING}:MessageID" => "uuid:#{UUIDTools::UUID.random_create.to_s.upcase}",
         "#{NS_WSMAN_DMTF}:Locale/" => '',
         "#{NS_WSMAN_MSFT}:DataLocale/" => '',
+        #"#{NS_WSMAN_CONF}:MaxTimeoutms" => 600, #TODO: research this a bit http://msdn.microsoft.com/en-us/library/cc251561(v=PROT.13).aspx
         "#{NS_WSMAN_DMTF}:OperationTimeout" => @timeout,
         :attributes! => {
           "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => {'mustUnderstand' => true},
@@ -324,6 +328,7 @@ module WinRM
     end
 
     def send_message(message)
+      puts "REQ:\n#{Nokogiri::XML(message).to_xml}"
       resp = @xfer.send_request(message)
 
       begin

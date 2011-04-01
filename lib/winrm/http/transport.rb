@@ -11,8 +11,6 @@ module WinRM
       def initialize(endpoint)
         @endpoint = endpoint.is_a?(String) ? URI.parse(endpoint) : endpoint
         @httpcli = HTTPClient.new(:agent_name => 'Ruby WinRM Client')
-        @httpcli.send_timeout = 300
-        @httpcli.receive_timeout = 300
       end
 
       def send_request(message)
