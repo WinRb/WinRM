@@ -62,6 +62,9 @@ module WinRM
       # @param [String<optional>] keytab the path to a keytab file if you are using one
       def initialize(endpoint, realm, service = nil, keytab = nil, opts)
         super(endpoint)
+        # Remove the GSSAPI auth from HTTPClient because we are doing our own thing
+        auths = @httpcli.www_auth.instance_variable_get('@authenticator')
+        auths.delete_if {|i| i.is_a?(HTTPClient::SSPINegotiateAuth)}
         service ||= 'HTTP'
         @service = "#{service}/#{@endpoint.host}@#{realm}"
         init_krb

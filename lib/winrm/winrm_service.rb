@@ -64,10 +64,12 @@ module WinRM
     def open_shell(shell_opts = {})
       i_stream = shell_opts.has_key?(:i_stream) ? shell_opts[:i_stream] : 'stdin'
       o_stream = shell_opts.has_key?(:o_stream) ? shell_opts[:o_stream] : 'stdout stderr'
+      codepage = shell_opts.has_key?(:codepage) ? shell_opts[:codepage] : 437
+      noprofile = shell_opts.has_key?(:noprofile) ? shell_opts[:noprofile] : 'FALSE'
       s = Savon::SOAP::XML.new
       s.version = 2
       s.namespaces.merge!(namespaces)
-      h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => { "#{NS_WSMAN_DMTF}:Option" => ['FALSE',437],
+      h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => { "#{NS_WSMAN_DMTF}:Option" => [noprofile, codepage],
         :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_NOPROFILE','WINRS_CODEPAGE']}}}}
       s.header.merge!(merge_headers(header,resource_uri_cmd,action_create,h_opts))
       s.input = "#{NS_WIN_SHELL}:Shell"
@@ -96,12 +98,14 @@ module WinRM
     # @param [String] command The command to run on the remote machine
     # @param [Array<String>] arguments An array of arguments for this command
     # @return [String] The CommandId from the SOAP response.  This is the ID we need to query in order to get output.
-    def run_command(shell_id, command, arguments = [])
+    def run_command(shell_id, command, arguments = [], cmd_opts = {})
+      consolemode = shell_opts.has_key?(:console_mode_stdin) ? shell_opts[:console_mode_stdin] : 'TRUE'
+      skipcmd     = shell_opts.has_key?(:skip_cmd_shell) ? shell_opts[:skip_cmd_shell] : 'FALSE'
       s = Savon::SOAP::XML.new
       s.version = 2
       s.namespaces.merge!(namespaces)
       h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => {
-        "#{NS_WSMAN_DMTF}:Option" => ['TRUE','FALSE'],
+        "#{NS_WSMAN_DMTF}:Option" => [consolemode, skipcmd],
         :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_CONSOLEMODE_STDIN','WINRS_SKIP_CMD_SHELL']}}}
       }
       s.header.merge!(merge_headers(header,resource_uri_cmd,action_command,h_opts,selector_shell_id(shell_id)))
@@ -322,13 +326,19 @@ module WinRM
     def send_message(message)
       resp = @xfer.send_request(message)
 
-      errors = resp/"//#{NS_SOAP_ENV}:Body/#{NS_SOAP_ENV}:Fault/*"
-      if errors.empty?
-        return resp
-      else
-        resp.root.add_namespace(NS_WSMAN_FAULT,'http://schemas.microsoft.com/wbem/wsman/1/wsmanfault')
-        fault = (errors/"//#{NS_WSMAN_FAULT}:WSManFault").first
-        raise WinRMWSManFault, "[WSMAN ERROR CODE: #{fault['Code']}]: #{fault.text}"
+      begin
+        errors = resp/"//#{NS_SOAP_ENV}:Body/#{NS_SOAP_ENV}:Fault/*"
+        if errors.empty?
+          return resp
+        else
+          resp.root.add_namespace(NS_WSMAN_FAULT,'http://schemas.microsoft.com/wbem/wsman/1/wsmanfault')
+          fault = (errors/"//#{NS_WSMAN_FAULT}:WSManFault").first
+          raise WinRMWSManFault, "[WSMAN ERROR CODE: #{fault['Code']}]: #{fault.text}"
+        end
+      # Sometimes a blank response is returned and it will throw this error when the XPath is evaluated for Fault
+      # The returned string will be '<?xml version="1.0"?>\n' in these cases
+      rescue Nokogiri::XML::XPath::SyntaxError => e
+        raise WinRMWebServiceError, "Bad SOAP Packet returned. Sometimes a retry will solve this error."
       end
     end
 
