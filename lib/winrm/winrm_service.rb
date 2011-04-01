@@ -99,8 +99,8 @@ module WinRM
     # @param [Array<String>] arguments An array of arguments for this command
     # @return [String] The CommandId from the SOAP response.  This is the ID we need to query in order to get output.
     def run_command(shell_id, command, arguments = [], cmd_opts = {})
-      consolemode = shell_opts.has_key?(:console_mode_stdin) ? shell_opts[:console_mode_stdin] : 'TRUE'
-      skipcmd     = shell_opts.has_key?(:skip_cmd_shell) ? shell_opts[:skip_cmd_shell] : 'FALSE'
+      consolemode = cmd_opts.has_key?(:console_mode_stdin) ? cmd_opts[:console_mode_stdin] : 'TRUE'
+      skipcmd     = cmd_opts.has_key?(:skip_cmd_shell) ? cmd_opts[:skip_cmd_shell] : 'FALSE'
       s = Savon::SOAP::XML.new
       s.version = 2
       s.namespaces.merge!(namespaces)
