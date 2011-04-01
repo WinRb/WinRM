@@ -34,11 +34,10 @@ module WinRM
     # Operation timeout
     # @see http://msdn.microsoft.com/en-us/library/ee916629(v=PROT.13).aspx
     # @param [Fixnum] sec the number of seconds to set the timeout to. It will be converted to an ISO8601 format.
-    def set_ttimeout(sec)
-      #@xfer.set_ttimeout(sec)
+    def set_timeout(sec)
       @timeout = Iso8601Duration.sec_to_dur(sec)
     end
-    alias :op_timeout :set_ttimeout
+    alias :op_timeout :set_timeout
 
     # Max envelope size
     # @see http://msdn.microsoft.com/en-us/library/ee916127(v=PROT.13).aspx
@@ -328,7 +327,6 @@ module WinRM
     end
 
     def send_message(message)
-      puts "REQ:\n#{Nokogiri::XML(message).to_xml}"
       resp = @xfer.send_request(message)
 
       begin
