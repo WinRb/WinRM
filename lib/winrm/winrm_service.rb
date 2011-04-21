@@ -22,6 +22,7 @@ module WinRM
       @locale = DEFAULT_LOCALE
       case transport
       when :kerberos
+        require 'gssapi'
         # TODO: check fo keys and throw error if missing
         @xfer = HTTP::HttpGSSAPI.new(endpoint, opts[:realm], opts[:service], opts[:keytab], opts)
       when :plaintext
