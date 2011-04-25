@@ -20,7 +20,7 @@ module WinRM
         if(resp.status == 200)
           # Version 1.1 of WinRM adds the namespaces in the document instead of the envelope so we have to
           # add them ourselves here. This should have no affect version 2.
-          doc = Nokogiri::XML(resp.body.content)
+          doc = Nokogiri::XML(resp.http_body.content)
           doc.collect_namespaces.each_pair do |k,v|
             doc.root.add_namespace((k.split(/:/).last),v) unless doc.namespaces.has_key?(k)
           end
@@ -94,7 +94,7 @@ Content-Type: application/octet-stream\r
 
         r = @httpcli.post(@endpoint, body, hdr)
 
-        winrm_decrypt(r.body.content)
+        winrm_decrypt(r.http_body.content)
       end
 
 
