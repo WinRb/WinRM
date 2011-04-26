@@ -21,7 +21,6 @@
 require 'httpclient'
 require 'savon/soap/xml'
 require 'uuidtools'
-require 'gssapi'
 require 'base64'
 require 'nokogiri'
 
