@@ -27,12 +27,13 @@ GEMSPEC = Gem::Specification.new do |gem|
   gem.rdoc_options	= %w(-x test/ -x examples/)
   gem.extra_rdoc_files = %w(README COPYING.txt)
 
-  gem.required_ruby_version	= '>= 1.8.7'
-  gem.add_runtime_dependency  'handsoap'
-  gem.add_runtime_dependency  'nokogiri'
-  gem.add_runtime_dependency  'httpclient'
-  gem.add_runtime_dependency  'rubyntlm'
-  gem.add_runtime_dependency  'uuid'
+  gem.required_ruby_version	= '>= 1.9.0'
+  gem.add_runtime_dependency  'gssapi', '~> 0.1.5'
+  gem.add_runtime_dependency  'nokogiri', '~> 1.4.4'
+  gem.add_runtime_dependency  'httpclient', '~> 2.2.0.2'
+  gem.add_runtime_dependency  'rubyntlm', '~> 0.1.1'
+  gem.add_runtime_dependency  'uuidtools', '~> 2.1.2'
+  gem.add_runtime_dependency  'savon', '~> 0.9.1'
 end
  
 Rake::GemPackageTask.new(GEMSPEC) do |pkg|
