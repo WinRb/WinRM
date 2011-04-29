@@ -1,59 +1,29 @@
 require 'rubygems'
 require 'rake/clean'
-require 'rake/gempackagetask'
 require 'date'
 
 CLEAN.include("pkg")
 CLEAN.include("doc")
+CLEAN.include("*.gem")
 
-GEMSPEC = Gem::Specification.new do |gem|
-  gem.name = "winrm"
-  gem.version = File.open('VERSION').readline.chomp
-  gem.date		= Date.today.to_s
-  gem.platform = Gem::Platform::RUBY
-  gem.rubyforge_project  = nil
+task :default => [:gem]
 
-  gem.author = "Dan Wanek"
-  gem.email = "dan.wanek@gmail.com"
-  gem.homepage = "http://github.com/zenchild/WinRM"
-
-  gem.summary = 'Ruby library for Windows Remote Management'
-  gem.description	= <<-EOF
-    Ruby library for Windows Remote Management
-  EOF
-
-  gem.files = `git ls-files`.split(/\n/)
-  gem.require_path = "lib"
-  gem.rdoc_options	= %w(-x test/ -x examples/)
-  gem.extra_rdoc_files = %w(README COPYING.txt)
-
-  gem.required_ruby_version	= '>= 1.9.0'
-  gem.add_runtime_dependency  'gssapi', '~> 0.1.5'
-  gem.add_runtime_dependency  'nokogiri', '~> 1.4.4'
-  gem.add_runtime_dependency  'httpclient', '~> 2.2.0.2'
-  gem.add_runtime_dependency  'rubyntlm', '~> 0.1.1'
-  gem.add_runtime_dependency  'uuidtools', '~> 2.1.2'
-  gem.add_runtime_dependency  'savon', '~> 0.9.1'
+desc "Build the gem from the gemspec"
+task :repackage do
+    system "gem build winrm.gemspec"
 end
- 
-Rake::GemPackageTask.new(GEMSPEC) do |pkg|
-  pkg.need_tar = true
-end
-
-task :default => [:buildgem]
 
 desc "Build the gem without a version change"
-task :buildgem => [:clean, :repackage]
-
-desc "Build the gem, but increment the version first"
-task :newrelease => [:versionup, :clean, :repackage]
-
+task :gem => [:clean, :repackage]
 
 desc "Increment the version by 1 minor release"
 task :versionup do
 	ver = up_min_version
 	puts "New version: #{ver}"
 end
+
+desc "Build the gem, but increment the version first"
+task :newrelease => [:versionup, :clean, :repackage]
 
 
 def up_min_version
