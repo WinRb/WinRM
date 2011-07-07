@@ -19,7 +19,7 @@
 #############################################################################
 
 require 'httpclient'
-require 'savon/soap/xml'
+require 'savon'
 require 'uuidtools'
 require 'base64'
 require 'nokogiri'
