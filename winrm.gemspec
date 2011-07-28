@@ -29,5 +29,5 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency  'httpclient', '~> 2.2.0.2'
   s.add_runtime_dependency  'rubyntlm', '~> 0.1.1'
   s.add_runtime_dependency  'uuidtools', '~> 2.1.2'
-  s.add_runtime_dependency  'savon', '~> 0.9.1'
+  s.add_runtime_dependency  'savon', '= 0.9.5'
 end
