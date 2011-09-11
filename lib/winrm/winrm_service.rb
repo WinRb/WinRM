@@ -270,7 +270,7 @@ module WinRM
       }
 
       resp = send_message(s.to_xml)
-      hresp = Savon::SOAP::XML.to_hash resp.to_xml
+      hresp = Nori.parse(resp.to_xml)[:envelope][:body]
       # Normalize items so the type always has an array even if it's just a single item.
       items = {}
       hresp[:enumerate_response][:items].each_pair do |k,v|
