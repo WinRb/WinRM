@@ -1,3 +1,4 @@
+$: << File.dirname(__FILE__)
 require 'spec_helper'
 
 describe "Test WinRM primitive methods" do

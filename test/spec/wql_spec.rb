@@ -1,3 +1,4 @@
+$: << File.dirname(__FILE__)
 require 'spec_helper'
 
 describe "Test remote WQL features via WinRM" do
