@@ -21,6 +21,12 @@
 # We only what one instance of this class so include Singleton
 require 'date'
 require 'kconv' if(RUBY_VERSION.start_with? '1.9') # bug in rubyntlm with ruby 1.9.x
+require 'logging'
+
+module WinRM
+  Logging.logger.root.level = :info
+  Logging.logger.root.appenders = Logging.appenders.stdout
+end
 
 require 'winrm/helpers/iso8601_duration'
 require 'winrm/soap_provider'

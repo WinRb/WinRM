@@ -12,6 +12,7 @@ module WinRM
         @endpoint = endpoint.is_a?(String) ? URI.parse(endpoint) : endpoint
         @httpcli = HTTPClient.new(:agent_name => 'Ruby WinRM Client')
         @httpcli.receive_timeout = 3600 # Set this to an unreasonable amount for now because WinRM has timeouts
+        @logger = Logging.logger[self]
       end
 
       def send_request(message)
@@ -102,6 +103,7 @@ Content-Type: application/octet-stream\r
 
 
       def init_krb
+        @logger.debug "Initializing Kerberos for #{@service}"
         @gsscli = GSSAPI::Simple.new(@endpoint.host, @service)
         token = @gsscli.init_context
         auth = Base64.strict_encode64 token
@@ -110,6 +112,7 @@ Content-Type: application/octet-stream\r
           "Connection" => "Keep-Alive",
           "Content-Type" => "application/soap+xml;charset=UTF-8"
         }
+        @logger.debug "Sending HTTP POST for Kerberos Authentication"
         r = @httpcli.post(@endpoint, '', hdr)
         itok = r.header["WWW-Authenticate"].pop
         itok = itok.split.last
@@ -119,6 +122,7 @@ Content-Type: application/octet-stream\r
 
       # @return [String] the encrypted request string
       def winrm_encrypt(str)
+        @logger.debug "Encrypting SOAP message:\n#{str}"
         iov_cnt = 3
         iov = FFI::MemoryPointer.new(GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * iov_cnt)
 
@@ -148,6 +152,7 @@ Content-Type: application/octet-stream\r
 
       # @return [String] the unencrypted response string
       def winrm_decrypt(str)
+        @logger.debug "Decrypting SOAP message:\n#{str}"
         iov_cnt = 3
         iov = FFI::MemoryPointer.new(GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * iov_cnt)
 
@@ -175,6 +180,8 @@ Content-Type: application/octet-stream\r
         qop_state.write_int(0)
 
         maj_stat = GSSAPI::LibGSSAPI.gss_unwrap_iov(min_stat, @gsscli.context, conf_state, qop_state, iov, iov_cnt)
+
+        @logger.debug "SOAP message decrypted (MAJ: #{maj_stat}, MIN: #{min_stat.read_int}):\n#{iov1[:buffer].value}"
 
         Nokogiri::XML(iov1[:buffer].value)
       end
