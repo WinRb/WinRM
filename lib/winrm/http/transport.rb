@@ -36,13 +36,19 @@ module WinRM
         auths = @httpcli.www_auth.instance_variable_get('@authenticator')
         auths.delete_if {|i| i.scheme !~ /basic/i}
       end
+
+      # Disable SSPI Auth
+      def no_sspi_auth!
+        auths = @httpcli.www_auth.instance_variable_get('@authenticator')
+        auths.delete_if {|i| i.is_a? HTTPClient::SSPINegotiateAuth }
+      end
     end
 
     class HttpPlaintext < HttpTransport
       def initialize(endpoint, user, pass, opts)
         super(endpoint)
         @httpcli.set_auth(nil, user, pass)
-        HTTPClient.const_set(:GSSAPIEnabled , false) if opts[:disable_gssapi]
+        no_sspi_auth! if opts[:disable_sspi]
         basic_auth_only! if opts[:basic_auth_only]
       end
     end
@@ -53,7 +59,7 @@ module WinRM
         super(endpoint)
         @httpcli.set_auth(endpoint, user, pass)
         @httpcli.ssl_config.set_trust_ca(ca_trust_path) unless ca_trust_path.nil?
-        HTTPClient.const_set(:GSSAPIEnabled , false) if opts[:disable_gssapi]
+        no_sspi_auth! if opts[:disable_sspi]
         basic_auth_only! if opts[:basic_auth_only]
       end
     end
