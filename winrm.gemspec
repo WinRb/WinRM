@@ -5,7 +5,7 @@ version = File.read(File.expand_path("../VERSION", __FILE__)).strip
 
 Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
-  s.name = 'winrm'
+  s.name = 'pmorton-winrm'
   s.version = version
   s.date		= Date.today.to_s
 
@@ -24,7 +24,6 @@ Gem::Specification.new do |s|
   s.extra_rdoc_files = %w(README COPYING.txt)
 
   s.required_ruby_version	= '>= 1.9.0'
-  s.add_runtime_dependency  'gssapi', '~> 1.0.0'
   s.add_runtime_dependency  'nokogiri', '~> 1.4.4'
   s.add_runtime_dependency  'httpclient', '~> 2.2.0.2'
   s.add_runtime_dependency  'rubyntlm', '~> 0.1.1'
