@@ -1,0 +1,12 @@
+## Kerberos
+#auth_type: plaintest
+#endpoint: "http://<yourserver>:5985/wsman"
+#options:
+#  realm: "your.realm"
+
+## Plain Text
+#auth_type: plaintext
+#endpoint: "http://localhost:5985/wsman"
+#options:
+#  user: vagrant
+#  pass: vagrant

@@ -5,15 +5,30 @@ require 'json'
 module ConnectionHelper
   # To run this test put a file called 'creds.json' in this directory with the following format:
   #   {"user":"myuser","pass":"mypass","endpoint":"http://mysys.com/wsman","realm":"MY.REALM"}
-  CREDS_FILE=File.dirname(__FILE__) + '/creds.json'
+  WINRM_CONFIG = File.expand_path("#{File.dirname(__FILE__)}/../config.yml")
 
   def winrm_connection
-    creds = JSON.load(File.open(CREDS_FILE,'r'))
-    winrm = WinRM::WinRMWebService.new(creds['endpoint'], :kerberos, :realm => creds['realm'])
-    #winrm = WinRM::WinRMWebService.new(creds['endpoint'], :plaintext, :user => creds['user'], :pass => creds['pass'])
-    #winrm = WinRM::WinRMWebService.new(creds['endpoint'], :plaintext, :user => creds['user'], :pass => creds['pass'], :basic_auth_only => true)
+    config = symbolize_keys(YAML.load(File.read(WINRM_CONFIG)))
+    config[:options].merge!( :basic_auth_only => true ) unless config[:auth_type].eql? :kerberos
+    winrm = WinRM::WinRMWebService.new(config[:endpoint], config[:auth_type].to_sym, config[:options])
     winrm
   end
+
+  def symbolize_keys(hash)
+    hash.inject({}){|result, (key, value)|
+      new_key = case key
+                when String then key.to_sym
+                else key
+                end
+      new_value = case value
+                  when Hash then symbolize_keys(value)
+                  else value
+                  end
+      result[new_key] = new_value
+      result
+    }
+  end
+
 end
 
 RSpec.configure do |config|
