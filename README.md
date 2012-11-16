@@ -77,6 +77,16 @@ WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :ba
 WinRM::WinRMWebService.new(endpoint, :kerberos, :realm => 'MYREALM.COM')
 ```
 
+### Troubleshooting
+You may have some errors like ```WinRM::WinRMHTTPTransportError: Bad HTTP response returned from server (401).```.
+You can run the following commands on the server:
+```
+winrm set winrm/config/client/auth @{Basic="true"}
+winrm set winrm/config/service/auth @{Basic="true"}
+winrm set winrm/config/service @{AllowUnencrypted="true"}
+```
+You can read more about that on issue [#29](https://github.com/zenchild/WinRM/issues/29)
+
 ## DISCLAIMER
 If you see something that could be done better or would like to help out in the development of this code please feel free to clone the repository and send me patches.
 
