@@ -46,7 +46,7 @@ WinRM::WinRMWebService.new(endpoint, :kerberos, :realm => 'MYREALM.COM')
 
 ## Troubleshooting
 You may have some errors like ```WinRM::WinRMHTTPTransportError: Bad HTTP response returned from server (401).```.
-You can run the following commands on the server:
+You can run the following commands on the server to try to solve the problem:
 ```
 winrm set winrm/config/client/auth @{Basic="true"}
 winrm set winrm/config/service/auth @{Basic="true"}
