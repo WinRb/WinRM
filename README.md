@@ -6,11 +6,54 @@ not limitted to, running batch scripts, powershell scripts and fetching WMI
 variables.  For more information on WinRM, please visit Microsoft's WinRM
 site: http://msdn.microsoft.com/en-us/library/aa384426(v=VS.85).aspx
 
-## My Info
-* Twitter: [@zentourist](https://twitter.com/zentourist)
-* BLOG:  [http://distributed-frostbite.blogspot.com/](http://distributed-frostbite.blogspot.com/)
-* Add me in LinkedIn:  [http://www.linkedin.com/in/danwanek](http://www.linkedin.com/in/danwanek)
-* Find me on irc.freenode.net in #ruby-lang (zenChild)
+## Install
+`gem install -r winrm` then on the server `winrm quickconfig` as admin
+
+## Example
+```ruby
+require 'winrm'
+endpoint = http://mywinrmhost:5985/wsman
+krb5_realm = 'EXAMPLE.COM'
+winrm = WinRM::WinRMWebService.new(endpoint, :kerberos, :realm => krb5_realm)
+winrm.cmd('ipconfig /all') do |stdout, stderr|
+  STDOUT.print stdout
+  STDERR.print stderr
+end
+```
+
+There are various connection types you can specify upon initialization:
+
+#### Plaintext
+```ruby
+WinRM::WinRMWebService.new(endpoint, :plaintext, :user => myuser, :pass => mypass)
+
+## Same but force basic authentication:
+WinRM::WinRMWebService.new(endpoint, :plaintext, :user => myuser, :pass => mypass, :basic_auth_only => true)
+```
+
+#### SSL
+```ruby
+WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass)
+
+## Same but force basic authentication:
+WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :basic_auth_only => true)
+```
+
+#### Kerberos
+```ruby
+WinRM::WinRMWebService.new(endpoint, :kerberos, :realm => 'MYREALM.COM')
+```
+
+### Troubleshooting
+You may have some errors like ```WinRM::WinRMHTTPTransportError: Bad HTTP response returned from server (401).```.
+You can run the following commands on the server:
+```
+winrm set winrm/config/client/auth @{Basic="true"}
+winrm set winrm/config/service/auth @{Basic="true"}
+winrm set winrm/config/service @{AllowUnencrypted="true"}
+```
+You can read more about that on issue [#29](https://github.com/zenchild/WinRM/issues/29)
+
 
 ## Current features
 
@@ -31,67 +74,18 @@ site: http://msdn.microsoft.com/en-us/library/aa384426(v=VS.85).aspx
    to be created because the SOAP backend is no longer a Singleton type
    class.
 
+## My Info
+* Twitter: [@zentourist](https://twitter.com/zentourist)
+* BLOG:  [http://distributed-frostbite.blogspot.com/](http://distributed-frostbite.blogspot.com/)
+* Add me in LinkedIn:  [http://www.linkedin.com/in/danwanek](http://www.linkedin.com/in/danwanek)
+* Find me on irc.freenode.net in #ruby-lang (zenChild)
 
-## !!!SHOUTS OUT!!!
+## Contributors
 Many thanks to the following for their many patches....
 * Seth Chisamore (https://github.com/schisamo)
 * Paul Morton (https://github.com/pmorton)
 
-
-
-## INSTALL:
-`gem install -r winrm` then on the server `winrm quickconfig` as admin
-
-## EXAMPLE:
-```ruby
-require 'winrm'
-endpoint = http://mywinrmhost:5985/wsman
-krb5_realm = 'EXAMPLE.COM'
-winrm = WinRM::WinRMWebService.new(endpoint, :kerberos, :realm => krb5_realm)
-winrm.cmd('ipconfig /all') do |stdout, stderr|
-  STDOUT.print stdout
-  STDERR.print stderr
-end
-```
-
-There are various connection types you can specify upon initialization:
-
-#### PLAINTEXT
-```ruby
-WinRM::WinRMWebService.new(endpoint, :plaintext, :user => myuser, :pass => mypass)
-
-# Same but force basic authentication:
-WinRM::WinRMWebService.new(endpoint, :plaintext, :user => myuser, :pass => mypass, :basic_auth_only => true)
-```
-
-#### SSL
-```ruby
-WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass)
-
-# Same but force basic authentication:
-WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :basic_auth_only => true)
-```
-
-#### KERBEROS
-```ruby
-WinRM::WinRMWebService.new(endpoint, :kerberos, :realm => 'MYREALM.COM')
-```
-
-### Troubleshooting
-You may have some errors like ```WinRM::WinRMHTTPTransportError: Bad HTTP response returned from server (401).```.
-You can run the following commands on the server:
-```
-winrm set winrm/config/client/auth @{Basic="true"}
-winrm set winrm/config/service/auth @{Basic="true"}
-winrm set winrm/config/service @{AllowUnencrypted="true"}
-```
-You can read more about that on issue [#29](https://github.com/zenchild/WinRM/issues/29)
-
-## DISCLAIMER
+## Disclaimer
 If you see something that could be done better or would like to help out in the development of this code please feel free to clone the repository and send me patches.
 
-`git clone git://github.com/zenchild/WinRM.git` or add an [issue](https://github.com/zenchild/WinRM/issues) on GitHub:
-
-- - -
-
-Cheers!
+`git clone git://github.com/zenchild/WinRM.git` or add an [issue](https://github.com/zenchild/WinRM/issues) on GitHub
