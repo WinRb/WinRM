@@ -42,9 +42,6 @@ Many thanks to the following for their many patches....
 ## INSTALL:
 `gem install -r winrm` then on the server `winrm quickconfig` as admin
 
-## USE:
-`require 'winrm'`
-
 ## EXAMPLE:
 ```ruby
 require 'winrm'
