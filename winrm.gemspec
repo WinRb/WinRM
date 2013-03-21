@@ -1,34 +1,36 @@
 # -*- encoding: utf-8 -*-
 require 'date'
 
-version = File.read(File.expand_path("../VERSION", __FILE__)).strip
+lib = File.expand_path('../lib', __FILE__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+require 'winrm/version'
 
-Gem::Specification.new do |s|
-  s.platform = Gem::Platform::RUBY
-  s.name = 'winrm'
-  s.version = version
-  s.date		= Date.today.to_s
+Gem::Specification.new do |spec|
+  spec.platform = Gem::Platform::RUBY
+  spec.name = 'winrm'
+  spec.version = WinRM::VERSION
+  spec.date		= Date.today.to_s
 
-  s.author = 'Dan Wanek'
-  s.email = 'dan.wanek@gmail.com'
-  s.homepage = "http://github.com/zenchild/WinRM"
+  spec.authors = ['Dan Wanek','Paul Morton']
+  spec.email = ['dan.wanek@gmail.com','']
+  spec.homepage = "http://github.com/zenchild/WinRM"
 
-  s.summary = 'Ruby library for Windows Remote Management'
-  s.description	= <<-EOF
+  spec.summary = 'Ruby library for Windows Remote Management'
+  spec.description	= <<-EOF
     Ruby library for Windows Remote Management
   EOF
 
-  s.files = `git ls-files`.split(/\n/)
-  s.require_path = "lib"
-  s.rdoc_options	= %w(-x test/ -x examples/)
-  s.extra_rdoc_files = %w(README.md LICENSE)
+  spec.files =`git ls-files`.split($/)
+  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
+  spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
+  spec.require_paths = ["lib"]
 
-  s.required_ruby_version	= '>= 1.9.0'
-  s.add_runtime_dependency  'gssapi', '~> 1.0.0'
-  s.add_runtime_dependency  'nokogiri', '~> 1.5.0'
-  s.add_runtime_dependency  'httpclient', '~> 2.2.0.2'
-  s.add_runtime_dependency  'rubyntlm', '~> 0.1.1'
-  s.add_runtime_dependency  'uuidtools', '~> 2.1.2'
-  s.add_runtime_dependency  'savon', '= 0.9.5'
-  s.add_runtime_dependency  'logging', '~> 1.6.1'
+  spec.required_ruby_version	= '>= 1.9.0'
+  #spec.add_runtime_dependency  'gssapi', '~> 1.0.0'
+  spec.add_runtime_dependency  'nokogiri', '~> 1.5.0'
+  #spec.add_runtime_dependency  'httpclient', '~> 2.3.3'
+  #spec.add_runtime_dependency  'rubyntlm', '~> 0.1.1'
+  spec.add_runtime_dependency  'uuidtools', '~> 2.1.2'
+  #spec.add_runtime_dependency  'savon', '= 0.9.5'
+  spec.add_runtime_dependency  'savon', '= 2.1'
 end
