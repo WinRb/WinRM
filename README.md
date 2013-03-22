@@ -23,9 +23,11 @@ end
 
 There are various connection types you can specify upon initialization:
 
+It is recommended that you <code>:disable_sspi => true</code> if you are using the plaintext or ssl transport.
+
 #### Plaintext
 ```ruby
-WinRM::WinRMWebService.new(endpoint, :plaintext, :user => myuser, :pass => mypass)
+WinRM::WinRMWebService.new(endpoint, :plaintext, :user => myuser, :pass => mypass, :disable_sspi => true)
 
 ## Same but force basic authentication:
 WinRM::WinRMWebService.new(endpoint, :plaintext, :user => myuser, :pass => mypass, :basic_auth_only => true)
@@ -33,7 +35,7 @@ WinRM::WinRMWebService.new(endpoint, :plaintext, :user => myuser, :pass => mypas
 
 #### SSL
 ```ruby
-WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass)
+WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :disable_sspi => true)
 
 ## Same but force basic authentication:
 WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :basic_auth_only => true)
