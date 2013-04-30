@@ -35,5 +35,16 @@ describe WinRM::Request::StartProcess do
     end
   end
 
+  describe '.execute' do 
+    let(:stream) { StringIO.new }
+
+    before(:each) do 
+      client.stub(:send_message).and_return do 
+        File.read('spec/mock/start_process_1.xml')
+      end
+    end
+    it { request.execute.should == "35CE9B86-3E89-4AA6-9768-D7EDBF34BCD0" }
+   end
+
 end
 

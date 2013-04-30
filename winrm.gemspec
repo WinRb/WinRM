@@ -26,11 +26,10 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.required_ruby_version	= '>= 1.9.0'
-  #spec.add_runtime_dependency  'gssapi', '~> 1.0.0'
   spec.add_runtime_dependency  'nokogiri', '~> 1.5.0'
-  #spec.add_runtime_dependency  'httpclient', '~> 2.3.3'
-  #spec.add_runtime_dependency  'rubyntlm', '~> 0.1.1'
+  spec.add_runtime_dependency  'httpclient'
+  spec.add_runtime_dependency 'nori'
+  spec.add_runtime_dependency 'gyoku'
+  spec.add_runtime_dependency  'rubyntlm'
   spec.add_runtime_dependency  'uuidtools', '~> 2.1.2'
-  #spec.add_runtime_dependency  'savon', '= 0.9.5'
-  spec.add_runtime_dependency  'savon', '= 2.1'
 end

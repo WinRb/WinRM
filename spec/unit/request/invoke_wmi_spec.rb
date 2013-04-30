@@ -27,6 +27,15 @@ describe WinRM::Request::InvokeWmi do
       it { message.xpath("/#{WinRM::NS_SOAP_ENV}:Envelope/#{WinRM::NS_SOAP_ENV}:Body/#{WinRM::NS_WSMAN_MSFT}:Delete_INPUT/#{WinRM::NS_WSMAN_MSFT}:fake").text.should == "argument" }
     end
   end
+  describe '.execute' do
+    before(:each) do
+      client.stub(:send_message).and_return do
+        File.read('spec/mock/invoke_1.xml')
+      end
+    end
+
+    it { request.execute.should == {:text=>"\n    ", :return_value=>"0"}}
+  end
 
 end
 

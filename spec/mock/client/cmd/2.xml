@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:x="http://schemas.xmlsoap.org/ws/2004/09/transfer" xmlns:w="http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd" xmlns:rsp="http://schemas.microsoft.com/wbem/wsman/1/windows/shell" xmlns:p="http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd" xml:lang="en-US">
+  <s:Header>
+    <a:Action>http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandResponse</a:Action>
+    <a:MessageID>uuid:FE627B57-DFEF-4173-8E4D-6D08ECE38A74</a:MessageID>
+    <a:To>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</a:To>
+    <a:RelatesTo>uuid:F2174454-83B6-46E0-9173-58F2ECD65C20</a:RelatesTo>
+  </s:Header>
+  <s:Body>
+    <rsp:CommandResponse>
+      <rsp:CommandId>C42051EC-4C89-47C3-8A8F-59291F5E9D9A</rsp:CommandId>
+    </rsp:CommandResponse>
+  </s:Body>
+</s:Envelope>

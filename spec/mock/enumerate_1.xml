@@ -1,0 +1,111 @@
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:n="http://schemas.xmlsoap.org/ws/2004/09/enumeration" xmlns:w="http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd" xml:lang="en-US">
+  <s:Header>
+    <a:Action>http://schemas.xmlsoap.org/ws/2004/09/enumeration/EnumerateResponse</a:Action>
+    <a:MessageID>uuid:28C4B795-2C5F-472D-929A-A911586DC18B</a:MessageID>
+    <a:To>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</a:To>
+    <a:RelatesTo>uuid:7B8C31C7-122A-4F6C-98CA-3327B4D39CD4</a:RelatesTo>
+  </s:Header>
+  <s:Body>
+    <n:EnumerateResponse>
+      <n:EnumerationContext>uuid:12AE5286-91FE-48F3-937E-0C22FF1AD7A1</n:EnumerationContext>
+      <w:Items>
+        <p:Win32_Process xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://schemas.microsoft.com/wbem/wsman/1/wmi/root/cimv2/Win32_Process" xmlns:cim="http://schemas.dmtf.org/wbem/wscim/1/common" xsi:type="p:Win32_Process_Type">
+          <p:Caption>System Idle Process</p:Caption>
+          <p:CommandLine xsi:nil="true"/>
+          <p:CreationClassName>Win32_Process</p:CreationClassName>
+          <p:CreationDate xsi:nil="true"/>
+          <p:CSCreationClassName>Win32_ComputerSystem</p:CSCreationClassName>
+          <p:CSName>VAGRANT-2008R2</p:CSName>
+          <p:Description>System Idle Process</p:Description>
+          <p:ExecutablePath xsi:nil="true"/>
+          <p:ExecutionState xsi:nil="true"/>
+          <p:Handle>0</p:Handle>
+          <p:HandleCount>0</p:HandleCount>
+          <p:InstallDate xsi:nil="true"/>
+          <p:KernelModeTime>33618906250</p:KernelModeTime>
+          <p:MaximumWorkingSetSize xsi:nil="true"/>
+          <p:MinimumWorkingSetSize xsi:nil="true"/>
+          <p:Name>System Idle Process</p:Name>
+          <p:OSCreationClassName>Win32_OperatingSystem</p:OSCreationClassName>
+          <p:OSName>Microsoft Windows Server 2008 R2 Standard |C:\Windows|\Device\Harddisk0\Partition1</p:OSName>
+          <p:OtherOperationCount>0</p:OtherOperationCount>
+          <p:OtherTransferCount>0</p:OtherTransferCount>
+          <p:PageFaults>1</p:PageFaults>
+          <p:PageFileUsage>0</p:PageFileUsage>
+          <p:ParentProcessId>0</p:ParentProcessId>
+          <p:PeakPageFileUsage>0</p:PeakPageFileUsage>
+          <p:PeakVirtualSize>0</p:PeakVirtualSize>
+          <p:PeakWorkingSetSize>24</p:PeakWorkingSetSize>
+          <p:Priority>0</p:Priority>
+          <p:PrivatePageCount>0</p:PrivatePageCount>
+          <p:ProcessId>0</p:ProcessId>
+          <p:QuotaNonPagedPoolUsage>0</p:QuotaNonPagedPoolUsage>
+          <p:QuotaPagedPoolUsage>0</p:QuotaPagedPoolUsage>
+          <p:QuotaPeakNonPagedPoolUsage>0</p:QuotaPeakNonPagedPoolUsage>
+          <p:QuotaPeakPagedPoolUsage>0</p:QuotaPeakPagedPoolUsage>
+          <p:ReadOperationCount>0</p:ReadOperationCount>
+          <p:ReadTransferCount>0</p:ReadTransferCount>
+          <p:SessionId>0</p:SessionId>
+          <p:Status xsi:nil="true"/>
+          <p:TerminationDate xsi:nil="true"/>
+          <p:ThreadCount>1</p:ThreadCount>
+          <p:UserModeTime>0</p:UserModeTime>
+          <p:VirtualSize>0</p:VirtualSize>
+          <p:WindowsVersion>6.1.7601</p:WindowsVersion>
+          <p:WorkingSetSize>24576</p:WorkingSetSize>
+          <p:WriteOperationCount>0</p:WriteOperationCount>
+          <p:WriteTransferCount>0</p:WriteTransferCount>
+        </p:Win32_Process>
+        <p:Win32_Process xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://schemas.microsoft.com/wbem/wsman/1/wmi/root/cimv2/Win32_Process" xmlns:cim="http://schemas.dmtf.org/wbem/wscim/1/common" xsi:type="p:Win32_Process_Type">
+          <p:Caption>System</p:Caption>
+          <p:CommandLine xsi:nil="true"/>
+          <p:CreationClassName>Win32_Process</p:CreationClassName>
+          <p:CreationDate>
+            <cim:Datetime>2013-04-29T11:43:11.203125-07:00</cim:Datetime>
+          </p:CreationDate>
+          <p:CSCreationClassName>Win32_ComputerSystem</p:CSCreationClassName>
+          <p:CSName>VAGRANT-2008R2</p:CSName>
+          <p:Description>System</p:Description>
+          <p:ExecutablePath xsi:nil="true"/>
+          <p:ExecutionState xsi:nil="true"/>
+          <p:Handle>4</p:Handle>
+          <p:HandleCount>520</p:HandleCount>
+          <p:InstallDate xsi:nil="true"/>
+          <p:KernelModeTime>1906718750</p:KernelModeTime>
+          <p:MaximumWorkingSetSize xsi:nil="true"/>
+          <p:MinimumWorkingSetSize xsi:nil="true"/>
+          <p:Name>System</p:Name>
+          <p:OSCreationClassName>Win32_OperatingSystem</p:OSCreationClassName>
+          <p:OSName>Microsoft Windows Server 2008 R2 Standard |C:\Windows|\Device\Harddisk0\Partition1</p:OSName>
+          <p:OtherOperationCount>8136</p:OtherOperationCount>
+          <p:OtherTransferCount>363517</p:OtherTransferCount>
+          <p:PageFaults>20406</p:PageFaults>
+          <p:PageFileUsage>112</p:PageFileUsage>
+          <p:ParentProcessId>0</p:ParentProcessId>
+          <p:PeakPageFileUsage>268</p:PeakPageFileUsage>
+          <p:PeakVirtualSize>7217152</p:PeakVirtualSize>
+          <p:PeakWorkingSetSize>3852</p:PeakWorkingSetSize>
+          <p:Priority>8</p:Priority>
+          <p:PrivatePageCount>114688</p:PrivatePageCount>
+          <p:ProcessId>4</p:ProcessId>
+          <p:QuotaNonPagedPoolUsage>0</p:QuotaNonPagedPoolUsage>
+          <p:QuotaPagedPoolUsage>0</p:QuotaPagedPoolUsage>
+          <p:QuotaPeakNonPagedPoolUsage>0</p:QuotaPeakNonPagedPoolUsage>
+          <p:QuotaPeakPagedPoolUsage>0</p:QuotaPeakPagedPoolUsage>
+          <p:ReadOperationCount>104</p:ReadOperationCount>
+          <p:ReadTransferCount>33032692</p:ReadTransferCount>
+          <p:SessionId>0</p:SessionId>
+          <p:Status xsi:nil="true"/>
+          <p:TerminationDate xsi:nil="true"/>
+          <p:ThreadCount>76</p:ThreadCount>
+          <p:UserModeTime>0</p:UserModeTime>
+          <p:VirtualSize>3461120</p:VirtualSize>
+          <p:WindowsVersion>6.1.7601</p:WindowsVersion>
+          <p:WorkingSetSize>49152</p:WorkingSetSize>
+          <p:WriteOperationCount>11083</p:WriteOperationCount>
+          <p:WriteTransferCount>61354599</p:WriteTransferCount>
+        </p:Win32_Process>
+      </w:Items>
+    </n:EnumerateResponse>
+  </s:Body>
+</s:Envelope>

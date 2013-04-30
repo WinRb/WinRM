@@ -38,8 +38,12 @@ module WinRM
       @response = response
     end
 
+    def http_body
+      response.http_body.content
+    end
+
     def xml
-      @xml ||= Nokogiri::XML(response.http_body.content)
+      @xml ||= Nokogiri::XML(http_body)
     end
 
     def reason

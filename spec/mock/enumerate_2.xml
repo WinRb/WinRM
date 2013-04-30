@@ -1,0 +1,64 @@
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:n="http://schemas.xmlsoap.org/ws/2004/09/enumeration" xmlns:w="http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd" xml:lang="en-US">
+  <s:Header>
+    <a:Action>http://schemas.xmlsoap.org/ws/2004/09/enumeration/PullResponse</a:Action>
+    <a:MessageID>uuid:59A6EF3F-CF3D-43C9-BAC8-D2A04A7FAA31</a:MessageID>
+    <a:To>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</a:To>
+    <a:RelatesTo>uuid:A399151C-95AD-4980-A22B-0D38E0E2DA74</a:RelatesTo>
+  </s:Header>
+  <s:Body>
+    <n:PullResponse>
+      <n:Items>
+        <p:Win32_Process xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://schemas.microsoft.com/wbem/wsman/1/wmi/root/cimv2/Win32_Process" xmlns:cim="http://schemas.dmtf.org/wbem/wscim/1/common" xsi:type="p:Win32_Process_Type">
+          <p:Caption>conhost.exe</p:Caption>
+          <p:CommandLine>\??\C:\Windows\system32\conhost.exe</p:CommandLine>
+          <p:CreationClassName>Win32_Process</p:CreationClassName>
+          <p:CreationDate>
+            <cim:Datetime>2013-04-29T13:09:06.102138-07:00</cim:Datetime>
+          </p:CreationDate>
+          <p:CSCreationClassName>Win32_ComputerSystem</p:CSCreationClassName>
+          <p:CSName>VAGRANT-2008R2</p:CSName>
+          <p:Description>conhost.exe</p:Description>
+          <p:ExecutablePath>C:\Windows\system32\conhost.exe</p:ExecutablePath>
+          <p:ExecutionState xsi:nil="true"/>
+          <p:Handle>1100</p:Handle>
+          <p:HandleCount>34</p:HandleCount>
+          <p:InstallDate xsi:nil="true"/>
+          <p:KernelModeTime>156250</p:KernelModeTime>
+          <p:MaximumWorkingSetSize>1380</p:MaximumWorkingSetSize>
+          <p:MinimumWorkingSetSize>200</p:MinimumWorkingSetSize>
+          <p:Name>conhost.exe</p:Name>
+          <p:OSCreationClassName>Win32_OperatingSystem</p:OSCreationClassName>
+          <p:OSName>Microsoft Windows Server 2008 R2 Standard |C:\Windows|\Device\Harddisk0\Partition1</p:OSName>
+          <p:OtherOperationCount>16</p:OtherOperationCount>
+          <p:OtherTransferCount>124</p:OtherTransferCount>
+          <p:PageFaults>556</p:PageFaults>
+          <p:PageFileUsage>860</p:PageFileUsage>
+          <p:ParentProcessId>312</p:ParentProcessId>
+          <p:PeakPageFileUsage>860</p:PeakPageFileUsage>
+          <p:PeakVirtualSize>23941120</p:PeakVirtualSize>
+          <p:PeakWorkingSetSize>2192</p:PeakWorkingSetSize>
+          <p:Priority>8</p:Priority>
+          <p:PrivatePageCount>880640</p:PrivatePageCount>
+          <p:ProcessId>1100</p:ProcessId>
+          <p:QuotaNonPagedPoolUsage>5</p:QuotaNonPagedPoolUsage>
+          <p:QuotaPagedPoolUsage>47</p:QuotaPagedPoolUsage>
+          <p:QuotaPeakNonPagedPoolUsage>5</p:QuotaPeakNonPagedPoolUsage>
+          <p:QuotaPeakPagedPoolUsage>49</p:QuotaPeakPagedPoolUsage>
+          <p:ReadOperationCount>0</p:ReadOperationCount>
+          <p:ReadTransferCount>0</p:ReadTransferCount>
+          <p:SessionId>0</p:SessionId>
+          <p:Status xsi:nil="true"/>
+          <p:TerminationDate xsi:nil="true"/>
+          <p:ThreadCount>2</p:ThreadCount>
+          <p:UserModeTime>0</p:UserModeTime>
+          <p:VirtualSize>23060480</p:VirtualSize>
+          <p:WindowsVersion>6.1.7601</p:WindowsVersion>
+          <p:WorkingSetSize>241664</p:WorkingSetSize>
+          <p:WriteOperationCount>0</p:WriteOperationCount>
+          <p:WriteTransferCount>0</p:WriteTransferCount>
+        </p:Win32_Process>
+      </n:Items>
+      <n:EndOfSequence/>
+    </n:PullResponse>
+  </s:Body>
+</s:Envelope>

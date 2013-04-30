@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:w="http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd" xmlns:rsp="http://schemas.microsoft.com/wbem/wsman/1/windows/shell" xmlns:p="http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd" xml:lang="en-US">
+  <s:Header>
+    <a:Action>http://schemas.microsoft.com/wbem/wsman/1/windows/shell/ReceiveResponse</a:Action>
+    <a:MessageID>uuid:FCF1BDF9-5BF0-40E4-9192-D7803A58D372</a:MessageID>
+    <a:To>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</a:To>
+    <a:RelatesTo>uuid:5C41E4E1-5ADA-47CF-949F-50F1DFC4CF4F</a:RelatesTo>
+  </s:Header>
+  <s:Body>
+    <rsp:ReceiveResponse>
+      <rsp:Stream Name="stdout" CommandId="DB29A7C7-FBF6-49F9-9C76-7860AE867415">DQo=</rsp:Stream>
+      <rsp:Stream Name="stdout" CommandId="DB29A7C7-FBF6-49F9-9C76-7860AE867415">DQo=</rsp:Stream>
+      <rsp:Stream Name="stdout" CommandId="DB29A7C7-FBF6-49F9-9C76-7860AE867415">ICAgIERpcmVjdG9yeTogQzpcVXNlcnNcdmFncmFudA0KDQoNCk1vZGUgICAgICAgICAgICAgICAgTGFzdFdyaXRlVGltZSAgICAgTGVuZ3RoIE5hbWUgICAgICAgICAgICAgICAgICAgICAgICAgICAgICANCi0tLS0gICAgICAgICAgICAgICAgLS0tLS0tLS0tLS0tLSAgICAgLS0tLS0tIC0tLS0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICANCmQtci0tICAgICAgICAgNy8xMy8yMDA5ICAgNzozNCBQTSAgICAgICAgICAgIERlc2t0b3AgICAgICAgICAgICAgICAgICAgICAgICAgICANCg==</rsp:Stream>
+      <rsp:Stream Name="stdout" CommandId="DB29A7C7-FBF6-49F9-9C76-7860AE867415">ZC1yLS0gICAgICAgICA0LzI5LzIwMTMgIDExOjM4IEFNICAgICAgICAgICAgRG9jdW1lbnRzICAgICAgICAgICAgICAgICAgICAgICAgIA0KZC1yLS0gICAgICAgICA3LzEzLzIwMDkgICA3OjM0IFBNICAgICAgICAgICAgRG93bmxvYWRzICAgICAgICAgICAgICAgICAgICAgICAgIA0KZC1yLS0gICAgICAgICA3LzEzLzIwMDkgICA3OjM0IFBNICAgICAgICAgICAgRmF2b3JpdGVzICAgICAgICAgICAgICAgICAgICAgICAgIA0KZC1yLS0gICAgICAgICA3LzEzLzIwMDkgICA3OjM0IFBNICAgICAgICAgICAgTGlua3MgICAgICAgICAgICAgICAgICAgICAgICAgICAgIA0KZC1yLS0gICAgICAgICA3LzEzLzIwMDkgICA3OjM0IFBNICAgICAgICAgICAgTXVzaWMgICAgICAgICAgICAgICAgICAgICAgICAgICAgIA0KZC1yLS0gICAgICAgICA3LzEzLzIwMDkgICA3OjM0IFBNICAgICAgICAgICAgUGljdHVyZXMgICAgICAgICAgICAgICAgICAgICAgICAgIA0KZC0tLS0gICAgICAgICA3LzEzLzIwMDkgICA3OjM0IFBNICAgICAgICAgICAgU2F2ZWQgR2FtZXMgICAgICAgICAgICAgICAgICAgICAgIA==</rsp:Stream>
+      <rsp:Stream Name="stderr" CommandId="DB29A7C7-FBF6-49F9-9C76-7860AE867415">DQpkLXItLSAgICAgICAgIDcvMTMvMjAwOSAgIDc6MzQgUE0gICAgICAgICAgICBWaWRlb3MgICAgICAgICAgICAgICAgICAgICAgICAgICAgDQotYS0tLSAgICAgICAgIDQvMjkvMjAxMyAgMTE6MzggQU0gICAgICAgICAgNiAudmJveF92ZXJzaW9uICAgICAgICAgICAgICAgICAgICAgDQotYS0tLSAgICAgICAgIDQvMjkvMjAxMyAgMTE6MzggQU0gICAgICAgICAgNiAudmVld2VlX3ZlcnNpb24gICAgICAgICAgICAgICAgICAgDQotYS0tLSAgICAgICAgIDQvMjkvMjAxMyAgMTE6MzggQU0gICAgICAgIDE1MCBpbnN0YWxsLWNoZWYuYmF0ICAgICAgICAgICAgICAgICAgDQotYS0tLSAgICAgICAgIDQvMjkvMjAxMyAgMTE6MzggQU0gICAgICAgIDE5MyBpbnN0YWxsLXZib3guYmF0ICAgICAgICAgICAgICAgICAgDQo=</rsp:Stream>
+      <rsp:Stream Name="stdout" CommandId="DB29A7C7-FBF6-49F9-9C76-7860AE867415">DQoNCg==</rsp:Stream>
+      <rsp:Stream Name="stdout" CommandId="DB29A7C7-FBF6-49F9-9C76-7860AE867415" End="true"/>
+      <rsp:Stream Name="stderr" CommandId="DB29A7C7-FBF6-49F9-9C76-7860AE867415" End="true"/>
+      <rsp:CommandState CommandId="DB29A7C7-FBF6-49F9-9C76-7860AE867415" State="http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done">
+        <rsp:ExitCode>0</rsp:ExitCode>
+      </rsp:CommandState>
+    </rsp:ReceiveResponse>
+  </s:Body>
+</s:Envelope>

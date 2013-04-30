@@ -6,6 +6,8 @@ describe WinRM::Request::OpenShell do
     WinRM::Client.new('localhost', user: 'vagrant', pass: 'vagrant')
   end
 
+
+
   context 'intialized with defaults' do
     let(:request) do
       WinRM::Request::OpenShell.new(client)
@@ -36,6 +38,16 @@ describe WinRM::Request::OpenShell do
           it { message.xpath("/#{WinRM::NS_SOAP_ENV}:Envelope/#{WinRM::NS_SOAP_ENV}:Body/#{WinRM::NS_WIN_SHELL}:Shell/#{WinRM::NS_WIN_SHELL}:OutputStreams").text.should == 'stdout stderr' }
         end
       end
+    end
+
+    describe '.execute' do
+      before(:each) do
+        client.stub(:send_message).and_return do
+          File.read('spec/mock/open_shell.xml')
+        end
+      end
+
+      it { request.execute.should == "62DE33F0-8674-43D9-B6A5-3298012CC4CD"}
     end
   end
 

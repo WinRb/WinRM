@@ -52,8 +52,6 @@ module WinRM
             stdout.write Base64.decode64(s.text)
           when 'stderr'
             stderr.write Base64.decode64(s.text)
-          else
-            raise ArgumentError, "Invalid Stream #{s['Name'].downcase}"
           end
         end
 

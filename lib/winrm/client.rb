@@ -49,29 +49,18 @@ module WinRM
     end
 
     def wql(query, wmi_namespace = nil)
-      WinRM::Request::Wql.new(self, endpoint: endpoint, wql: query, wmi_namespace: wmi_namespace).execute
+      WinRM::Request::Wql.new(self, endpoint: endpoint, query: query, wmi_namespace: wmi_namespace).execute
     end
     
     def shell_id
       @shell_id ||= open_shell(env_vars: opts[:env_vars])
     end
 
-    def cmd(command,arguments, opts= {})
+    def cmd(command,arguments = '', opts= {})
       default_opts ={ streams_as_strings: false, stdout: STDOUT, stderr: STDERR }
       opts = default_opts.merge(opts)
 
       arguments = [arguments] unless arguments.is_a? Array
-      
-      if opts[:streams_as_strings].is_a?(Hash)
-        if opts[:streams_as_strings][:combined]
-          stream = StringIO.new
-          opts[:stdout] = stream
-          opts[:stderr] = stream
-        end
-      elsif opts[:streams_as_strings]
-        opts[:stdout] = StringIO.new
-        opts[:stderr] = StringIO.new
-      end
 
       begin
         command_id = start_process(shell_id, command: command, arguments: (arguments || []) )
@@ -79,17 +68,8 @@ module WinRM
 
         result.stdout.rewind unless is_tty(result.stdout)
         result.stderr.rewind unless is_tty(result.stderr)
-        
-        if opts[:streams_as_strings].is_a?(Hash)
-          if opts[:streams_as_strings][:combined]
-            return result.exit_code, result.stdout.read, nil
-          else
-            return result.exit_code, result.stdout.read, result.stderr.read
-          end
-        else
-          return result.exit_code, (is_tty(result.stdout) ? nil : result.stdout), (is_tty(result.stderr) ? nil : result.stderr)
-        end
-
+      
+        return result.exit_code, (is_tty(result.stdout) ? nil : result.stdout), (is_tty(result.stderr) ? nil : result.stderr)
       rescue
         raise
       ensure
@@ -106,6 +86,10 @@ module WinRM
       script = script.encode('ASCII-8BIT')
       script = Base64.strict_encode64(script)
       cmd("powershell", "-encodedCommand #{script}", opts)
+    end
+
+    def disconnect
+      close_shell(shell_id)
     end
 
     def shell(shell_name = :cmd)
@@ -192,10 +176,6 @@ module WinRM
 
     def write_stdin(shell_id,command_id, text)
       WinRM::Request::WriteStdin.new(self, shell_id: shell_id, command_id: command_id, text: text ).execute
-    end
-
-    def list_shells
-      WinRM::Request::ListShells.new(self).execute
     end
   end
 end

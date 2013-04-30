@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:x="http://schemas.xmlsoap.org/ws/2004/09/transfer" xmlns:w="http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd" xmlns:rsp="http://schemas.microsoft.com/wbem/wsman/1/windows/shell" xmlns:p="http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd" xml:lang="en-US">
+  <s:Header>
+    <a:Action>http://schemas.xmlsoap.org/ws/2004/09/transfer/CreateResponse</a:Action>
+    <a:MessageID>uuid:08F6B10B-6552-47B8-9E20-F4C4FF42300E</a:MessageID>
+    <a:To>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</a:To>
+    <a:RelatesTo>uuid:E1DE2037-B82D-49BB-AA8D-BF6F14530913</a:RelatesTo>
+  </s:Header>
+  <s:Body>
+    <x:ResourceCreated>
+      <a:Address>http://localhost:5985/wsman</a:Address>
+      <a:ReferenceParameters>
+        <w:ResourceURI>http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd</w:ResourceURI>
+        <w:SelectorSet>
+          <w:Selector Name="ShellId">180C6C05-D00B-4F88-9ACB-0526F63FA63B</w:Selector>
+        </w:SelectorSet>
+      </a:ReferenceParameters>
+    </x:ResourceCreated>
+  </s:Body>
+</s:Envelope>

@@ -48,7 +48,7 @@ module WinRM
       def execute
           response = Nokogiri::XML(client.send_message(self.to_s))
           parameters = {}
-          response.xpath("//p:Create_OUTPUT",response.collect_namespaces).children.each do |c|  parameters[c.name.snakecase] = c.text end 
+          response.xpath("//p:#{method}_OUTPUT",response.collect_namespaces).children.each do |c|  parameters[c.name.snakecase.to_sym] = c.text end 
           parameters
       end
 
