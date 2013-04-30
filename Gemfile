@@ -7,3 +7,4 @@ gem 'pry'
 gem 'pry-debugger'
 gem 'rspec'
 gem 'simplecov', :require => false, :group => :test
+gem 'rake'

@@ -1,2 +1,12 @@
 require "bundler/gem_tasks"
-`vagrant reload`
+require 'rspec/core/rake_task'
+
+RSpec::Core::RakeTask.new(:spec) do |t|
+  t.pattern = "spec/unit/**/*_spec.rb"
+end
+
+RSpec::Core::RakeTask.new(:spec_all) do |t|
+  t.pattern = "spec/**/*_spec.rb"
+end
+
+task :default => :spec
