@@ -68,7 +68,9 @@ module WinRM
 
         result.stdout.rewind unless is_tty(result.stdout)
         result.stderr.rewind unless is_tty(result.stderr)
-      
+        
+        close_command(shell_id,command_id)
+        
         return result.exit_code, (is_tty(result.stdout) ? nil : result.stdout), (is_tty(result.stderr) ? nil : result.stderr)
       rescue
         raise
