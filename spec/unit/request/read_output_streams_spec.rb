@@ -22,21 +22,29 @@ describe WinRM::Request::ReadOutputStreams do
   end
 
   describe '.execute' do
-    let(:stream) { StringIO.new }
+    let(:stream) do
+      stdout = ''
+      stderr = ''
+      request.execute do |stream, text|
+          case stream
+          when :stdout
+            stdout << text
+          when :stderr
+            stderr << text
+          end
+      end
+      return stdout,stderr
+    end
+
     before(:each) do 
-      request.stdout = stream
-      request.stderr= stream
       client.stub(:send_message).and_return do 
         File.read('spec/mock/read_output_streams.xml')
       end
-      request.execute
-      request.stdout.rewind
-      request.stderr.rewind
     end
 
-    it { request.stdout.read.should =~ /install-chef.bat/ }
-    it { request.stdout.read.should =~ /Pictures/ }
-    it { request.stdout.read.should =~ /Music/ }
+    it { stream[1].should =~ /install-chef.bat/ }
+    it { stream[0].should =~ /Pictures/ }
+    it { stream[0].should =~ /Music/ }
   end
   
 

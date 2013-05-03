@@ -60,35 +60,103 @@ describe WinRM::Client do
   end
 
   describe '.cmd' do
-    before(:each) do
-      client.stub(:send_message).and_return do
-        @request_number ||= 1
-        response = File.read("spec/mock/client/cmd/#{@request_number}.xml")
-        @request_number += 1
-        response
+    context 'with a block' do
+      before(:each) do
+        client.stub(:send_message).and_return do
+          @request_number ||= 1
+          response = File.read("spec/mock/client/cmd/#{@request_number}.xml")
+          @request_number += 1
+          response
+        end
       end
-    end
-    let(:response) { client.cmd('cmd', '/c dir && exit 0', stdout: StringIO.new, stderr: StringIO.new) }
+      let(:response) do
+        stdout = ''
+        stderr = ''
+        exit_code = client.cmd('cmd', '/c dir && exit 0') do |stream,text|
+          case stream
+          when :stderr
+            stderr << text
+          when :stdout
+            stdout << text
+          end 
+        end
+        return exit_code, stdout, stderr
+      end
 
-    it { response[0].should == 0}
-    it { response[1].read.should =~ /9,811,701,760/ }
-    it { response[2].read.should == " Volume in drive C is Windows 2008R2\r\n" }
+      it { response[0].should == [0, nil]}
+      it { response[1].should =~ /9,811,701,760/ }
+      it { response[2].should == " Volume in drive C is Windows 2008R2\r\n" }
+    end
+
+    context 'without a block' do
+      before(:each) do
+        client.stub(:send_message).and_return do
+          @request_number ||= 1
+          response = File.read("spec/mock/client/cmd/#{@request_number}.xml")
+          @request_number += 1
+          response
+        end
+      end
+      let(:response) do
+        exit_code, streams = client.cmd('cmd', '/c dir && exit 0') 
+        return exit_code, streams 
+      end
+
+      it { response[0][0].should == 0}
+      it { response[1][2][:stdout].should =~ /9,811,701,760/ }
+      it { response[1][0].should == {:stderr=>" Volume in drive C is Windows 2008R2\r\n"} }
+    end
+
   end
 
   describe '.powershell' do
-    before(:each) do
-      client.stub(:send_message).and_return do
-        @request_number ||= 1
-        response = File.read("spec/mock/client/powershell/#{@request_number}.xml")
-        @request_number += 1
-        response
+    context 'with a block' do
+      before(:each) do
+        client.stub(:send_message).and_return do
+          @request_number ||= 1
+          response = File.read("spec/mock/client/powershell/#{@request_number}.xml")
+          @request_number += 1
+          response
+        end
       end
-    end
-    let(:response) { client.powershell('dir', stdout: StringIO.new, stderr: StringIO.new) }
 
-    it { response[0].should == 0}
-    it { response[1].read.should =~ /150 install-chef.bat/ }
-    it { response[2].read.should =~ /LastWriteTime/ }
+      let(:response) do
+        stdout = ''
+        stderr = ''
+        exit_code = client.powershell('dir') do |stream,text|
+          case stream
+          when :stderr
+            stderr << text
+          when :stdout
+            stdout << text
+          end 
+        end
+        return exit_code, stdout, stderr
+      end
+
+      it { response[0].should == [0, nil]}
+      it { response[1].should =~ /150 install-chef.bat/ }
+      it { response[2].should =~ /LastWriteTime/ }
+    end
+
+    context 'without a block' do
+      before(:each) do
+        client.stub(:send_message).and_return do
+          @request_number ||= 1
+          response = File.read("spec/mock/client/powershell/#{@request_number}.xml")
+          @request_number += 1
+          response
+        end
+      end
+      let(:response) do
+        exit_code, streams = client.powershell('dir')
+        return exit_code, streams 
+      end
+
+      it { response[0][0].should == 0}
+      it { response[1][3][:stdout].should =~ /Pictures/ }
+      it { response[1][2][:stderr].should =~ /LastWriteTime/ }
+    end
   end
 
   describe '.disconnect' do

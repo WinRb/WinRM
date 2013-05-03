@@ -9,7 +9,6 @@ module WinRM
     attr_reader :host
     attr_reader :opts 
 
-    # TODO: Disable basic and digest authentication
     def initialize(endpoint, opts = {})
       default_opts = { port: 5985, ssl: false, env_vars: {} }
       opts = default_opts.merge(opts)
@@ -56,24 +55,36 @@ module WinRM
       @shell_id ||= open_shell(env_vars: opts[:env_vars])
     end
 
-    def cmd(command,arguments = '', opts= {})
-      default_opts ={ streams_as_strings: false, stdout: STDOUT, stderr: STDERR }
+    def cmd(command,arguments = '', opts= {}, &block)
+      default_opts = { :relay => false}
       opts = default_opts.merge(opts)
 
       arguments = [arguments] unless arguments.is_a? Array
 
+      response_array = [] unless block_given?
+
       begin
         command_id = start_process(shell_id, command: command, arguments: (arguments || []) )
-        result = read_streams(shell_id,command_id, opts[:stdout], opts[:stderr])
+        result = read_streams(shell_id,command_id) do |stream,text|
+          
+          if(opts[:relay])  
+            case stream
+            when :stdout
+              STDOUT.write text
+            when :stderr
+              STDERR.write text
+            end
+          end
 
-        result.stdout.rewind unless is_tty(result.stdout)
-        result.stderr.rewind unless is_tty(result.stderr)
-        
+          if block_given?
+            yield stream, text
+          else
+            response_array << {stream => text}
+          end
+
+        end
         close_command(shell_id,command_id)
-        
-        return result.exit_code, (is_tty(result.stdout) ? nil : result.stdout), (is_tty(result.stderr) ? nil : result.stderr)
-      rescue
-        raise
+        return result, response_array
       ensure
         begin 
           close_command(shell_id,command_id)
@@ -87,7 +98,17 @@ module WinRM
       script << "\x00" unless script[-1].eql? "\x00"
       script = script.encode('ASCII-8BIT')
       script = Base64.strict_encode64(script)
-      cmd("powershell", "-encodedCommand #{script}", opts)
+
+      response_array = [] unless block_given?
+
+      result, _not_used = cmd("powershell", "-encodedCommand #{script}", opts) do |stream,text|
+        if block_given?
+          yield stream, text
+        else
+          response_array << { stream => text }
+        end
+      end
+      return result, response_array
     end
 
     def disconnect
@@ -148,9 +169,6 @@ module WinRM
       end
     end
 
-    def is_tty(stream)
-      stream.respond_to?('tty?') && stream.tty?
-    end
     def open_shell(call_opts = {})
       call_opts = opts.merge(call_opts)
       WinRM::Request::OpenShell.new(self, call_opts).execute
@@ -172,8 +190,10 @@ module WinRM
       WinRM::Request::CloseCommand.new(self, shell_id: shell_id, command_id: command_id).execute
     end
 
-    def read_streams(shell_id,command_id, stdout, stderr)
-      WinRM::Request::ReadOutputStreams.new(self, shell_id: shell_id, command_id: command_id, stdout: stdout, stderr: stderr).execute
+    def read_streams(shell_id,command_id, &block)
+      WinRM::Request::ReadOutputStreams.new(self, shell_id: shell_id, command_id: command_id).execute do |stream,text|
+        yield stream,text
+      end
     end
 
     def write_stdin(shell_id,command_id, text)

@@ -8,15 +8,6 @@ module WinRM
       attr_accessor :stderr
       attr_reader :exit_code
 
-      def initialize(*args)
-        super
-        @stdout = StringIO.new if @stdout.nil?
-        @stderr = StringIO.new if @stderr.nil?
-
-        raise ArgumentError, ':stdout must respond to write.' unless @stdout.respond_to?(:write) 
-        raise ArgumentError, ':stderr must respond to write.' unless @stderr.respond_to?(:write) 
-      end
-
       def body
         { "#{NS_WIN_SHELL}:Receive" => {
             "#{NS_WIN_SHELL}:DesiredStream" => 'stdout stderr',
@@ -29,35 +20,28 @@ module WinRM
         merge_headers(base_headers,RESOURCE_URI_CMD,ACTION_RECEIVE,selector_shell_id(shell_id))
       end
 
-      def execute
-        
+      def execute(&block)
+
         begin
-          read_streams
+          read_streams(&block)
         end while exit_code.nil?
 
-        self
+        return exit_code
       end
 
       def command_done?(response)
         not response.xpath("//#{NS_WIN_SHELL}:CommandState[@State='http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done']").empty?
       end
 
-      def read_streams
+      def read_streams(&block)
         response = Nokogiri::XML(client.send_message(self.to_s))
         response.xpath("//#{NS_WIN_SHELL}:Stream").each do |s|
           next if s.text.nil? || s.text.empty?
-          
-          case s['Name'].downcase
-          when 'stdout'
-            stdout.write Base64.decode64(s.text)
-          when 'stderr'
-            stderr.write Base64.decode64(s.text)
-          end
+          yield( s['Name'].downcase.to_sym, Base64.decode64(s.text) )
         end
 
         @exit_code = response.xpath("//rsp:ExitCode").text.to_i if command_done?(response)
         
-        nil
       end 
 
     end

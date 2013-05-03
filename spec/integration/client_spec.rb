@@ -18,18 +18,44 @@ describe WinRM::Client do
   end
 
   describe '.cmd' do
-    subject(:response) { client.cmd('cmd', '/c dir && echo error 1>&2 && exit 0', stdout: StringIO.new, stderr: StringIO.new) }
+    subject(:response) do
+     client.cmd('cmd', '/c dir && echo error 1>&2 && exit 0')
+    end
+
+    subject(:stdout) do
+      response[1].collect do |i|
+        i[:stdout]
+      end.join('\r\n')
+    end
+
+    subject(:stderr) do
+      response[1].collect do |i|
+        i[:stderr]
+      end.join('\r\n')
+    end
 
     it { response[0].should == 0}
-    it { response[1].read.should =~ /install-chef\.bat/ }
-    it { response[2].read.should =~ /error/ }
+    it { stdout.should =~ /Volume Serial Number is/ }
+    it { stderr.should =~ /error/ }
   end
 
   describe '.powershell' do
-    subject(:response) { client.powershell('dir; write-error "Error"; exit 0', stdout: StringIO.new, stderr: StringIO.new) }
+    subject(:response) { client.powershell('dir; write-error "Error"; exit 0') }
+    
+    subject(:stdout) do
+      response[1].collect do |i|
+        i[:stdout]
+      end.join('\r\n')
+    end
+
+    subject(:stderr) do
+      response[1].collect do |i|
+        i[:stderr]
+      end.join('\r\n')
+    end
 
     it { response[0].should == 0}
-    it { response[1].read.should =~ /install-chef\.bat/ }
-    it { response[2].read.should =~ /Error/ }
+    it { stdout.should =~ /LastWriteTime/ }
+    it { stderr.should =~ /Error/ }
   end
 end
