@@ -12,13 +12,21 @@ module WinRM
         super
         @skip_command_shell = false if @skip_command_shell.nil?
         @batch_mode = true if @batch_mode.nil?
+
+        unless @arguments.nil?
+          @arguments = nil if @arguments.empty?
+        end
       end
 
       def body
-        { "#{NS_WIN_SHELL}:CommandLine" => { 
-            "#{NS_WIN_SHELL}:Command" => "\"#{command}\"", 
-            "#{NS_WIN_SHELL}:Arguments" => ( arguments || [] ) }
-        }
+        body = { "#{NS_WIN_SHELL}:CommandLine" => { 
+                    "#{NS_WIN_SHELL}:Command" => "\"#{command}\""
+                     }
+                }
+        unless arguments.nil? or arguments.empty?
+          body["#{NS_WIN_SHELL}:CommandLine"]["#{NS_WIN_SHELL}:Arguments"] = arguments 
+        end
+        body
       end
 
       def header

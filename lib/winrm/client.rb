@@ -57,14 +57,13 @@ module WinRM
 
     def cmd(command,arguments = '', opts= {}, &block)
       default_opts = { :relay => false}
-      opts = default_opts.merge(opts)
 
-      arguments = [arguments] unless arguments.is_a? Array
+      opts = default_opts.merge(opts)
 
       response_array = [] unless block_given?
 
       begin
-        command_id = start_process(shell_id, command: command, arguments: (arguments || []) )
+        command_id = start_process(shell_id, command: command, arguments: arguments )
         result = read_streams(shell_id,command_id) do |stream,text|
           
           if(opts[:relay])  
@@ -83,7 +82,6 @@ module WinRM
           end
 
         end
-        close_command(shell_id,command_id)
         return result, response_array
       ensure
         begin 
