@@ -20,7 +20,7 @@ module WinRM
   module HTTP
 
     # A generic HTTP transport that utilized HTTPClient to send messages back and forth.
-    # This backend will maintain state for every WinRMWebService instance that is instatiated so it
+    # This backend will maintain state for every WinRMWebService instance that is instantiated so it
     # is possible to use GSSAPI with Keep-Alive.
     class HttpTransport
 
@@ -60,7 +60,14 @@ module WinRM
         auths = @httpcli.www_auth.instance_variable_get('@authenticator')
         auths.delete_if {|i| i.is_a? HTTPClient::SSPINegotiateAuth }
       end
+
+      # Disable SSL Peer Verification
+      def no_ssl_peer_verification!
+        @httpcli.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      end
+
     end
+
 
     class HttpPlaintext < HttpTransport
       def initialize(endpoint, user, pass, opts)
@@ -68,6 +75,7 @@ module WinRM
         @httpcli.set_auth(nil, user, pass)
         no_sspi_auth! if opts[:disable_sspi]
         basic_auth_only! if opts[:basic_auth_only]
+        no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
       end
     end
 
@@ -79,6 +87,7 @@ module WinRM
         @httpcli.ssl_config.set_trust_ca(ca_trust_path) unless ca_trust_path.nil?
         no_sspi_auth! if opts[:disable_sspi]
         basic_auth_only! if opts[:basic_auth_only]
+        no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
       end
     end
 
