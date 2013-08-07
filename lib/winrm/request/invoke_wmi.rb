@@ -52,20 +52,6 @@ module WinRM
           parameters
       end
 
-      def selector_set
-        return {} if selectors.empty?
-        s = []
-
-        selectors.each do |k,v|
-          s << { "#{NS_WSMAN_DMTF}:Selector" => {
-                    :content! => v,
-                    :@Name => k
-                    }
-                  }
-        end
-        return { "#{NS_WSMAN_DMTF}:SelectorSet" => s }
-      end
-
     end  
   end
 end
