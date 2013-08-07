@@ -16,6 +16,8 @@ module WinRM
       @host = host
 
       @httpcli = HTTPClient.new
+      @httpcli.debug_dev = STDOUT if ENV['WINRM_LOG'] =~ /debug/i
+
       @httpcli.www_auth.instance_variable_set("@authenticator",[
           @httpcli.www_auth.negotiate_auth,
           @httpcli.www_auth.sspi_negotiate_auth

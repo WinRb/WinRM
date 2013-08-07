@@ -27,7 +27,7 @@ module WinRM
 
         message["#{NS_WIN_SHELL}:Shell"]["#{NS_WIN_SHELL}:WorkingDirectory"] = working_directory unless working_directory.nil?
         # TODO: research Lifetime a bit more: http://msdn.microsoft.com/en-us/library/cc251546(v=PROT.13).aspx
-        #s.body["#{NS_WIN_SHELL}:Lifetime"] = Iso8601Duration.sec_to_dur(shell_opts[:lifetime]) if(shell_opts.has_key?(:lifetime) && shell_opts[:lifetime].is_a?(Fixnum))
+        #s.body["#{NS_WIN_SHELL}:Lifetime"] = sec_to_dur(shell_opts[:lifetime]) if(shell_opts.has_key?(:lifetime) && shell_opts[:lifetime].is_a?(Fixnum))
         # @todo make it so the input is given in milliseconds and converted to xs:duration
         message["#{NS_WIN_SHELL}:Shell"]["#{NS_WIN_SHELL}:IdleTimeOut"] = idle_timeout unless idle_timeout.nil?
 

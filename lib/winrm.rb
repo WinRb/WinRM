@@ -20,17 +20,14 @@ if File.exist? '/usr/heimdal/lib/libgssapi.dylib'
 end
 
 require 'date'
-require 'kconv'
 require 'logger'
 require 'httpclient'
 require 'nori'
-#require 'savon'
 require 'uuidtools'
 require 'base64'
 require 'nokogiri'
 require 'gyoku'
-require 'winrm/iso8601_duration'
-require 'pry'
+require 'ruby-duration'
 
 
 module WinRM

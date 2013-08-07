@@ -31,9 +31,9 @@ shared_examples_for "a WinRM request" do
   end
 
   describe '.to_s' do
-    it { expect { message.header }.to_not raise_error(StandardError, "Not Implemented")}
-    it { expect { message.body }.to_not raise_error(StandardError, "Not Implemented")}
-    it { expect { message.to_s }.to_not raise_error(StandardError, "Not Implemented")}
+    it { expect { request.header }.to_not raise_error}
+    it { expect { request.body }.to_not raise_error}
+    it { expect { request.to_s }.to_not raise_error}
   end
 end
 

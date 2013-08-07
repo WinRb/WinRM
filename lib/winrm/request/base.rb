@@ -69,6 +69,10 @@ module WinRM
       def header
         raise StandardError, "Not Implemented"
       end
+
+      def sec_to_dur(seconds)
+        Duration.new(seconds).iso8601
+      end
     end
 
   end

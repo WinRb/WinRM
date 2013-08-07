@@ -30,6 +30,7 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency  'httpclient'
   spec.add_runtime_dependency 'nori'
   spec.add_runtime_dependency 'gyoku'
-  spec.add_runtime_dependency  'rubyntlm'
+  spec.add_runtime_dependency  'rubyntlm', '~> 0.3.3'
   spec.add_runtime_dependency  'uuidtools', '~> 2.1.2'
+  spec.add_runtime_dependency  'ruby-duration'
 end
