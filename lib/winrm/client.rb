@@ -127,44 +127,10 @@ module WinRM
     end
 
     def shell(shell_name = :cmd)
-      case shell_name
-      when :cmd
-        command = 'cmd'
-      when :powershell
-        command = "Powershell -Command ^-"
-      else
-        raise ArgumentError, "Invalid console type #{shell_name}"
-      end
-
+      command = shell_command(shell_name)
       process = start_process(shell_id,:command => command, batch_mode: false, :arguments => [])
-
-      t = Thread.new do
-        read_streams(shell_id,process, STDOUT, STDERR )
-        close_command(shell_id,process)
-        exit 0
-      end
-
-      Signal.trap("INT") do
-        puts "Exiting..."
-        exit 0
-      end
-
-      if shell_name.eql? :powershell
-        write_stdin(shell_id,process, "Write-Host -NoNewline \"PS $(pwd)> \"\r\n")
-      end
-
-      while buf = Readline.readline('', true)
-        if buf =~ /^exit!$/
-          close_command(shell_id,process)
-          exit 0
-        else
-          write_stdin(shell_id,process,"#{buf}\r\n")
-          if shell_name.eql? :powershell
-            write_stdin(shell_id,process, "Write-Host -NoNewline \"PS $(pwd)> \"\r\n")
-          end
-        end
-      end
-
+      pump_read_thread(process)
+      receive_and_pump(process, shell_name)
     end
 
     def send_message(message)
@@ -215,5 +181,56 @@ module WinRM
       rtn_opts[:shell_id] = shell_id unless shell_id.nil?
       rtn_opts
     end
+
+    def pump_read_thread(process)
+      @read_thread = Thread.new do
+        read_streams(shell_id,process) do |s,t|
+          case s
+          when :stdout
+            STDOUT.write t
+          when :stderr
+           STDERR.write t 
+          end
+        end
+        close_command(shell_id,process)
+        exit 0
+      end
+
+      Signal.trap("INT") do
+        puts "Exiting..."
+        exit 1
+      end
+    end
+
+    def receive_and_pump(process, shell_name)
+      if shell_name.eql? :powershell
+        write_stdin(shell_id,process, "Write-Host -NoNewline \"PS $(pwd)> \"\r\n")
+      end
+
+      while buf = Readline.readline('', true)
+        if buf =~ /^exit!$/
+          close_command(shell_id,process)
+          exit 0
+        else
+          write_stdin(shell_id,process,"#{buf}\r\n")
+          if shell_name.eql? :powershell
+            write_stdin(shell_id,process, "Write-Host -NoNewline \"PS $(pwd)> \"\r\n")
+          end
+        end
+      end
+    end
+
+    def shell_command(shell_name)
+      case shell_name
+      when :cmd
+        command = 'cmd'
+      when :powershell
+        command = "Powershell -Command ^-"
+      else
+        raise ArgumentError, "Invalid console type #{shell_name}"
+      end
+    end
+
+
   end
 end
