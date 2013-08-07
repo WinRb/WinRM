@@ -1,18 +1,22 @@
 require 'spec_helper'
 
 describe WinRM::Client do
-  context 'with no username and password' do
-    it { expect { WinRM::Client.new('localhost') }.to raise_error(StandardError,'Username and Password are required') }
+  context 'using kerberos' do
+    let (:client ) { WinRM::Client.new('localhost') }
+    subject { client.httpcli.www_auth.instance_variable_get("@authenticator") }
+    it { should be_eql([client.httpcli.www_auth.sspi_negotiate_auth]) }
+    its (:count) { should be(1) }
+  end
+
+  context 'using ntml' do
+    let (:client ) { WinRM::Client.new('localhost', user: 'vagrant', pass: 'vagrant') }
+    subject { client.httpcli.www_auth.instance_variable_get("@authenticator") }
+    it { should be_eql([client.httpcli.www_auth.negotiate_auth]) }
+    its (:count) { should be(1) }
   end
 
   let(:client) { WinRM::Client.new('localhost', user: 'vagrant', pass: 'vagrant') }
 
-  describe 'authentication stack' do
-    subject(:auth) { client.httpcli.www_auth.instance_variable_get("@authenticator") }
-    it { auth.count.should be(2) }
-    it { auth[0].should be(client.httpcli.www_auth.negotiate_auth) }
-    it { auth[1].should be(client.httpcli.www_auth.sspi_negotiate_auth) }
-  end
   describe '.ready?' do
     context 'not ready' do
       before(:each) do

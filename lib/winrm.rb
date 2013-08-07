@@ -14,9 +14,31 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
-if File.exist? '/usr/heimdal/lib/libgssapi.dylib'
-  #require 'gssapi/heimdal'
+require 'active_support/core_ext/kernel'
+case RbConfig::CONFIG['host_os']
+when /mswin|msys|mingw|cygwin|bccwin|wince|emc/
+  begin
+    require 'rubysspi'
+  rescue LoadError
+    warn 'WARNING: rubysspi gem is missing. Kerberos authentication will not work'
+  end
+when /darwin|mac os/
+  begin
+    # We turn of warnings because we know that OSX is missing some gssapi features, but
+    # we don't care
+    silence_warnings do
+      require 'gssapi/heimdal'
+      require 'gssapi'
+    end
+  rescue LoadError
+    warn 'WARNING: gssapi gem is missing. Kerberos authentication will not work'
+  end
+else
+  begin
+    require 'gssapi'
+  rescue LoadError
+    warn 'WARNING: gssapi gem is missing. Kerberos authentication will not work'
+  end
 end
 
 require 'date'
@@ -65,10 +87,15 @@ module WinRM
     end
 
     attr_writer :logger
+    alias :log :logger
      
   end
 
-  WinRM.logger.level = Logger::INFO
+  ENV['WINRM_LOG'] ||= 'INFO'
+  WinRM.logger.level = Logger.const_get(ENV['WINRM_LOG'])
+  if WinRM.logger.level == Logger::DEBUG
+    $DEBUG = true
+  end
   
   require 'winrm/path'
   require 'winrm/mixins/wmi_enumeration'

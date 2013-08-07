@@ -22,9 +22,25 @@ module WinRM
     end
 
     def setup_authentication
-      unless opts[:user] and opts[:pass]
-        raise StandardError, 'Username and Password are required'
+      if opts[:user] and opts[:pass]
+        setup_ntlm
+      else
+        setup_kerberos
       end
+    end
+
+    def setup_kerberos
+      WinRM.log.debug 'Setting up kerberos authentication...'
+      @httpcli.www_auth.instance_variable_set("@authenticator",[
+        @httpcli.www_auth.sspi_negotiate_auth
+      ])
+    end
+
+    def setup_ntlm
+      WinRM.log.debug 'Setting up NTLM authentication...'
+      @httpcli.www_auth.instance_variable_set("@authenticator",[
+        @httpcli.www_auth.negotiate_auth
+      ])
 
       @httpcli.set_auth(@endpoint.to_s, opts[:user], opts[:pass])
 
@@ -42,13 +58,8 @@ module WinRM
 
     def setup_client
       @httpcli = HTTPClient.new
+      @httpcli.debug_dev = STDOUT if WinRM.log.level == Logger::DEBUG
 
-      @httpcli.debug_dev = STDOUT if ENV['WINRM_LOG'] =~ /debug/i
-
-      @httpcli.www_auth.instance_variable_set("@authenticator",[
-          @httpcli.www_auth.negotiate_auth,
-          @httpcli.www_auth.sspi_negotiate_auth
-        ])
     end
 
     def ready?
