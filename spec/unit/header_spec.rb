@@ -12,7 +12,8 @@ describe WinRM::Headers do
   end
 
   describe '.merge_headers' do
-    subject(:headers) { instance.merge_headers({header1: :value1}, WinRM::Headers::ACTION_DELETE, {:attributes! => {:test => :test} } ) }
+    include WinRM::Headers
+    subject(:headers) { instance.merge_headers({header1: :value1}, get_action(:delete), {:attributes! => {:test => :test} } ) }
     it { should == { :header1=>:value1, "a:Action"=>"http://schemas.xmlsoap.org/ws/2004/09/transfer/Delete", :attributes! => {"a:Action" => {"s:mustUnderstand"=>true}, :test=>:test} } }
   end
 

@@ -27,7 +27,7 @@ module WinRM
       end
 
       def header
-        merge_headers(base_headers,resource_uri,ACTION_ENUMERATE)
+        merge_headers(base_headers,resource_uri,get_action(:enumerate))
       end
 
       def resource_uri

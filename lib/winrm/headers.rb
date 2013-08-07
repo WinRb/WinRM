@@ -1,46 +1,29 @@
 module WinRM
   module Headers
+
     RESOURCE_URI_CMD =  { "#{NS_WSMAN_DMTF}:ResourceURI" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd',
                           :attributes! => {"#{NS_WSMAN_DMTF}:ResourceURI" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}
                         }.freeze
     
-    ACTION_CREATE = { "#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Create',
-                        :attributes! => {"#{NS_ADDRESSING}:Action" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}
-                    }.freeze
+    ACTIONS = { create:          'http://schemas.xmlsoap.org/ws/2004/09/transfer/Create',
+      delete:          'http://schemas.xmlsoap.org/ws/2004/09/transfer/Delete',
+      command:         'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Command',
+      receive:         'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Receive',
+      send:            'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Send',
+      get:             'http://schemas.xmlsoap.org/ws/2004/09/transfer/Get',
+      signal:          'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Signal',
+      enumerate:       'http://schemas.xmlsoap.org/ws/2004/09/enumeration/Enumerate',
+      enumerate_pull:  'http://schemas.xmlsoap.org/ws/2004/09/enumeration/Pull'
 
-    ACTION_DELETE = { "#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Delete',
-                        :attributes! => {"#{NS_ADDRESSING}:Action" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}
-                    }.freeze
+     }.freeze
 
-    ACTION_COMMAND =  { "#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Command',
-                          :attributes! => {"#{NS_ADDRESSING}:Action" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}
-                      }.freeze
+    def get_action(action)
+      { "#{NS_ADDRESSING}:Action" => ACTIONS[action],
+                :attributes! => {"#{NS_ADDRESSING}:Action" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}
+      }
+    end
 
-    ACTION_RECEIVE =  { "#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Receive',
-                          :attributes! => {"#{NS_ADDRESSING}:Action" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}
-                      }.freeze
-
-    ACTION_SEND =  { "#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Send',
-                          :attributes! => {"#{NS_ADDRESSING}:Action" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}
-                      }.freeze
-
-    ACTION_GET  =  { "#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Get',
-                          :attributes! => {"#{NS_ADDRESSING}:Action" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}
-                      }.freeze
-
-    ACTION_SIGNAL =   { "#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Signal',
-                          :attributes! => {"#{NS_ADDRESSING}:Action" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}
-                      }
-
-    ACTION_ENUMERATE =  { "#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/enumeration/Enumerate',
-                          :attributes! => {"#{NS_ADDRESSING}:Action" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}
-                        }
-
-    ACTION_ENUMERATE_PULL = { "#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/enumeration/Pull',
-                          :attributes! => {"#{NS_ADDRESSING}:Action" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}
-                        }
-
-
+    
     # Builds a common set of headers used by all commands
     # @option opts [Integer] :max_env_size (153600) The largest message size that the client should expect
     # @option opts [String] :timeout (PT60S) The period, as an ISO8601 duration, in which the client expects to receive a fault or reponse from the server.

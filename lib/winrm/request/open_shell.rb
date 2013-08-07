@@ -43,7 +43,7 @@ module WinRM
       end
 
       def header
-          merge_headers(base_headers,RESOURCE_URI_CMD,ACTION_CREATE,shell_options)
+          merge_headers(base_headers,RESOURCE_URI_CMD,get_action(:create),shell_options)
       end
 
       def execute

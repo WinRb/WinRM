@@ -19,7 +19,7 @@ module WinRM
       end
 
       def header
-        merge_headers(base_headers,RESOURCE_URI_CMD,ACTION_SEND,selector_shell_id(shell_id))
+        merge_headers(base_headers,RESOURCE_URI_CMD,get_action(:send),selector_shell_id(shell_id))
       end
 
       def execute
