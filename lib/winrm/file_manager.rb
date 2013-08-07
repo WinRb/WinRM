@@ -9,15 +9,11 @@ module WinRM
     end
 
     def directory?(path)
-      path = Path.new(path) unless path.is_a? Path
-      response = client.wql "Select * From Win32_Directory Where Name = \"#{path.double_escaped_windows_path}\""
-      not response.empty?
+      path_exists?(:directory, path)
     end
 
     def file?(path)
-      path = Path.new(path) unless path.is_a? Path
-      response = client.wql "Select * From CIM_DataFile Where Name = \"#{path.double_escaped_windows_path}\""
-      not response.empty?
+      path_exists?(:file, path)
     end
 
     def exists?(path)
@@ -92,5 +88,19 @@ module WinRM
       true
     end
 
+    private
+    def path_exists?(type, path)
+      path = Path.new(path) unless path.is_a? Path
+
+      case type
+      when :directory
+        query = "Select * From Win32_Directory Where Name = \"#{path.double_escaped_windows_path}\""
+      when :file 
+        query = "Select * From CIM_DataFile Where Name = \"#{path.double_escaped_windows_path}\""
+      else
+        raise StandardError
+      end
+      not ( (client.wql query).empty? )
+    end
   end
 end
