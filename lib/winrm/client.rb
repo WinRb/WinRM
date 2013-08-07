@@ -181,19 +181,17 @@ module WinRM
     end
 
     def open_shell(call_opts = {})
-      call_opts = opts.merge(call_opts)
+      call_opts = shell_opts(call_opts)
       WinRM::Request::OpenShell.new(self, call_opts).execute
     end
 
     def close_shell(shell_id, call_opts = {})
-      call_opts = opts.merge(call_opts)
-      call_opts[:shell_id] = shell_id
+      call_opts = shell_opts(call_opts,shell_id)
       WinRM::Request::CloseShell.new(self,call_opts).execute
     end
 
     def start_process(shell_id, call_opts = {})
-      call_opts = opts.merge(call_opts)
-      call_opts[:shell_id] = shell_id
+      call_opts = shell_opts(call_opts,shell_id)
       WinRM::Request::StartProcess.new(self,call_opts).execute
     end
 
@@ -209,6 +207,13 @@ module WinRM
 
     def write_stdin(shell_id,command_id, text)
       WinRM::Request::WriteStdin.new(self, shell_id: shell_id, command_id: command_id, text: text ).execute
+    end
+
+    private
+    def shell_opts(call_opts, shell_id = nil)
+      rtn_opts = opts.dup.merge(call_opts)
+      rtn_opts[:shell_id] = shell_id unless shell_id.nil?
+      rtn_opts
     end
   end
 end
