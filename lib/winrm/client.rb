@@ -136,14 +136,7 @@ module WinRM
     def send_message(message)
       WinRM.logger.debug "Message: #{Nokogiri::XML(message).to_xml}"
       hdr = {'Content-Type' => 'application/soap+xml;charset=UTF-8', 'Content-Length' => message.length}
-      resp = @httpcli.post(endpoint, message, hdr)
-      if(resp.status == 200)
-        WinRM.logger.debug "Response #{Nokogiri::XML(resp.body).to_xml}"
-        return resp.http_body.content
-      else
-        WinRM.logger.debug resp.http_body.content
-        raise WinRMHTTPTransportError.new("Bad HTTP response returned from server (#{resp.status}).", resp)
-      end
+      handle_response(@httpcli.post(endpoint, message, hdr))
     end
 
     def open_shell(call_opts = {})
@@ -228,6 +221,16 @@ module WinRM
         command = "Powershell -Command ^-"
       else
         raise ArgumentError, "Invalid console type #{shell_name}"
+      end
+    end
+
+    def handle_response(resp)
+      if(resp.status == 200)
+        WinRM.logger.debug "Response #{Nokogiri::XML(resp.body).to_xml}"
+        return resp.http_body.content
+      else
+        WinRM.logger.debug resp.http_body.content
+        raise WinRMHTTPTransportError.new("Bad HTTP response returned from server (#{resp.status}).", resp)
       end
     end
 
