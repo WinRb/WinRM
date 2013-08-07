@@ -15,21 +15,13 @@ module WinRM
       @opts = opts
       @host = host
 
-      @httpcli = HTTPClient.new
-      @httpcli.debug_dev = STDOUT if ENV['WINRM_LOG'] =~ /debug/i
+      setup_client
+      setup_transport(endpoint)
+      setup_authentication
 
-      @httpcli.www_auth.instance_variable_set("@authenticator",[
-          @httpcli.www_auth.negotiate_auth,
-          @httpcli.www_auth.sspi_negotiate_auth
-        ])
-      
+    end
 
-      transport = opts[:ssl].eql?(true) ? 'https' : 'https'
-      transport = 'http'
-      @endpoint = URI("#{transport}://#{endpoint}:#{opts[:port]}/wsman")
-      
-      opts[:endpoint] = @endpoint
-
+    def setup_authentication
       unless opts[:user] and opts[:pass]
         raise StandardError, 'Username and Password are required'
       end
@@ -38,6 +30,25 @@ module WinRM
 
       opts.delete(:user)
       opts.delete(:pass)
+    end
+
+    def setup_transport(endpoint)
+      transport = opts[:ssl].eql?(true) ? 'https' : 'https'
+      transport = 'http'
+      @endpoint = URI("#{transport}://#{endpoint}:#{opts[:port]}/wsman")
+      
+      opts[:endpoint] = @endpoint
+    end
+
+    def setup_client
+      @httpcli = HTTPClient.new
+
+      @httpcli.debug_dev = STDOUT if ENV['WINRM_LOG'] =~ /debug/i
+
+      @httpcli.www_auth.instance_variable_set("@authenticator",[
+          @httpcli.www_auth.negotiate_auth,
+          @httpcli.www_auth.sspi_negotiate_auth
+        ])
     end
 
     def ready?
