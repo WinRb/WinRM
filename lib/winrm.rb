@@ -14,7 +14,12 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+
 require 'active_support/core_ext/kernel'
+
+# Kerberos support is tricky. If we want to control how kerberos is loaded ( and we do ),
+# we have to initialize kerberos before httpclient has a chance to do so.
+
 case RbConfig::CONFIG['host_os']
 when /mswin|msys|mingw|cygwin|bccwin|wince|emc/
   begin
@@ -27,7 +32,7 @@ when /darwin|mac os/
     # We turn of warnings because we know that OSX is missing some gssapi features, but
     # we don't care
     silence_warnings do
-      require 'gssapi/heimdal'
+      #require 'gssapi/heimdal'
       require 'gssapi'
     end
   rescue LoadError
@@ -40,6 +45,8 @@ else
     warn 'WARNING: gssapi gem is missing. Kerberos authentication will not work'
   end
 end
+
+require 'winrm/monkey_patches/gssapi'
 
 require 'date'
 require 'logger'
