@@ -106,7 +106,7 @@ module WinRM
           end
 
         end
-        return result, response_array
+        return WinRM::Response.new(result, response_array)
       ensure
         begin 
           close_command(shell_id,command_id)
@@ -123,14 +123,14 @@ module WinRM
 
       response_array = [] unless block_given?
 
-      result, _not_used = cmd("powershell", "-encodedCommand #{script}", opts) do |stream,text|
+      cmd_response = cmd("powershell", "-encodedCommand #{script}", opts) do |stream,text|
         if block_given?
           yield stream, text
         else
           response_array << { stream => text }
         end
       end
-      return result, response_array
+      return WinRM::Response.new(cmd_response.exit_code, response_array)
     end
 
     def disconnect
