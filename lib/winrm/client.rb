@@ -49,8 +49,12 @@ module WinRM
     end
 
     def setup_transport(endpoint)
-      transport = opts[:ssl].eql?(true) ? 'https' : 'https'
-      transport = 'http'
+      if opts[:ssl].eql?(true)
+        transport = 'https'
+        @httpcli.ssl_config.set_trust_ca(opts[:ca_file]) unless opts[:ca_file].nil?
+      else
+        transport = 'http'
+      end
       @endpoint = URI("#{transport}://#{endpoint}:#{opts[:port]}/wsman")
       
       opts[:endpoint] = @endpoint
