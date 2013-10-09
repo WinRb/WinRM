@@ -9,9 +9,9 @@ Gem::Specification.new do |s|
   s.version = version
   s.date		= Date.today.to_s
 
-  s.author = 'Dan Wanek'
-  s.email = 'dan.wanek@gmail.com'
-  s.homepage = "http://github.com/zenchild/WinRM"
+  s.author = ['Dan Wanek','Paul Morton']
+  s.email = ['dan.wanek@gmail.com','paul@themortonsonline.com']
+  s.homepage = "http://github.com/WinRb/WinRM"
 
   s.summary = 'Ruby library for Windows Remote Management'
   s.description	= <<-EOF
