@@ -37,6 +37,9 @@ WinRM::WinRMWebService.new(endpoint, :plaintext, :user => myuser, :pass => mypas
 ```ruby
 WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :disable_sspi => true)
 
+## Specifying CA path
+WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :ca_trust_path => '/etc/ssl/certs/cert.pem', :basic_auth_only => true)
+
 ## Same but force basic authentication:
 WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :basic_auth_only => true)
 ```
