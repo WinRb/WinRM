@@ -30,5 +30,5 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency  'rubyntlm', '~> 0.1.1'
   s.add_runtime_dependency  'uuidtools', '~> 2.1.2'
   s.add_runtime_dependency  'savon', '= 0.9.5'
-  s.add_runtime_dependency  'logging', '~> 1.6.1'
+  s.add_runtime_dependency  'logging', '~> 1.6', '>= 1.6.1'
 end
