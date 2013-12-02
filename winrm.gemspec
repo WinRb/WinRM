@@ -27,8 +27,11 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency  'gssapi', '~> 1.0.0'
   s.add_runtime_dependency  'httpclient', '~> 2.2', '>= 2.2.0.2'
   s.add_runtime_dependency  'nokogiri', '~> 1.5'
-  s.add_runtime_dependency  'rubyntlm', '~> 0.1.1'
+  s.add_runtime_dependency  'rubyntlm', '~> 0.1'
   s.add_runtime_dependency  'uuidtools', '~> 2.1.2'
-  s.add_runtime_dependency  'savon', '= 0.9.5'
   s.add_runtime_dependency  'logging', '~> 1.6', '>= 1.6.1'
+  s.add_runtime_dependency  'nori', '~> 2.0'
+  s.add_runtime_dependency  'gyoku', '~> 1.0'
+  s.add_runtime_dependency  'builder', '>= 2.1.2'
+  s.add_development_dependency  'rake'
 end
