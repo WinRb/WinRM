@@ -79,6 +79,15 @@ You can read more about that on issue [#29](https://github.com/WinRb/WinRM/issue
    to be created because the SOAP backend is no longer a Singleton type
    class.
 
+## Testing (rspec)
+Most of the rspec tests are designed to be run against a live windows server.  To run the tests,
+copy test/config-example.yml to test/config.yml and comment out one of the config sections, and
+supply your own values.  If you are using kerberos, you must first kinit as your test user.
+Once that's done, you can run `rake rspec` to run the tests.
+
+Testing with kerberos may also require https://github.com/zenchild/gssapi/pull/16 to be applied
+to your gssapi gem
+
 ## My Info
 * Twitter: [@zentourist](https://twitter.com/zentourist)
 * BLOG:  [http://distributed-frostbite.blogspot.com/](http://distributed-frostbite.blogspot.com/)
