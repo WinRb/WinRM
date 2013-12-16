@@ -16,6 +16,8 @@
   limitations under the License.
 =end
 
+require 'nori'
+
 module WinRM
   # This is the main class that does the SOAP request/response logic. There are a few helper classes, but pretty
   #   much everything comes through here first.
@@ -293,9 +295,8 @@ module WinRM
       end
 
       resp = send_message(builder.target!)
-      toggle_nori_type_casting :off
-      hresp = Nori.parse(resp.to_xml)[:envelope][:body]
-      toggle_nori_type_casting :original
+      parser = Nori.new(:advanced_typecasting => false, :convert_tags_to => lambda { |tag| tag.snakecase.to_sym }, :strip_namespaces => true)
+      hresp = parser.parse(resp.to_xml)[:envelope][:body]
       # Normalize items so the type always has an array even if it's just a single item.
       items = {}
       hresp[:enumerate_response][:items].each_pair do |k,v|
@@ -308,21 +309,6 @@ module WinRM
       items
     end
     alias :wql :run_wql
-
-    def toggle_nori_type_casting(to)
-      @nori_type_casting ||= Nori.advanced_typecasting?
-      case to.to_sym
-      when :original
-        Nori.advanced_typecasting = @nori_type_casting
-      when :on
-        Nori.advanced_typecasting = true
-      when :off
-        Nori.advanced_typecasting = false
-      else
-        raise ArgumentError, "Cannot toggle type casting to '#{to}', it is not a valid argument"
-      end
-
-    end
 
     private
 
