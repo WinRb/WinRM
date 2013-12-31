@@ -71,6 +71,21 @@ module WinRM
       end
     end
 
+    class HttpSSPINegotiate < HttpTransport
+      def initialize(endpoint, user, pass, opts)
+        # Override the relevant functionality in httpclient to make sspi work.
+        require 'winrm/http/auth'
+        super(endpoint)
+        @httpcli.set_auth(nil, user, pass)
+        # Remove non-sspi auths
+        auths = @httpcli.www_auth.instance_variable_get('@authenticator')
+        auths.delete_if {|i| not i.is_a?(HTTPClient::SSPINegotiateAuth)}
+
+        no_sspi_auth! if opts[:disable_sspi]
+        basic_auth_only! if opts[:basic_auth_only]
+      end
+    end
+
     # Uses SSL to secure the transport
     class HttpSSL < HttpTransport
       def initialize(endpoint, user, pass, ca_trust_path = nil, opts)

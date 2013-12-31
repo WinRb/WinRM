@@ -45,6 +45,8 @@ module WinRM
         @xfer = HTTP::HttpGSSAPI.new(endpoint, opts[:realm], opts[:service], opts[:keytab], opts)
       when :plaintext
         @xfer = HTTP::HttpPlaintext.new(endpoint, opts[:user], opts[:pass], opts)
+      when :sspinegotiate
+        @xfer = HTTP::HttpSSPINegotiate.new(endpoint, opts[:user], opts[:pass], opts)
       when :ssl
         @xfer = HTTP::HttpSSL.new(endpoint, opts[:user], opts[:pass], opts[:ca_trust_path], opts)
       end
