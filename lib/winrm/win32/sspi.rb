@@ -1,5 +1,8 @@
 
 
+# Overrides and enhances the ruby core win32 sspi module to add support to
+# encrypt/decrypt data to be sent over channel, example using SSP Negotiate auth
+
 module Win32
   module SSPI
     # QueryContextAttributes attributes flags

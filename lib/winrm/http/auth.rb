@@ -1,6 +1,15 @@
 
 require 'httpclient/auth'
 
+# Overrides the HTTPClient::WWWAuth code to add support for encryption/decryption
+# of data sent during the NTLM auth over negotiate.
+
+# Also Overrides HTTPClient::SSPINegotiateAuth to remember user credentials, original
+# library code relies on the current login user credentials on the client machine. 
+
+# Below code helps ruby client to perform auth using the credentials provided to
+# ruby client, and also enhances to use encrypted channel.
+
 class HTTPClient
 
   class WWWAuth
@@ -53,7 +62,6 @@ class HTTPClient
     end
   end
 
-  # Over-ride ruby win32 sspi to support encrypt/decrypt
   class SSPINegotiateAuth
     # Override to remember creds
     # Set authentication credential.
