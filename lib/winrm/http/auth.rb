@@ -53,7 +53,19 @@ class HTTPClient
     end
   end
 
+  # Over-ride ruby win32 sspi to support encrypt/decrypt
   class SSPINegotiateAuth
+    # Override to remember creds
+    # Set authentication credential.
+    def set(uri, user, passwd)
+      # Check if user has domain specified in it.
+      if user
+        creds = user.split("\\")
+        creds.length.eql?(2) ? (@domain,@user = creds) : @user = creds[0]
+      end
+      @passwd = passwd
+    end
+
     # Response handler: returns credential.
     # See win32/sspi for negotiation state transition.
     def get(req)
@@ -72,7 +84,7 @@ class HTTPClient
         if SSPIEnabled
           # Over-ride ruby win32 sspi to support encrypt/decrypt
           require 'winrm/win32/sspi'
-          authenticator = param[:authenticator] = Win32::SSPI::NegotiateAuth.new
+          authenticator = param[:authenticator] = Win32::SSPI::NegotiateAuth.new(@user, @domain, @passwd)
           @authenticator = authenticator #  **** Hacky remember as we need this for encrypt/decrypt
           return authenticator.get_initial_token
         else # use GSSAPI

@@ -135,6 +135,19 @@ module Win32
     end
 
     class NegotiateAuth
+      # Override to remember password
+      # Creates a new instance ready for authentication as the given user in the given domain.
+      # Defaults to current user and domain as defined by ENV["USERDOMAIN"] and ENV["USERNAME"] if
+      # no arguments are supplied.
+      def initialize(user = nil, domain = nil, password = nil)
+        if user.nil? && domain.nil? && ENV["USERNAME"].nil? && ENV["USERDOMAIN"].nil?
+          raise "A username or domain must be supplied since they cannot be retrieved from the environment"
+        end
+        @user = user || ENV["USERNAME"]
+        @domain = domain || ENV["USERDOMAIN"]
+        @password = password
+      end
+
       # Takes a token and gets the next token in the Negotiate authentication chain. Token can be Base64 encoded or not.
       # The token can include the "Negotiate" header and it will be stripped.
       # Does not indicate if SEC_I_CONTINUE or SEC_E_OK was returned.
@@ -206,6 +219,18 @@ EOF
           body = outputBuffer.buffer
         end
         body
+      end
+
+      private
+      # ** Override to add password support
+      # Gets credentials based on user, domain or both. If both are nil, an error occurs
+      def get_credentials
+        @credentials = CredHandle.new
+        ts = TimeStamp.new
+        @identity = Identity.new @user, @domain, @password
+        result = SSPIResult.new(API::AcquireCredentialsHandle.call(nil, "Negotiate", SECPKG_CRED_OUTBOUND, nil, @identity.to_p,
+          nil, nil, @credentials.to_p, ts.to_p))
+        raise "Error acquire credentials: #{result}" unless result.ok?
       end
     end
   end
