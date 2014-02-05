@@ -87,7 +87,7 @@ describe WinRM::Client do
         return exit_code, stdout, stderr
       end
 
-      it { response[0].should == [0, nil]}
+      it { response[0].exit_code.should == 0 }
       it { response[1].should =~ /9,811,701,760/ }
       it { response[2].should == " Volume in drive C is Windows 2008R2\r\n" }
     end
@@ -102,13 +102,12 @@ describe WinRM::Client do
         end
       end
       let(:response) do
-        exit_code, streams = client.cmd('cmd', '/c dir && exit 0') 
-        return exit_code, streams 
+        client.cmd('cmd', '/c dir && exit 0') 
       end
 
-      it { response[0][0].should == 0}
-      it { response[1][2][:stdout].should =~ /9,811,701,760/ }
-      it { response[1][0].should == {:stderr=>" Volume in drive C is Windows 2008R2\r\n"} }
+      it { response.exit_code.should == 0}
+      it { response.output.should =~ /9,811,701,760/ }
+      it { response.output.should =~ /Volume in drive C is Windows 2008R2\r\n/ }
     end
 
   end
@@ -138,7 +137,7 @@ describe WinRM::Client do
         return exit_code, stdout, stderr
       end
 
-      it { response[0].should == [0, nil]}
+      it { response[0].exit_code.should == 0 }
       it { response[1].should =~ /150 install-chef.bat/ }
       it { response[2].should =~ /LastWriteTime/ }
     end
@@ -153,13 +152,12 @@ describe WinRM::Client do
         end
       end
       let(:response) do
-        exit_code, streams = client.powershell('dir')
-        return exit_code, streams 
+        client.powershell('dir')
       end
 
-      it { response[0][0].should == 0}
-      it { response[1][3][:stdout].should =~ /Pictures/ }
-      it { response[1][2][:stderr].should =~ /LastWriteTime/ }
+      it { response.exit_code.should == 0}
+      it { response.output.should =~ /Pictures/ }
+      it { response.output.should =~ /LastWriteTime/ }
     end
   end
 

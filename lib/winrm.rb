@@ -119,9 +119,6 @@ module WinRM
   require 'winrm/request/wql'
   require 'winrm/request/invoke_wmi'
   require 'winrm/request/enumerate'
+  require 'winrm/response/response'
   require 'winrm/exceptions'
-
-  
-
 end
-
