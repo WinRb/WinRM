@@ -1,5 +1,5 @@
 ## Kerberos
-#auth_type: plaintest
+#auth_type: kerberos
 #endpoint: "http://<yourserver>:5985/wsman"
 #options:
 #  realm: "your.realm"
