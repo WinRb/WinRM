@@ -2,6 +2,7 @@
 *.gem
 pkg/*
 .rvmrc
+.idea
 test/spec/creds*.json
 test/config.yml
 traces/
