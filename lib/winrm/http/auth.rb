@@ -1,6 +1,23 @@
 
 require 'httpclient/auth'
 
+require 'winrm/helpers/assert_patch'
+
+def validate_patch
+  # The code below patches the httpclient library to add support
+  # for encrypt/decrypt as described below.
+  # Add few restriction to make sure the patched methods are still
+  # available, but still give a way to consciously use later versions
+  PatchAssertions.assert_major_version("httpclient", 2.3, "USE_HTTPCLIENT_MAJOR")
+  PatchAssertions.assert_arity_of_patched_method(HTTPClient::WWWAuth, "filter_request", 1)
+  PatchAssertions.assert_arity_of_patched_method(HTTPClient::WWWAuth, "filter_response", 2)
+  PatchAssertions.assert_arity_of_patched_method(HTTPClient::SSPINegotiateAuth, "set", -1)
+  PatchAssertions.assert_arity_of_patched_method(HTTPClient::SSPINegotiateAuth, "get", 1)
+end
+
+# Perform the patch validations
+validate_patch
+
 # Overrides the HTTPClient::WWWAuth code to add support for encryption/decryption
 # of data sent during the NTLM auth over negotiate.
 

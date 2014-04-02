@@ -1,4 +1,18 @@
 
+require 'winrm/helpers/assert_patch'
+
+def validate_patch
+  # The code below patches the Win32::SSPI module from ruby core to add support
+  # for encrypt/decrypt as described below.
+  # Add few restrictions to make sure the patched methods are still
+  # available, but still give a way to consciously use later versions
+  PatchAssertions.assert_arity_of_patched_method(Win32::SSPI::NegotiateAuth, "initialize", -1)
+  PatchAssertions.assert_arity_of_patched_method(Win32::SSPI::NegotiateAuth, "complete_authentication", 1)
+  PatchAssertions.assert_arity_of_patched_method(Win32::SSPI::NegotiateAuth, "get_credentials", 0)
+end
+
+# Perform the patch validations
+validate_patch
 
 # Overrides and enhances the ruby core win32 sspi module to add support to
 # encrypt/decrypt data to be sent over channel, example using SSP Negotiate auth
