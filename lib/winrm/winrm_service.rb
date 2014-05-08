@@ -256,7 +256,7 @@ module WinRM
       script = script.chars.to_a.join("\x00").chomp
       script << "\x00" unless script[-1].eql? "\x00"
       if(defined?(script.encode))
-        script = script.encode('ASCII-8BIT')
+        script = script.encode('UTF-8')
         script = Base64.strict_encode64(script)
       else
         script = Base64.encode64(script).chomp
