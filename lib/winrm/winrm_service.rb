@@ -253,10 +253,8 @@ module WinRM
       # if an IO object is passed read it..otherwise assume the contents of the file were passed
       script = script_file.kind_of?(IO) ? script_file.read : script_file
 
-      script = script.chars.to_a.join("\x00").chomp
-      script << "\x00" unless script[-1].eql? "\x00"
       if(defined?(script.encode))
-        script = script.encode('ASCII-8BIT')
+        script = script.encode('UTF-16LE', 'UTF-8')
         script = Base64.strict_encode64(script)
       else
         script = Base64.encode64(script).chomp
