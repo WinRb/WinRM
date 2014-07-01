@@ -17,7 +17,8 @@
 =end
 
 require 'httpclient'
-require 'savon'
+require 'builder'
+require 'gyoku'
 require 'uuidtools'
 require 'base64'
 require 'nokogiri'
