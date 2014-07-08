@@ -5,8 +5,8 @@
 #  realm: "your.realm"
 
 ## Plain Text
-#auth_type: plaintext
-#endpoint: "http://localhost:5985/wsman"
-#options:
-#  user: vagrant
-#  pass: vagrant
+auth_type: plaintext
+endpoint: "http://localhost:5985/wsman"
+options:
+  user: vagrant
+  pass: vagrant

@@ -3,7 +3,8 @@
 pkg/*
 .rvmrc
 .idea
-test/spec/creds*.json
-test/config.yml
+.bundle
+spec/spec/creds*.json
+spec/config.yml
 traces/
 Gemfile.lock
