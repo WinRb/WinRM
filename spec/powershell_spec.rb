@@ -1,6 +1,3 @@
-$: << File.dirname(__FILE__)
-require 'spec_helper'
-
 describe "Test remote Powershell features via WinRM", :integration => true do
   before(:all) do
     @winrm = winrm_connection

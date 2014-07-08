@@ -1,6 +1,4 @@
-$: << File.dirname(__FILE__)
-require 'spec_helper'
-require 'Nori'
+require 'nori'
 
 describe "Test Nori Type Cast Toggler", :unit => true do
   before(:all) do
