@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/WinRb/WinRM.png)](https://travis-ci.org/WinRb/WinRM)
+
 # Windows Remote Management (WinRM) for Ruby
 
 This is a SOAP library that uses the functionality in Windows Remote
