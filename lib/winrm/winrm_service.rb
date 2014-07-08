@@ -133,7 +133,12 @@ module WinRM
       s.input = "#{NS_WIN_SHELL}:CommandLine"
       s.body = { "#{NS_WIN_SHELL}:Command" => "\"#{command}\"", "#{NS_WIN_SHELL}:Arguments" => arguments}
 
-      resp = send_message(s.to_xml)
+      # Grab the command element and unescape any single quotes - issue 69
+      xml = s.to_xml
+      escaped_cmd = /<#{NS_WIN_SHELL}:Command>(.+)<\/#{NS_WIN_SHELL}:Command>/.match(xml)[1]
+      xml.sub!(escaped_cmd, escaped_cmd.gsub(/&#39;/, "'"))
+
+      resp = send_message(xml)
       (resp/"//#{NS_WIN_SHELL}:CommandId").text
     end
 
