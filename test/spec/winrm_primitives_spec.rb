@@ -9,17 +9,17 @@ describe "Test WinRM primitive methods" do
   it 'should #open_shell and #close_shell' do
     sid = @winrm.open_shell
     # match a UUID
-    sid.should =~ /^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/
-    @winrm.close_shell(sid).should be_true
+    expect(sid).to match(/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/)
+    expect(@winrm.close_shell(sid)).to be true
   end
 
   it 'should #run_command and #cleanup_command' do
     sid = @winrm.open_shell
 
     cmd_id = @winrm.run_command(sid, 'ipconfig', %w{/all})
-    cmd_id.should =~ /^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/
+    expect(sid).to match(/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/)
 
-    @winrm.cleanup_command(sid, cmd_id).should be_true
+    expect(@winrm.cleanup_command(sid, cmd_id)).to be true
     @winrm.close_shell(sid)
   end
 
@@ -28,8 +28,8 @@ describe "Test WinRM primitive methods" do
     cmd_id = @winrm.run_command(sid, 'ipconfig', %w{/all})
 
     output = @winrm.get_command_output(sid, cmd_id)
-    output[:exitcode].should == 0
-    output[:data].should_not be_empty
+    expect(output[:exitcode]).to eq(0)
+    expect(output[:data]).to_not be_empty
 
     @winrm.cleanup_command(sid, cmd_id)
     @winrm.close_shell(sid)
@@ -43,26 +43,26 @@ describe "Test WinRM primitive methods" do
     @winrm.get_command_output(sid, cmd_id) do |stdout, stderr|
       outvar << stdout
     end
-    outvar.should =~ /Windows IP Configuration/
+    expect(outvar).to match(/Windows IP Configuration/)
 
     @winrm.cleanup_command(sid, cmd_id)
     @winrm.close_shell(sid)
   end
 
   it 'should set #op_timeout' do
-    @winrm.op_timeout(120).should == 'PT2M0S'
-    @winrm.op_timeout(1202).should == 'PT20M2S'
-    @winrm.op_timeout(86400).should == 'PT24H0S'
+    expect(@winrm.op_timeout(120)).to eq('PT2M0S')
+    expect(@winrm.op_timeout(1202)).to eq('PT20M2S')
+    expect(@winrm.op_timeout(86400)).to eq('PT24H0S')
   end
 
   it 'should set #max_env_size' do
     @winrm.max_env_size(153600 * 4)
-    @winrm.instance_variable_get('@max_env_sz').should == 614400
+    expect(@winrm.instance_variable_get('@max_env_sz')).to eq(614400)
   end
 
   it 'should set #locale' do
     @winrm.locale('en-ca')
-    @winrm.instance_variable_get('@locale').should == 'en-ca'
+    expect(@winrm.instance_variable_get('@locale')).to eq('en-ca')
   end
 
 end
