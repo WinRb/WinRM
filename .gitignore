@@ -6,3 +6,4 @@ pkg/*
 test/spec/creds*.json
 test/config.yml
 traces/
+Gemfile.lock
