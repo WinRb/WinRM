@@ -1,7 +1,23 @@
-require "bundler/gem_tasks"
+require 'rubygems'
+require 'bundler/setup'
 require 'rspec/core/rake_task'
 
-RSpec::Core::RakeTask.new(:spec) do |t|
-  t.pattern = "test/spec/*_spec.rb"
-  t.rspec_opts = '--format documentation --color'
+# Change to the directory of this file.
+Dir.chdir(File.expand_path("../", __FILE__))
+
+# For gem creation and bundling
+require "bundler/gem_tasks"
+
+RSpec::Core::RakeTask.new(:spec) do |task|
+  task.pattern = "test/spec/*_spec.rb"
+  task.rspec_opts = [ '--color', '-f documentation' ]
+  task.rspec_opts << '-tunit'
 end
+
+# Run the integration test suite
+RSpec::Core::RakeTask.new(:integration) do |task|
+  task.pattern = "test/spec/*_spec.rb"
+  task.rspec_opts = [ '--color', '-f documentation' ]
+end
+
+task :default => "spec"

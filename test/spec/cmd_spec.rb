@@ -1,7 +1,7 @@
 $: << File.dirname(__FILE__)
 require 'spec_helper'
 
-describe "Test remote WQL features via WinRM" do
+describe "Test remote WQL features via WinRM", :integration => true do
   before(:all) do
     @winrm = winrm_connection
   end
