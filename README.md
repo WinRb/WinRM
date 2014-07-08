@@ -79,6 +79,35 @@ You can read more about that on issue [#29](https://github.com/WinRb/WinRM/issue
    to be created because the SOAP backend is no longer a Singleton type
    class.
 
+## Contributing
+
+1. Fork it.
+2. Create a branch (git checkout -b my_feature_branch)
+3. Run the unit and integration tests (bundle exec rake integration)
+4. Commit your changes (git commit -am "Added a sweet feature")
+5. Push to the branch (git push origin my_feature_branch)
+6. Create a pull requst from your branch into master (Please be sure to provide enough detail for us to cipher what this change is doing)
+
+### Running the tests
+
+We use Bundler to manage dependencies during development.
+
+```
+$ bundle install
+```
+
+Once you have the dependencies, you can run the unit tests with `rake`:
+
+```
+$ bundle exec rake spec
+```
+
+To run the integration tests you will need a Windows box with the WinRM service properly configured. Its easiest to use a Vagrant Windows box.
+
+1. Create a Windows VM with WinRM configured (see above).
+2. Copy the config-example.yml to config.yml - edit this file with your WinRM connection details.
+3. Run `bundle exec rake integration`
+
 ## My Info
 * Twitter: [@zentourist](https://twitter.com/zentourist)
 * BLOG:  [http://distributed-frostbite.blogspot.com/](http://distributed-frostbite.blogspot.com/)
