@@ -14,7 +14,7 @@ site: http://msdn.microsoft.com/en-us/library/aa384426(v=VS.85).aspx
 ## Example
 ```ruby
 require 'winrm'
-endpoint = http://mywinrmhost:5985/wsman
+endpoint = 'http://mywinrmhost:5985/wsman'
 krb5_realm = 'EXAMPLE.COM'
 winrm = WinRM::WinRMWebService.new(endpoint, :kerberos, :realm => krb5_realm)
 winrm.cmd('ipconfig /all') do |stdout, stderr|
