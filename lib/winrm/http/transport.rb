@@ -29,7 +29,10 @@ module WinRM
       def initialize(endpoint)
         @endpoint = endpoint.is_a?(String) ? URI.parse(endpoint) : endpoint
         @httpcli = HTTPClient.new(:agent_name => 'Ruby WinRM Client')
-        @httpcli.receive_timeout = 3600 # Set this to an unreasonable amount for now because WinRM has timeouts
+        @httpcli.receive_timeout = 120 # Set this to two minutes.  We set an
+                                       # OperationTimeout of 1 minute, so we
+                                       # shouldn't have to wait much longer
+                                       # than that.
         @logger = Logging.logger[self]
       end
 
