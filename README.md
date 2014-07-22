@@ -39,11 +39,29 @@ WinRM::WinRMWebService.new(endpoint, :plaintext, :user => myuser, :pass => mypas
 ```ruby
 WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :disable_sspi => true)
 
-## Specifying CA path
+# Specifying CA path
 WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :ca_trust_path => '/etc/ssl/certs/cert.pem', :basic_auth_only => true)
 
-## Same but force basic authentication:
+# Same but force basic authentication:
 WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :basic_auth_only => true)
+
+# Basic auth over SSL w/self signed cert
+# Enabling no_ssl_peer_verification is not recommended. HTTPS connections are still encrypted,
+# but the WinRM gem is not able to detect forged replies or man in the middle attacks.
+WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :basic_auth_only => true, :no_ssl_peer_verification => true)
+```
+
+##### Create a self signed cert for WinRM
+You may want to create a self signed certificate for servicing https WinRM connections. First you must install makecert.exe from the Windows SDK, then you can use the following PowerShell script to create a cert and enable the WinRM HTTPS listener.
+
+```powershell
+$hostname = $Env:ComputerName
+ 
+C:\"Program Files"\"Microsoft SDKs"\Windows\v7.1\Bin\makecert.exe -r -pe -n "CN=$hostname,O=vagrant" -eku 1.3.6.1.5.5.7.3.1 -ss my -sr localMachine -sky exchange -sp "Microsoft RSA SChannel Cryptographic Provider" -sy 12 "$hostname.cer"
+ 
+$thumbprint = (& ls cert:LocalMachine/my).Thumbprint
+$cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$hostname`";CertificateThumbprint=`"$thumbprint`"}'"
+iex $cmd
 ```
 
 #### Kerberos
