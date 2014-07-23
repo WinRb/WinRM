@@ -2,6 +2,9 @@
 *.gem
 pkg/*
 .rvmrc
-test/spec/creds*.json
-test/config.yml
+.idea
+.bundle
+spec/spec/creds*.json
+spec/config.yml
 traces/
+Gemfile.lock

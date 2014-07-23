@@ -17,7 +17,7 @@
 =end
 
 require 'date'
-require 'kconv' if(RUBY_VERSION.start_with? '1.9') # bug in rubyntlm with ruby 1.9.x
+require 'kconv' # rubyntlm .0.1.1 doesn't require kconv, workaround for issue #65
 require 'logging'
 
 module WinRM
