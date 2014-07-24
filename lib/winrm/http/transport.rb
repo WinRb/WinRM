@@ -36,14 +36,10 @@ module WinRM
       def send_request(message)
         hdr = {'Content-Type' => 'application/soap+xml;charset=UTF-8', 'Content-Length' => message.length}
         resp = @httpcli.post(@endpoint, message, hdr)
-        if(resp.status == 200)
-          # TODO:
-          # Version 1.1 of WinRM adds the namespaces in the document instead of the envelope so we have to
-          # add them ourselves here. This should have no affect version 2.
-          resp.http_body.content
-        else
+        if (resp.status != 200)
           raise WinRMHTTPTransportError, "Bad HTTP response returned from server (#{resp.status})."
         end
+        resp.http_body.content
       end
 
       # We'll need this to force basic authentication if desired

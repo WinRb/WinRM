@@ -45,7 +45,7 @@ module WinRM
       case transport
       when :kerberos
         require 'gssapi'
-        # TODO: check fo keys and throw error if missing
+        # TODO: check for keys and throw error if missing
         @xfer = HTTP::HttpGSSAPI.new(endpoint, opts[:realm], opts[:service], opts[:keytab], opts)
       when :plaintext
         @xfer = HTTP::HttpPlaintext.new(endpoint, opts[:user], opts[:pass], opts)
@@ -85,6 +85,8 @@ module WinRM
     #   :env_vars => {:myvar1 => 'val1', :myvar2 => 'var2'}
     # @return [String] The ShellId from the SOAP response.  This is our open shell instance on the remote machine.
     def open_shell(shell_opts = {})
+      @logger.debug("Opening new shell")
+
       i_stream = shell_opts.has_key?(:i_stream) ? shell_opts[:i_stream] : 'stdin'
       o_stream = shell_opts.has_key?(:o_stream) ? shell_opts[:o_stream] : 'stdout stderr'
       codepage = shell_opts.has_key?(:codepage) ? shell_opts[:codepage] : 437
@@ -121,7 +123,6 @@ module WinRM
       shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
       @logger.debug("Opened shell with id: #{shell_id}")
       shell_id
-      #(resp/"//*[@Name='ShellId']").text
     end
 
     # Run a command on a machine with an open shell
@@ -166,6 +167,9 @@ module WinRM
     #   is either :stdout or :stderr.  The reason it is in an Array so so we can get the output in the order it ocurrs on
     #   the console.
     def get_command_output(shell_id, command_id, &block)
+
+      @logger.debug("Getting command output: #{command_id}")
+
       body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout stderr',
         :attributes! => {"#{NS_WIN_SHELL}:DesiredStream" => {'CommandId' => command_id}}}
 
@@ -178,18 +182,10 @@ module WinRM
         end
       end
 
-      @logger.debug("Getting command '#{command_id}' output")
-
       resp_doc = send_message(builder.target!)
       output = {:data => []}
       REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |n|
-      #(resp/"//#{NS_WIN_SHELL}:Stream").each do |n|
         next if n.text.nil? || n.text.empty?
-
-        #raw_out = Base64.decode64(n.text)
-        #@logger.debug("Command out: #{raw_out}")
-
-        #stream = { :stdout => Base64.decode64(n.text), :stderr => '' }
         stream = { n.attributes['Name'].to_sym => Base64.decode64(n.text) }
         output[:data] << stream
         yield stream[:stdout], stream[:stderr] if block_given?
@@ -211,7 +207,6 @@ module WinRM
           old_data += new_data
         end
       else
-        #output[:exitcode] = (resp/"//#{NS_WIN_SHELL}:ExitCode").text.to_i
         output[:exitcode] = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:ExitCode").text.to_i
       end
       output
@@ -244,6 +239,8 @@ module WinRM
     # @param [String] shell_id The shell id on the remote machine.  See #open_shell
     # @return [true] This should have more error checking but it just returns true for now.
     def close_shell(shell_id)
+
+      @logger.debug("Closing shell: #{shell_id}")
 
       builder = Builder::XmlMarkup.new
       builder.instruct!(:xml, :encoding => 'UTF-8')
@@ -327,6 +324,11 @@ module WinRM
     end
     alias :wql :run_wql
 
+    def toggle_nori_type_casting(to)
+      @logger.warn('toggle_nori_type_casting is deprecated and has no effect, ' +
+        'please remove calls to it')
+    end
+
     private
 
     def namespaces
@@ -377,14 +379,16 @@ module WinRM
 
     def send_message(message)
       resp = @xfer.send_request(message)
-      xmldoc = REXML::Document.new(resp)
+      resp_doc = REXML::Document.new(resp)
 
-      # TODO: Check for SOAP faults in the response
+      errors = REXML::XPath.match(resp_doc, "//#{NS_SOAP_ENV}:Body/#{NS_SOAP_ENV}:Fault/*")
+      if !errors.empty?
+        @logger.debug("Found SOAP fault: #{errors.inspect}")
+        fault = REXML::XPath.first(resp_doc, "//#{NS_WSMAN_FAULT}:WSManFault")
+        raise WinRMWSManFault, "[WSMAN ERROR CODE: #{fault.attributes['Code']}]: #{fault.text}"
+      end
 
-      # TODO:
-      # Sometimes a blank response is returned and it will throw this error when the XPath is evaluated for Fault
-      # The returned string will be '<?xml version="1.0"?>\n' in these cases
-      xmldoc
+      resp_doc
     end
 
     # Helper methods for SOAP Headers
