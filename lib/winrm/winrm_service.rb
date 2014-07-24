@@ -98,9 +98,6 @@ module WinRM
         "#{NS_WIN_SHELL}:OutputStreams" => o_stream
       }
       shell_body["#{NS_WIN_SHELL}:WorkingDirectory"] = shell_opts[:working_directory] if shell_opts.has_key?(:working_directory)
-      # TODO: research Lifetime a bit more: http://msdn.microsoft.com/en-us/library/cc251546(v=PROT.13).aspx
-      #s.body["#{NS_WIN_SHELL}:Lifetime"] = Iso8601Duration.sec_to_dur(shell_opts[:lifetime]) if(shell_opts.has_key?(:lifetime) && shell_opts[:lifetime].is_a?(Fixnum))
-      # @todo make it so the input is given in milliseconds and converted to xs:duration
       shell_body["#{NS_WIN_SHELL}:IdleTimeOut"] = shell_opts[:idle_timeout] if(shell_opts.has_key?(:idle_timeout) && shell_opts[:idle_timeout].is_a?(String))
       if(shell_opts.has_key?(:env_vars) && shell_opts[:env_vars].is_a?(Hash))
         keys = shell_opts[:env_vars].keys
@@ -356,7 +353,6 @@ module WinRM
         "#{NS_ADDRESSING}:MessageID" => "uuid:#{UUIDTools::UUID.random_create.to_s.upcase}",
         "#{NS_WSMAN_DMTF}:Locale/" => '',
         "#{NS_WSMAN_MSFT}:DataLocale/" => '',
-        #"#{NS_WSMAN_CONF}:MaxTimeoutms" => 600, #TODO: research this a bit http://msdn.microsoft.com/en-us/library/cc251561(v=PROT.13).aspx
         "#{NS_WSMAN_DMTF}:OperationTimeout" => @timeout,
         :attributes! => {
           "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => {'mustUnderstand' => true},
