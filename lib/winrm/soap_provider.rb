@@ -17,10 +17,10 @@
 =end
 
 require 'httpclient'
-require 'savon'
+require 'builder'
+require 'gyoku'
 require 'uuidtools'
 require 'base64'
-require 'nokogiri'
 
 module WinRM
   NS_SOAP_ENV    ='s'   # http://www.w3.org/2003/05/soap-envelope

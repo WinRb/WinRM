@@ -16,6 +16,9 @@
   limitations under the License.
 =end
 
+require 'nori'
+require 'rexml/document'
+
 module WinRM
   # This is the main class that does the SOAP request/response logic. There are a few helper classes, but pretty
   #   much everything comes through here first.
@@ -36,8 +39,9 @@ module WinRM
     def initialize(endpoint, transport = :kerberos, opts = {})
       @endpoint = endpoint
       @timeout = DEFAULT_TIMEOUT
-      @max_env_sz = DEFAULT_MAX_ENV_SIZE 
+      @max_env_sz = DEFAULT_MAX_ENV_SIZE
       @locale = DEFAULT_LOCALE
+      @logger = Logging.logger[self]
       case transport
       when :kerberos
         require 'gssapi'
@@ -85,33 +89,39 @@ module WinRM
       o_stream = shell_opts.has_key?(:o_stream) ? shell_opts[:o_stream] : 'stdout stderr'
       codepage = shell_opts.has_key?(:codepage) ? shell_opts[:codepage] : 437
       noprofile = shell_opts.has_key?(:noprofile) ? shell_opts[:noprofile] : 'FALSE'
-      s = Savon::SOAP::XML.new
-      s.version = 2
-      s.namespaces.merge!(namespaces)
       h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => { "#{NS_WSMAN_DMTF}:Option" => [noprofile, codepage],
         :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_NOPROFILE','WINRS_CODEPAGE']}}}}
-      s.header.merge!(merge_headers(header,resource_uri_cmd,action_create,h_opts))
-      s.input = "#{NS_WIN_SHELL}:Shell"
-      s.body = {
+      shell_body = {
         "#{NS_WIN_SHELL}:InputStreams" => i_stream,
         "#{NS_WIN_SHELL}:OutputStreams" => o_stream
       }
-      s.body["#{NS_WIN_SHELL}:WorkingDirectory"] = shell_opts[:working_directory] if shell_opts.has_key?(:working_directory)
+      shell_body["#{NS_WIN_SHELL}:WorkingDirectory"] = shell_opts[:working_directory] if shell_opts.has_key?(:working_directory)
       # TODO: research Lifetime a bit more: http://msdn.microsoft.com/en-us/library/cc251546(v=PROT.13).aspx
       #s.body["#{NS_WIN_SHELL}:Lifetime"] = Iso8601Duration.sec_to_dur(shell_opts[:lifetime]) if(shell_opts.has_key?(:lifetime) && shell_opts[:lifetime].is_a?(Fixnum))
       # @todo make it so the input is given in milliseconds and converted to xs:duration
-      s.body["#{NS_WIN_SHELL}:IdleTimeOut"] = shell_opts[:idle_timeout] if(shell_opts.has_key?(:idle_timeout) && shell_opts[:idle_timeout].is_a?(String))
+      shell_body["#{NS_WIN_SHELL}:IdleTimeOut"] = shell_opts[:idle_timeout] if(shell_opts.has_key?(:idle_timeout) && shell_opts[:idle_timeout].is_a?(String))
       if(shell_opts.has_key?(:env_vars) && shell_opts[:env_vars].is_a?(Hash))
         keys = shell_opts[:env_vars].keys
         vals = shell_opts[:env_vars].values
-        s.body["#{NS_WIN_SHELL}:Environment"] = {
+        shell_body["#{NS_WIN_SHELL}:Environment"] = {
           "#{NS_WIN_SHELL}:Variable" => vals,
           :attributes! => {"#{NS_WIN_SHELL}:Variable" => {'Name' => keys}}
         }
       end
+      builder = Builder::XmlMarkup.new
+      builder.instruct!(:xml, :encoding => 'UTF-8')
+      builder.tag! :env, :Envelope, namespaces do |env|
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_create,h_opts)) }
+        env.tag! :env, :Body do |body|
+          body.tag!("#{NS_WIN_SHELL}:Shell") { |s| s << Gyoku.xml(shell_body)}
+        end
+      end
 
-      resp = send_message(s.to_xml)
-      (resp/"//*[@Name='ShellId']").text
+      resp_doc = send_message(builder.target!)
+      shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
+      @logger.debug("Opened shell with id: #{shell_id}")
+      shell_id
+      #(resp/"//*[@Name='ShellId']").text
     end
 
     # Run a command on a machine with an open shell
@@ -122,24 +132,31 @@ module WinRM
     def run_command(shell_id, command, arguments = [], cmd_opts = {})
       consolemode = cmd_opts.has_key?(:console_mode_stdin) ? cmd_opts[:console_mode_stdin] : 'TRUE'
       skipcmd     = cmd_opts.has_key?(:skip_cmd_shell) ? cmd_opts[:skip_cmd_shell] : 'FALSE'
-      s = Savon::SOAP::XML.new
-      s.version = 2
-      s.namespaces.merge!(namespaces)
+
       h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => {
         "#{NS_WSMAN_DMTF}:Option" => [consolemode, skipcmd],
         :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_CONSOLEMODE_STDIN','WINRS_SKIP_CMD_SHELL']}}}
       }
-      s.header.merge!(merge_headers(header,resource_uri_cmd,action_command,h_opts,selector_shell_id(shell_id)))
-      s.input = "#{NS_WIN_SHELL}:CommandLine"
-      s.body = { "#{NS_WIN_SHELL}:Command" => "\"#{command}\"", "#{NS_WIN_SHELL}:Arguments" => arguments}
+      body = { "#{NS_WIN_SHELL}:Command" => "\"#{command}\"", "#{NS_WIN_SHELL}:Arguments" => arguments}
+
+      builder = Builder::XmlMarkup.new
+      builder.instruct!(:xml, :encoding => 'UTF-8')
+      builder.tag! :env, :Envelope, namespaces do |env|
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_command,h_opts,selector_shell_id(shell_id))) }
+        env.tag!(:env, :Body) do |env_body|
+          env_body.tag!("#{NS_WIN_SHELL}:CommandLine") { |cl| cl << Gyoku.xml(body) }
+        end
+      end
 
       # Grab the command element and unescape any single quotes - issue 69
-      xml = s.to_xml
+      xml = builder.target!
       escaped_cmd = /<#{NS_WIN_SHELL}:Command>(.+)<\/#{NS_WIN_SHELL}:Command>/.match(xml)[1]
       xml.sub!(escaped_cmd, escaped_cmd.gsub(/&#39;/, "'"))
 
-      resp = send_message(xml)
-      (resp/"//#{NS_WIN_SHELL}:CommandId").text
+      resp_doc = send_message(xml)
+      command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
+      @logger.debug("Running command with id: #{command_id}")
+      command_id
     end
 
     # Get the Output of the given shell and command
@@ -149,19 +166,31 @@ module WinRM
     #   is either :stdout or :stderr.  The reason it is in an Array so so we can get the output in the order it ocurrs on
     #   the console.
     def get_command_output(shell_id, command_id, &block)
-      s = Savon::SOAP::XML.new
-      s.version = 2
-      s.namespaces.merge!(namespaces)
-      s.header.merge!(merge_headers(header,resource_uri_cmd,action_receive,selector_shell_id(shell_id)))
-      s.input = "#{NS_WIN_SHELL}:Receive"
-      s.body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout stderr',
+      body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout stderr',
         :attributes! => {"#{NS_WIN_SHELL}:DesiredStream" => {'CommandId' => command_id}}}
 
-      resp = send_message(s.to_xml)
+      builder = Builder::XmlMarkup.new
+      builder.instruct!(:xml, :encoding => 'UTF-8')
+      builder.tag! :env, :Envelope, namespaces do |env|
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_receive,selector_shell_id(shell_id))) }
+        env.tag!(:env, :Body) do |env_body|
+          env_body.tag!("#{NS_WIN_SHELL}:Receive") { |cl| cl << Gyoku.xml(body) }
+        end
+      end
+
+      @logger.debug("Getting command '#{command_id}' output")
+
+      resp_doc = send_message(builder.target!)
       output = {:data => []}
-      (resp/"//#{NS_WIN_SHELL}:Stream").each do |n|
+      REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |n|
+      #(resp/"//#{NS_WIN_SHELL}:Stream").each do |n|
         next if n.text.nil? || n.text.empty?
-        stream = {n['Name'].to_sym => Base64.decode64(n.text)}
+
+        #raw_out = Base64.decode64(n.text)
+        #@logger.debug("Command out: #{raw_out}")
+
+        #stream = { :stdout => Base64.decode64(n.text), :stderr => '' }
+        stream = { n.attributes['Name'].to_sym => Base64.decode64(n.text) }
         output[:data] << stream
         yield stream[:stdout], stream[:stderr] if block_given?
       end
@@ -175,12 +204,15 @@ module WinRM
       #   <rsp:CommandState CommandId="..." State="http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done">
       #     <rsp:ExitCode>0</rsp:ExitCode>
       #   </rsp:CommandState>
-      if((resp/"//*[@State='http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done']").empty?)
-        output.merge!(get_command_output(shell_id,command_id,&block)) do |key, old_data, new_data|
+      #if ((resp/"//*[@State='http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done']").empty?)
+      done_elems = REXML::XPath.match(resp_doc, "//*[@State='http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done']")
+      if done_elems.empty?
+        output.merge!(get_command_output(shell_id, command_id, &block)) do |key, old_data, new_data|
           old_data += new_data
         end
       else
-        output[:exitcode] = (resp/"//#{NS_WIN_SHELL}:ExitCode").text.to_i
+        #output[:exitcode] = (resp/"//#{NS_WIN_SHELL}:ExitCode").text.to_i
+        output[:exitcode] = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:ExitCode").text.to_i
       end
       output
     end
@@ -191,16 +223,20 @@ module WinRM
     # @param [String] command_id The command id on the remote machine.  See #run_command
     # @return [true] This should have more error checking but it just returns true for now.
     def cleanup_command(shell_id, command_id)
-      s = Savon::SOAP::XML.new
-      s.version = 2
-      s.namespaces.merge!(namespaces)
-      s.header.merge!(merge_headers(header,resource_uri_cmd,action_signal,selector_shell_id(shell_id)))
-
       # Signal the Command references to terminate (close stdout/stderr)
-      s.input = ["#{NS_WIN_SHELL}:Signal", {'CommandId' => command_id}]
 
-      s.body = { "#{NS_WIN_SHELL}:Code" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/signal/terminate' }
-      resp = send_message(s.to_xml)
+      @logger.debug("Cleaning up command: #{command_id}")
+
+      body = { "#{NS_WIN_SHELL}:Code" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/signal/terminate' }
+      builder = Builder::XmlMarkup.new
+      builder.instruct!(:xml, :encoding => 'UTF-8')
+      builder.tag! :env, :Envelope, namespaces do |env|
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_signal,selector_shell_id(shell_id))) }
+        env.tag!(:env, :Body) do |env_body|
+          env_body.tag!("#{NS_WIN_SHELL}:Signal", {'CommandId' => command_id}) { |cl| cl << Gyoku.xml(body) }
+        end
+      end
+      resp = send_message(builder.target!)
       true
     end
 
@@ -208,31 +244,16 @@ module WinRM
     # @param [String] shell_id The shell id on the remote machine.  See #open_shell
     # @return [true] This should have more error checking but it just returns true for now.
     def close_shell(shell_id)
-      s = Savon::SOAP::XML.new
-      s.version = 2
-      s.namespaces.merge!(namespaces)
-      s.namespaces.merge!(Savon::SOAP::XML::SchemaTypes)
-      s.header.merge!(merge_headers(header,resource_uri_cmd,action_delete,selector_shell_id(shell_id)))
 
-      # Because Savon does not support a nil Body we have to build it ourselves.
-      s.xml do |b|
-        b.tag!('env:Envelope', s.namespaces) do
-          b.tag!('env:Header') do |bh|
-            bh << Gyoku.xml(s.header) unless s.header.empty?
-          end
-          if(s.input.nil?)
-            b.tag! 'env:Body'
-          else
-            b.tag! 'env:Body' do |bb|
-              bb.tag! s.input do |bbb|
-                bbb << Gyoku.xml(s.body) if s.body
-              end
-            end
-          end
-        end
+      builder = Builder::XmlMarkup.new
+      builder.instruct!(:xml, :encoding => 'UTF-8')
+
+      builder.tag!('env:Envelope', namespaces) do |env|
+        env.tag!('env:Header') { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_delete,selector_shell_id(shell_id))) }
+        env.tag!('env:Body')
       end
 
-      resp = send_message(s.to_xml)
+      resp = send_message(builder.target!)
       true
     end
 
@@ -274,21 +295,25 @@ module WinRM
     # @param [String] wql The WQL query
     # @return [Hash] Returns a Hash that contain the key/value pairs returned from the query.
     def run_wql(wql)
-      s = Savon::SOAP::XML.new
-      s.version = 2
-      s.namespaces.merge!(namespaces)
-      s.header.merge!(merge_headers(header,resource_uri_wmi,action_enumerate))
-      s.input = "#{NS_ENUM}:Enumerate"
-      s.body = { "#{NS_WSMAN_DMTF}:OptimizeEnumeration" => nil,
+
+      body = { "#{NS_WSMAN_DMTF}:OptimizeEnumeration" => nil,
         "#{NS_WSMAN_DMTF}:MaxElements" => '32000',
         "#{NS_WSMAN_DMTF}:Filter" => wql,
         :attributes! => { "#{NS_WSMAN_DMTF}:Filter" => {'Dialect' => 'http://schemas.microsoft.com/wbem/wsman/1/WQL'}}
       }
 
-      resp = send_message(s.to_xml)
-      toggle_nori_type_casting :off
-      hresp = Nori.parse(resp.to_xml)[:envelope][:body]
-      toggle_nori_type_casting :original
+      builder = Builder::XmlMarkup.new
+      builder.instruct!(:xml, :encoding => 'UTF-8')
+      builder.tag! :env, :Envelope, namespaces do |env|
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_wmi,action_enumerate)) }
+        env.tag!(:env, :Body) do |env_body|
+          env_body.tag!("#{NS_ENUM}:Enumerate") { |en| en << Gyoku.xml(body) }
+        end
+      end
+
+      resp = send_message(builder.target!)
+      parser = Nori.new(:parser => :rexml, :advanced_typecasting => false, :convert_tags_to => lambda { |tag| tag.snakecase.to_sym }, :strip_namespaces => true)
+      hresp = parser.parse(resp.to_s)[:envelope][:body]
       # Normalize items so the type always has an array even if it's just a single item.
       items = {}
       hresp[:enumerate_response][:items].each_pair do |k,v|
@@ -302,25 +327,14 @@ module WinRM
     end
     alias :wql :run_wql
 
-    def toggle_nori_type_casting(to)
-      @nori_type_casting ||= Nori.advanced_typecasting?
-      case to.to_sym
-      when :original
-        Nori.advanced_typecasting = @nori_type_casting
-      when :on
-        Nori.advanced_typecasting = true
-      when :off
-        Nori.advanced_typecasting = false
-      else
-        raise ArgumentError, "Cannot toggle type casting to '#{to}', it is not a valid argument"
-      end
-
-    end
-
     private
 
     def namespaces
-      {'xmlns:a' => 'http://schemas.xmlsoap.org/ws/2004/08/addressing',
+      {
+        'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema',
+        'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+        'xmlns:env' => 'http://www.w3.org/2003/05/soap-envelope',
+        'xmlns:a' => 'http://schemas.xmlsoap.org/ws/2004/08/addressing',
         'xmlns:b' => 'http://schemas.dmtf.org/wbem/wsman/1/cimbinding.xsd',
         'xmlns:n' => 'http://schemas.xmlsoap.org/ws/2004/09/enumeration',
         'xmlns:x' => 'http://schemas.xmlsoap.org/ws/2004/09/transfer',
@@ -363,21 +377,14 @@ module WinRM
 
     def send_message(message)
       resp = @xfer.send_request(message)
+      xmldoc = REXML::Document.new(resp)
 
-      begin
-        errors = resp/"//#{NS_SOAP_ENV}:Body/#{NS_SOAP_ENV}:Fault/*"
-        if errors.empty?
-          return resp
-        else
-          resp.root.add_namespace(NS_WSMAN_FAULT,'http://schemas.microsoft.com/wbem/wsman/1/wsmanfault')
-          fault = (errors/"//#{NS_WSMAN_FAULT}:WSManFault").first
-          raise WinRMWSManFault, "[WSMAN ERROR CODE: #{fault['Code']}]: #{fault.text}"
-        end
+      # TODO: Check for SOAP faults in the response
+
+      # TODO:
       # Sometimes a blank response is returned and it will throw this error when the XPath is evaluated for Fault
       # The returned string will be '<?xml version="1.0"?>\n' in these cases
-      rescue Nokogiri::XML::XPath::SyntaxError => e
-        raise WinRMWebServiceError, "Bad SOAP Packet returned. Sometimes a retry will solve this error."
-      end
+      xmldoc
     end
 
     # Helper methods for SOAP Headers
@@ -423,7 +430,7 @@ module WinRM
     end
 
     def selector_shell_id(shell_id)
-      {"#{NS_WSMAN_DMTF}:SelectorSet" => 
+      {"#{NS_WSMAN_DMTF}:SelectorSet" =>
         {"#{NS_WSMAN_DMTF}:Selector" => shell_id, :attributes! => {"#{NS_WSMAN_DMTF}:Selector" => {'Name' => 'ShellId'}}}
       }
     end
