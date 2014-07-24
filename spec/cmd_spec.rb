@@ -33,4 +33,10 @@ describe "Test remote WQL features via WinRM", :integration => true do
     output = @winrm.run_cmd('')
     expect(output[:exitcode]).to eq(0)
   end
+
+  it 'should run a CMD command that has bad arg and return non-zero exit code' do
+    output = @winrm.run_cmd('dir /z')
+    expect(output[:exitcode]).to eq(1)
+  end
+
 end
