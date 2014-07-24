@@ -17,6 +17,7 @@
 =end
 
 require 'nori'
+require 'rexml/document'
 
 module WinRM
   # This is the main class that does the SOAP request/response logic. There are a few helper classes, but pretty
@@ -40,6 +41,7 @@ module WinRM
       @timeout = DEFAULT_TIMEOUT
       @max_env_sz = DEFAULT_MAX_ENV_SIZE
       @locale = DEFAULT_LOCALE
+      @logger = Logging.logger[self]
       case transport
       when :kerberos
         require 'gssapi'
@@ -115,8 +117,11 @@ module WinRM
         end
       end
 
-      resp = send_message(builder.target!)
-      (resp/"//*[@Name='ShellId']").text
+      resp_doc = send_message(builder.target!)
+      shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
+      @logger.debug("Opened shell with id: #{shell_id}")
+      shell_id
+      #(resp/"//*[@Name='ShellId']").text
     end
 
     # Run a command on a machine with an open shell
@@ -148,8 +153,10 @@ module WinRM
       escaped_cmd = /<#{NS_WIN_SHELL}:Command>(.+)<\/#{NS_WIN_SHELL}:Command>/.match(xml)[1]
       xml.sub!(escaped_cmd, escaped_cmd.gsub(/&#39;/, "'"))
 
-      resp = send_message(xml)
-      (resp/"//#{NS_WIN_SHELL}:CommandId").text
+      resp_doc = send_message(xml)
+      command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
+      @logger.debug("Running command with id: #{command_id}")
+      command_id
     end
 
     # Get the Output of the given shell and command
@@ -171,11 +178,19 @@ module WinRM
         end
       end
 
-      resp = send_message(builder.target!)
+      @logger.debug("Getting command '#{command_id}' output")
+
+      resp_doc = send_message(builder.target!)
       output = {:data => []}
-      (resp/"//#{NS_WIN_SHELL}:Stream").each do |n|
+      REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |n|
+      #(resp/"//#{NS_WIN_SHELL}:Stream").each do |n|
         next if n.text.nil? || n.text.empty?
-        stream = {n['Name'].to_sym => Base64.decode64(n.text)}
+
+        #raw_out = Base64.decode64(n.text)
+        #@logger.debug("Command out: #{raw_out}")
+
+        #stream = { :stdout => Base64.decode64(n.text), :stderr => '' }
+        stream = { n.attributes['Name'].to_sym => Base64.decode64(n.text) }
         output[:data] << stream
         yield stream[:stdout], stream[:stderr] if block_given?
       end
@@ -189,12 +204,15 @@ module WinRM
       #   <rsp:CommandState CommandId="..." State="http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done">
       #     <rsp:ExitCode>0</rsp:ExitCode>
       #   </rsp:CommandState>
-      if((resp/"//*[@State='http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done']").empty?)
-        output.merge!(get_command_output(shell_id,command_id,&block)) do |key, old_data, new_data|
+      #if ((resp/"//*[@State='http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done']").empty?)
+      done_elems = REXML::XPath.match(resp_doc, "//*[@State='http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done']")
+      if done_elems.empty?
+        output.merge!(get_command_output(shell_id, command_id, &block)) do |key, old_data, new_data|
           old_data += new_data
         end
       else
-        output[:exitcode] = (resp/"//#{NS_WIN_SHELL}:ExitCode").text.to_i
+        #output[:exitcode] = (resp/"//#{NS_WIN_SHELL}:ExitCode").text.to_i
+        output[:exitcode] = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:ExitCode").text.to_i
       end
       output
     end
@@ -206,6 +224,8 @@ module WinRM
     # @return [true] This should have more error checking but it just returns true for now.
     def cleanup_command(shell_id, command_id)
       # Signal the Command references to terminate (close stdout/stderr)
+
+      @logger.debug("Cleaning up command: #{command_id}")
 
       body = { "#{NS_WIN_SHELL}:Code" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/signal/terminate' }
       builder = Builder::XmlMarkup.new
@@ -292,8 +312,8 @@ module WinRM
       end
 
       resp = send_message(builder.target!)
-      parser = Nori.new(:advanced_typecasting => false, :convert_tags_to => lambda { |tag| tag.snakecase.to_sym }, :strip_namespaces => true)
-      hresp = parser.parse(resp.to_xml)[:envelope][:body]
+      parser = Nori.new(:parser => :rexml, :advanced_typecasting => false, :convert_tags_to => lambda { |tag| tag.snakecase.to_sym }, :strip_namespaces => true)
+      hresp = parser.parse(resp.to_s)[:envelope][:body]
       # Normalize items so the type always has an array even if it's just a single item.
       items = {}
       hresp[:enumerate_response][:items].each_pair do |k,v|
@@ -357,21 +377,14 @@ module WinRM
 
     def send_message(message)
       resp = @xfer.send_request(message)
+      xmldoc = REXML::Document.new(resp)
 
-      begin
-        errors = resp/"//#{NS_SOAP_ENV}:Body/#{NS_SOAP_ENV}:Fault/*"
-        if errors.empty?
-          return resp
-        else
-          resp.root.add_namespace(NS_WSMAN_FAULT,'http://schemas.microsoft.com/wbem/wsman/1/wsmanfault')
-          fault = (errors/"//#{NS_WSMAN_FAULT}:WSManFault").first
-          raise WinRMWSManFault, "[WSMAN ERROR CODE: #{fault['Code']}]: #{fault.text}"
-        end
+      # TODO: Check for SOAP faults in the response
+
+      # TODO:
       # Sometimes a blank response is returned and it will throw this error when the XPath is evaluated for Fault
       # The returned string will be '<?xml version="1.0"?>\n' in these cases
-      rescue Nokogiri::XML::XPath::SyntaxError => e
-        raise WinRMWebServiceError, "Bad SOAP Packet returned. Sometimes a retry will solve this error."
-      end
+      xmldoc
     end
 
     # Helper methods for SOAP Headers
