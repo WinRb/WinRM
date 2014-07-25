@@ -85,8 +85,6 @@ module WinRM
     #   :env_vars => {:myvar1 => 'val1', :myvar2 => 'var2'}
     # @return [String] The ShellId from the SOAP response.  This is our open shell instance on the remote machine.
     def open_shell(shell_opts = {})
-      @logger.debug("Opening new shell")
-
       i_stream = shell_opts.has_key?(:i_stream) ? shell_opts[:i_stream] : 'stdin'
       o_stream = shell_opts.has_key?(:o_stream) ? shell_opts[:o_stream] : 'stdout stderr'
       codepage = shell_opts.has_key?(:codepage) ? shell_opts[:codepage] : 437
@@ -118,7 +116,6 @@ module WinRM
 
       resp_doc = send_message(builder.target!)
       shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
-      @logger.debug("Opened shell with id: #{shell_id}")
       shell_id
     end
 
@@ -153,8 +150,30 @@ module WinRM
 
       resp_doc = send_message(xml)
       command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
-      @logger.debug("Running command with id: #{command_id}")
       command_id
+    end
+
+    def write_stdin(shell_id, command_id, stdin)
+      # Signal the Command references to terminate (close stdout/stderr)
+      body = {
+        "#{NS_WIN_SHELL}:Send" => {
+          "#{NS_WIN_SHELL}:Stream" => {
+            "@Name" => 'stdin',
+            "@CommandId" => command_id,
+            :content! => Base64.encode64(stdin)
+          }
+        }
+      }
+      builder = Builder::XmlMarkup.new
+      builder.instruct!(:xml, :encoding => 'UTF-8')
+      builder.tag! :env, :Envelope, namespaces do |env|
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_send,selector_shell_id(shell_id))) }
+        env.tag!(:env, :Body) do |env_body|
+          env_body << Gyoku.xml(body)
+        end
+      end
+      resp = send_message(builder.target!)
+      true
     end
 
     # Get the Output of the given shell and command
@@ -164,9 +183,6 @@ module WinRM
     #   is either :stdout or :stderr.  The reason it is in an Array so so we can get the output in the order it ocurrs on
     #   the console.
     def get_command_output(shell_id, command_id, &block)
-
-      @logger.debug("Getting command output: #{command_id}")
-
       body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout stderr',
         :attributes! => {"#{NS_WIN_SHELL}:DesiredStream" => {'CommandId' => command_id}}}
 
@@ -216,9 +232,6 @@ module WinRM
     # @return [true] This should have more error checking but it just returns true for now.
     def cleanup_command(shell_id, command_id)
       # Signal the Command references to terminate (close stdout/stderr)
-
-      @logger.debug("Cleaning up command: #{command_id}")
-
       body = { "#{NS_WIN_SHELL}:Code" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/signal/terminate' }
       builder = Builder::XmlMarkup.new
       builder.instruct!(:xml, :encoding => 'UTF-8')
@@ -236,9 +249,6 @@ module WinRM
     # @param [String] shell_id The shell id on the remote machine.  See #open_shell
     # @return [true] This should have more error checking but it just returns true for now.
     def close_shell(shell_id)
-
-      @logger.debug("Closing shell: #{shell_id}")
-
       builder = Builder::XmlMarkup.new
       builder.instruct!(:xml, :encoding => 'UTF-8')
 
@@ -374,8 +384,10 @@ module WinRM
     end
 
     def send_message(message)
+      log_xml(message)
       resp = @xfer.send_request(message)
       resp_doc = REXML::Document.new(resp)
+      log_xml(resp_doc)
 
       errors = REXML::XPath.match(resp_doc, "//#{NS_SOAP_ENV}:Body/#{NS_SOAP_ENV}:Fault/*")
       if !errors.empty?
@@ -385,6 +397,16 @@ module WinRM
       end
 
       resp_doc
+    end
+
+    def log_xml(message)
+      return unless @logger.debug?
+      message = REXML::Document.new(message) if message.is_a? String
+
+      formatter = REXML::Formatters::Pretty.new(2)
+      formatter.compact = true
+      formatter.write(message, @logger)
+      @logger.debug("\n")
     end
 
     # Helper methods for SOAP Headers
@@ -421,6 +443,11 @@ module WinRM
 
     def action_signal
       {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Signal',
+        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
+    end
+
+    def action_send
+      {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Send',
         :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
     end
 
