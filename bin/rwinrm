@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby
+
+$:.push File.expand_path('../../lib', __FILE__)
+
+require 'readline'
+require 'optparse'
+require 'winrm'
+
+def parse_options
+  options = {}
+  optparse = OptionParser.new do |opts|
+    opts.banner = "Usage: rwinrm endpoint [options]"
+
+    options[:auth_type] = :plaintext
+    options[:basic_auth_only] = true
+    options[:endpoint] = ARGV[0]
+
+    opts.on('-u', '--user username', String, 'WinRM user name') do |v|
+      options[:user] = v
+    end
+
+    opts.on('-p', '--pass password', String, 'WinRM user password') do |v|
+      options[:pass] = v
+    end
+
+    opts.on('-h', '--help', 'Display this screen') do
+      puts opts
+      exit
+    end
+  end
+
+  optparse.parse!
+  raise OptionParser::MissingArgument.new(:endpoint) if options[:endpoint].nil?
+
+  options
+rescue OptionParser::InvalidOption, OptionParser::MissingArgument
+  puts $!.message
+  puts optparse
+  exit 1
+end
+
+def repl(options)
+  client = WinRM::WinRMWebService.new(
+    options[:endpoint],
+    options[:auth_type].to_sym,
+    options)
+
+  shell_id = client.open_shell()
+  command_id = client.run_command(shell_id, 'cmd')
+
+  read_thread = Thread.new do
+    client.get_command_output(shell_id, command_id) do |stdout, stderr|
+      STDOUT.write stdout
+      STDERR.write stderr
+    end
+  end
+
+  while buf = Readline.readline('', true)
+    if buf =~ /^exit/
+      read_thread.exit()
+      client.cleanup_command(shell_id, command_id)
+      client.close_shell(shell_id)
+      exit 0
+    else
+      client.write_stdin(shell_id, command_id, "#{buf}\r\n")
+    end
+  end
+
+rescue => e
+  puts e.message
+  exit 100
+end
+
+repl(parse_options())
