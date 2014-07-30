@@ -128,18 +128,14 @@ To run the integration tests you will need a Windows box with the WinRM service 
 2. Copy the config-example.yml to config.yml - edit this file with your WinRM connection details.
 3. Run `bundle exec rake integration`
 
-## My Info
+## WinRM Author
 * Twitter: [@zentourist](https://twitter.com/zentourist)
 * BLOG:  [http://distributed-frostbite.blogspot.com/](http://distributed-frostbite.blogspot.com/)
 * Add me in LinkedIn:  [http://www.linkedin.com/in/danwanek](http://www.linkedin.com/in/danwanek)
 * Find me on irc.freenode.net in #ruby-lang (zenChild)
 
-## Contributors
-Many thanks to the following for their many patches....
-* Seth Chisamore (https://github.com/schisamo)
+## Maintainers
 * Paul Morton (https://github.com/pmorton)
+* Shawn Neal (https://github.com/sneal)
 
-## Disclaimer
-If you see something that could be done better or would like to help out in the development of this code please feel free to clone the repository and send me patches.
-
-`git clone git://github.com/WinRb/WinRM.git` or add an [issue](https://github.com/WinRb/WinRM/issues) on GitHub
+[Contributors](https://github.com/WinRb/WinRM/graphs/contributors)
