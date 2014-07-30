@@ -104,7 +104,7 @@ module WinRM
         # raise Error
       end
 
-      def send_request(msg)
+      def send_request(msg, retried=false)
         original_length = msg.length
         pad_len, emsg = winrm_encrypt(msg)
         hdr = {
@@ -123,7 +123,17 @@ Content-Type: application/octet-stream\r
 
         r = @httpcli.post(@endpoint, body, hdr)
 
-        winrm_decrypt(r.http_body.content)
+        case r.status
+        when 200
+          winrm_decrypt(r.http_body.content)
+        when 401
+          raise WinRMAuthorizationError, '401 response while sending request' if retried
+          @logger.debug "Got 401 - retrying init_krb"
+          init_krb
+          return send_request(msg, true)
+        else
+          raise WinRMHTTPTransportError, "Bad HTTP response returned from server (#{r.status})."
+        end
       end
 
 
