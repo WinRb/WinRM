@@ -4,13 +4,13 @@ module WinRMSpecs
   def self.stdout(output)
     output[:data].collect do |i|
       i[:stdout]
-    end.join('\r\n').strip
+    end.join('\r\n').gsub(/(\\r\\n)+$/, '')
   end
 
   def self.stderr(output)
     output[:data].collect do |i|
       i[:stderr]
-    end.join('\r\n').strip
+    end.join('\r\n').gsub(/(\\r\\n)+$/, '')
   end
 end
 
