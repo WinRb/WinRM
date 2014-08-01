@@ -45,7 +45,7 @@ module WinRM
           end
           return doc
         else
-          raise WinRMHTTPTransportError, "Bad HTTP response returned from server (#{resp.status})."
+          raise WinRMHTTPTransportError, "Bad HTTP response returned from server", resp.status
         end
       end
 
@@ -134,7 +134,7 @@ Content-Type: application/octet-stream\r
       end
 
 
-      private 
+      private
 
 
       def init_krb
