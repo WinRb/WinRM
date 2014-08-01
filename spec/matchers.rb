@@ -60,3 +60,12 @@ RSpec::Matchers.define :have_exit_code do |expected_exit_code|
     "expected exit code #{expected_exit_code}, but got #{actual_output[:exitcode]}"
   end
 end
+
+RSpec::Matchers.define :be_a_uid do
+  match do |actual|
+    actual != nil && actual.match(/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/)
+  end
+  failure_message do |actual|
+    "expected a uid, but got '#{actual}'"
+  end
+end
