@@ -1,10 +1,11 @@
-describe "Test remote WQL features via WinRM", :integration => true do
+describe "winrm client wql", :integration => true do
   before(:all) do
     @winrm = winrm_connection
   end
 
-  it 'should run a WQL query against Win32_Service' do
-    output = @winrm.run_wql('select Name,Status from Win32_Service')
+  it 'should query Win32_OperatingSystem' do
+    output = @winrm.run_wql('select * from Win32_OperatingSystem')
     expect(output).to_not be_empty
+    expect(output[:win32_operating_system][0][:caption]).to match(/Microsoft Windows/)
   end
 end
