@@ -29,6 +29,14 @@ module WinRM
   class WinRMWSManFault < StandardError; end
 
   # Bad HTTP Transport
-  class WinRMHTTPTransportError < StandardError; end
+  class WinRMHTTPTransportError < StandardError
+    attr_reader :response_code
+
+    def initialize(msg, response_code)
+      @response_code = response_code
+      msg << " (#{response_code})."
+      super(msg)
+    end
+  end
 end # WinRM
 

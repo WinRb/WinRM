@@ -36,8 +36,9 @@ module WinRM
       def send_request(message)
         hdr = {'Content-Type' => 'application/soap+xml;charset=UTF-8', 'Content-Length' => message.length}
         resp = @httpcli.post(@endpoint, message, hdr)
+
         if (resp.status != 200)
-          raise WinRMHTTPTransportError, "Bad HTTP response returned from server (#{resp.status})."
+          raise WinRMHTTPTransportError, "Bad HTTP response returned from server", resp.status
         end
         resp.http_body.content
       end
@@ -132,12 +133,12 @@ Content-Type: application/octet-stream\r
           init_krb
           return send_request(msg, true)
         else
-          raise WinRMHTTPTransportError, "Bad HTTP response returned from server (#{r.status})."
+          raise WinRMHTTPTransportError, "Bad HTTP response returned from server", r.status
         end
       end
 
 
-      private 
+      private
 
 
       def init_krb
