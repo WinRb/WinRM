@@ -45,12 +45,13 @@ module WinRM
       case transport
       when :kerberos
         require 'gssapi'
-        # TODO: check for keys and throw error if missing
         @xfer = HTTP::HttpGSSAPI.new(endpoint, opts[:realm], opts[:service], opts[:keytab], opts)
       when :plaintext
         @xfer = HTTP::HttpPlaintext.new(endpoint, opts[:user], opts[:pass], opts)
       when :ssl
         @xfer = HTTP::HttpSSL.new(endpoint, opts[:user], opts[:pass], opts[:ca_trust_path], opts)
+      else
+        raise "Invalid transport '#{transport}' specified, expected: kerberos, plaintext, ssl."
       end
     end
 
