@@ -21,8 +21,20 @@ require 'kconv' # rubyntlm .0.1.1 doesn't require kconv, workaround for issue #6
 require 'logging'
 
 module WinRM
-  Logging.logger.root.level = :info
-  Logging.logger.root.appenders = Logging.appenders.stdout
+  # Enable logging if it is requested. We do this before
+  # anything else so that we can setup the output before
+  # any logging occurs.
+  if ENV["WINRM_LOG"] && ENV["WINRM_LOG"] != ""
+    begin
+      Logging.logger.root.level = ENV["WINRM_LOG"]
+      Logging.logger.root.appenders = Logging.appenders.stderr
+    rescue ArgumentError
+      # This means that the logging level wasn't valid
+      $stderr.puts "Invalid WINRM_LOG level is set: #{ENV["WINRM_LOG"]}"
+      $stderr.puts ""
+      $stderr.puts "Please use one of the standard log levels: debug, info, warn, or error"
+    end
+  end
 end
 
 require 'winrm/helpers/iso8601_duration'
