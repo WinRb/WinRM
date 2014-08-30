@@ -34,7 +34,7 @@ module WinRM
         resp = @httpcli.post(@endpoint, message, hdr)
 
         if (resp.status != 200)
-          raise WinRMHTTPTransportError, "Bad HTTP response returned from server", resp.status
+          raise WinRMHTTPTransportError.new("Bad HTTP response returned from server", resp.status)
         end
         resp.http_body.content
       end
@@ -121,7 +121,7 @@ Content-Type: application/octet-stream\r
             init_krb
             return send_request(msg, true)
           else
-            raise WinRMHTTPTransportError, "Bad HTTP response returned from server", resp.status
+            raise WinRMHTTPTransportError.new("Bad HTTP response returned from server", resp.status)
           end
         end
 
