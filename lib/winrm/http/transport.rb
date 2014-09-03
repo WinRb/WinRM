@@ -36,13 +36,17 @@ module WinRM
       def send_request(message)
         hdr = {'Content-Type' => 'application/soap+xml;charset=UTF-8', 'Content-Length' => message.length}
         resp = @httpcli.post(@endpoint, message, hdr)
-        if(resp.status == 200)
+        doc=nil
+        if(resp.respond_to?('http_body') && resp.http_body.content.length > 0)
           # Version 1.1 of WinRM adds the namespaces in the document instead of the envelope so we have to
           # add them ourselves here. This should have no affect version 2.
           doc = Nokogiri::XML(resp.http_body.content)
           doc.collect_namespaces.each_pair do |k,v|
             doc.root.add_namespace((k.split(/:/).last),v) unless doc.namespaces.has_key?(k)
           end
+        end
+
+        if resp.status == 200 || (!doc.nil? && doc/"//#{NS_SOAP_ENV}:Body/#{NS_SOAP_ENV}:Fault/*")
           return doc
         else
           raise WinRMHTTPTransportError, "Bad HTTP response returned from server", resp.status
