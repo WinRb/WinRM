@@ -13,26 +13,32 @@
 # limitations under the License.
 
 module WinRM
-  # Generic WinRM SOAP Error
-  class WinRMWebServiceError < StandardError
-  end
+
+  # WinRM base class for errors
+  class WinRMError < StandardError; end
 
   # Authorization Error
-  class WinRMAuthorizationError < StandardError
-  end
+  class WinRMAuthorizationError < WinRMError; end
 
   # A Fault returned in the SOAP response. The XML node is a WSManFault
-  class WinRMWSManFault < StandardError; end
+  class WinRMWSManFault < WinRMError
+    attr_reader :fault_code
+    attr_reader :fault_text
 
-  # Bad HTTP Transport
-  class WinRMHTTPTransportError < StandardError
-    attr_reader :response_code
-
-    def initialize(msg, response_code)
-      @response_code = response_code
-      msg << " (#{response_code})."
-      super(msg)
+    def initialize(fault_text, fault_code)
+      @fault_text = fault_text
+      @fault_code = fault_code
+      super("[WSMAN ERROR CODE: #{fault_code}]: #{fault_text}")
     end
   end
-end # WinRM
 
+  # non-200 response without a SOAP fault
+  class WinRMHTTPTransportError < WinRMError
+    attr_reader :status_code
+
+    def initialize(msg, status_code)
+      @status_code = status_code
+      super(msg + " (#{status_code}).")
+    end
+  end
+end
