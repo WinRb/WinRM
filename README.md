@@ -8,6 +8,9 @@ not limitted to, running batch scripts, powershell scripts and fetching WMI
 variables.  For more information on WinRM, please visit Microsoft's WinRM
 site: http://msdn.microsoft.com/en-us/library/aa384426(v=VS.85).aspx
 
+## Supported WinRM Versions
+WinRM 1.1 is supported, however 2.0 and higher is recommended. [See MSDN](http://technet.microsoft.com/en-us/library/ff520073(v=ws.10).aspx) for information about WinRM versions and supported operating systems.
+
 ## Install
 `gem install -r winrm` then on the server `winrm quickconfig` as admin
 
