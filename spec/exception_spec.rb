@@ -21,7 +21,7 @@ describe "Exceptions", :unit => true do
     let (:error) { WinRM::WinRMWSManFault.new("fault text", 42) }
 
     it 'exposes the fault text as an attribute' do
-      expect(error.fault_text).to eq('fault text')
+      expect(error.fault_description).to eq('fault text')
     end
 
     it 'exposes the fault code as an attribute' do

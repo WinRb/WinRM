@@ -23,12 +23,12 @@ module WinRM
   # A Fault returned in the SOAP response. The XML node is a WSManFault
   class WinRMWSManFault < WinRMError
     attr_reader :fault_code
-    attr_reader :fault_text
+    attr_reader :fault_description
 
-    def initialize(fault_text, fault_code)
-      @fault_text = fault_text
+    def initialize(fault_description, fault_code)
+      @fault_description = fault_description
       @fault_code = fault_code
-      super("[WSMAN ERROR CODE: #{fault_code}]: #{fault_text}")
+      super("[WSMAN ERROR CODE: #{fault_code}]: #{fault_description}")
     end
   end
 
