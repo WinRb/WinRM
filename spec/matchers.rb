@@ -63,7 +63,8 @@ end
 
 RSpec::Matchers.define :be_a_uid do
   match do |actual|
-    actual != nil && actual.match(/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/)
+    # WinRM1.1 returns uuid's prefixed with 'uuid:' where as later versions do not
+    actual != nil && actual.match(/^(uuid:)*\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/)
   end
   failure_message do |actual|
     "expected a uid, but got '#{actual}'"

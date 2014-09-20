@@ -6,6 +6,8 @@ describe "winrm client wql", :integration => true do
   it 'should query Win32_OperatingSystem' do
     output = @winrm.run_wql('select * from Win32_OperatingSystem')
     expect(output).to_not be_empty
-    expect(output[:win32_operating_system][0][:caption]).to match(/Microsoft Windows/)
+    output_caption = output[:win32_operating_system][0][:caption]
+    expect(output_caption).to include('Microsoft')
+    expect(output_caption).to include('Windows')
   end
 end
