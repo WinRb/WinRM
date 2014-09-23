@@ -384,21 +384,9 @@ module WinRM
     end
 
     def send_message(message)
-      log_xml(message)
-      resp_doc = @xfer.send_request(message)
-      log_xml(resp_doc)
-      resp_doc
+      @xfer.send_request(message)
     end
-
-    def log_xml(message)
-      return unless @logger.debug?
-      message = REXML::Document.new(message) if message.is_a? String
-
-      formatter = REXML::Formatters::Pretty.new(2)
-      formatter.compact = true
-      formatter.write(message, @logger)
-      @logger.debug("\n")
-    end
+    
 
     # Helper methods for SOAP Headers
 

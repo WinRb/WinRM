@@ -37,8 +37,10 @@ module WinRM
       # @param [String] The XML SOAP message
       # @returns [REXML::Document] The parsed response body
       def send_request(message)
+        log_soap_message(message)
         hdr = {'Content-Type' => 'application/soap+xml;charset=UTF-8', 'Content-Length' => message.length}
         resp = @httpcli.post(@endpoint, message, hdr)
+        log_soap_message(resp.http_body.content)
         handler = WinRM::ResponseHandler.new(resp.http_body.content, resp.status)
         handler.parse_to_xml()
       end
@@ -60,6 +62,19 @@ module WinRM
         @httpcli.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
       end
 
+      protected
+
+      def log_soap_message(message)
+        return unless @logger.debug?
+        
+        xml_msg = REXML::Document.new(message)
+        formatter = REXML::Formatters::Pretty.new(2)
+        formatter.compact = true
+        formatter.write(xml_msg, @logger)
+        @logger.debug("\n")
+      rescue StandardError => e
+        @logger.debug("Couldn't log SOAP request/response: #{e.message} - #{message}")
+      end
     end
 
 
@@ -106,9 +121,10 @@ module WinRM
       # @param [String] The XML SOAP message
       # @param [Boolean] Has the request been retried already? Defaults to false.
       # @returns [REXML::Document] The parsed response body
-      def send_request(msg, retried=false)
-        original_length = msg.length
-        pad_len, emsg = winrm_encrypt(msg)
+      def send_request(message, retried=false)
+        log_soap_message(message)
+        original_length = message.length
+        pad_len, emsg = winrm_encrypt(message)
         hdr = {
           "Connection" => "Keep-Alive",
           "Content-Type" => "multipart/encrypted;protocol=\"application/HTTP-Kerberos-session-encrypted\";boundary=\"Encrypted Boundary\""
@@ -124,11 +140,12 @@ Content-Type: application/octet-stream\r
         EOF
 
         resp = @httpcli.post(@endpoint, body, hdr)
+        log_soap_message(resp.http_body.content)
 
         if resp.status == 401 && !retried
           @logger.debug "Got 401 - reinitializing Kerberos and retrying one more time"
           init_krb
-          return send_request(msg, true)
+          return send_request(message, true)
         end
 
         handler = WinRM::ResponseHandler.new(winrm_decrypt(resp.http_body.content), resp.status)
@@ -137,7 +154,6 @@ Content-Type: application/octet-stream\r
 
 
       private
-
 
       def init_krb
         @logger.debug "Initializing Kerberos for #{@service}"
