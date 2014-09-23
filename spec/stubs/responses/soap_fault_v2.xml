@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<s:Envelope xml:lang="en-US" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:e="http://schemas.xmlsoap.org/ws/2004/08/eventing" xmlns:n="http://schemas.xmlsoap.org/ws/2004/09/enumeration" xmlns:p="http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd" xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:w="http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd" xmlns:x="http://schemas.xmlsoap.org/ws/2004/09/transfer">
+  <s:Header>
+    <a:Action>http://schemas.xmlsoap.org/ws/2004/09/enumeration/fault</a:Action>
+    <a:MessageID>uuid:CC816664-896D-46C7-9227-AE6E1231CE49</a:MessageID>
+    <a:To>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</a:To>
+    <a:RelatesTo>uuid:0CB1C49A-5054-4C12-AF30-FC60BE995DD9</a:RelatesTo>
+  </s:Header>
+  <s:Body>
+    <s:Fault>
+      <s:Code>
+        <s:Value>s:Sender</s:Value>
+        <s:Subcode>
+          <s:Value>n:CannotProcessFilter</s:Value>
+        </s:Subcode>
+      </s:Code>
+      <s:Reason>
+        <s:Text xml:lang="en-US">The data source could not process the filter. The filter might be missing or it might be invalid. Change the filter and try the request again.  </s:Text>
+      </s:Reason>
+      <s:Detail>
+        <f:WSManFault Code="2150858778" Machine="localhost" xmlns:f="http://schemas.microsoft.com/wbem/wsman/1/wsmanfault">
+          <f:Message>
+            <f:ProviderFault path="%systemroot%\system32\WsmWmiPl.dll" provider="WMI Provider">
+              <f:WSManFault Code="2150858778" Machine="vagrant-2008R2" xmlns:f="http://schemas.microsoft.com/wbem/wsman/1/wsmanfault">
+                <f:Message>The specified class does not exist in the given namespace. </f:Message>
+              </f:WSManFault>
+              <f:ExtendedError>
+                <p:__ExtendedStatus xmlns:cim="http://schemas.dmtf.org/wbem/wscim/1/common" xmlns:p="http://schemas.microsoft.com/wbem/wsman/1/wmi/root/cimv2/__ExtendedStatus" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="p:__ExtendedStatus_Type">
+                  <p:Description xsi:nil="true"/>
+                  <p:Operation>ExecQuery</p:Operation>
+                  <p:ParameterInfo>Select * from Win32_Processa where name=&quot;sshd.exe&quot;</p:ParameterInfo>
+                  <p:ProviderName>WinMgmt</p:ProviderName>
+                  <p:StatusCode xsi:nil="true"/>
+                </p:__ExtendedStatus>
+              </f:ExtendedError>
+            </f:ProviderFault>
+          </f:Message>
+        </f:WSManFault>
+      </s:Detail>
+    </s:Fault>
+  </s:Body>
+</s:Envelope>
