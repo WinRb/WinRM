@@ -1,4 +1,4 @@
-require 'winrm/response_handler'
+require 'winrm/http/response_handler'
 
 describe 'response handler', :unit => true do
 

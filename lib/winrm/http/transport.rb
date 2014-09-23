@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require_relative '../response_handler'
+require_relative 'response_handler'
 
 module WinRM
   module HTTP
