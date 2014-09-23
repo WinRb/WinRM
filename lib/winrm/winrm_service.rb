@@ -385,17 +385,8 @@ module WinRM
 
     def send_message(message)
       log_xml(message)
-      resp = @xfer.send_request(message)
-      resp_doc = REXML::Document.new(resp)
+      resp_doc = @xfer.send_request(message)
       log_xml(resp_doc)
-
-      errors = REXML::XPath.match(resp_doc, "//#{NS_SOAP_ENV}:Body/#{NS_SOAP_ENV}:Fault/*")
-      if !errors.empty?
-        @logger.debug("Found SOAP fault: #{errors.inspect}")
-        fault = REXML::XPath.first(resp_doc, "//#{NS_WSMAN_FAULT}:WSManFault")
-        raise WinRMWSManFault, "[WSMAN ERROR CODE: #{fault.attributes['Code']}]: #{fault.text}"
-      end
-
       resp_doc
     end
 

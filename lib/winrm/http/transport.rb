@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require_relative '../response_handler'
+
 module WinRM
   module HTTP
 
@@ -29,14 +31,16 @@ module WinRM
         @logger = Logging.logger[self]
       end
 
+      # Sends the SOAP payload to the WinRM service and returns the service's
+      # SOAP response. If an error occurrs an appropriate error is raised.
+      #
+      # @param [String] The XML SOAP message
+      # @returns [REXML::Document] The parsed response body
       def send_request(message)
         hdr = {'Content-Type' => 'application/soap+xml;charset=UTF-8', 'Content-Length' => message.length}
         resp = @httpcli.post(@endpoint, message, hdr)
-
-        if (resp.status != 200)
-          raise WinRMHTTPTransportError.new("Bad HTTP response returned from server", resp.status)
-        end
-        resp.http_body.content
+        handler = WinRM::ResponseHandler.new(resp.http_body.content, resp.status)
+        handler.parse_to_xml()
       end
 
       # We'll need this to force basic authentication if desired
@@ -96,6 +100,12 @@ module WinRM
         init_krb
       end
 
+      # Sends the SOAP payload to the WinRM service and returns the service's
+      # SOAP response. If an error occurrs an appropriate error is raised.
+      #
+      # @param [String] The XML SOAP message
+      # @param [Boolean] Has the request been retried already? Defaults to false.
+      # @returns [REXML::Document] The parsed response body
       def send_request(msg, retried=false)
         original_length = msg.length
         pad_len, emsg = winrm_encrypt(msg)
@@ -115,17 +125,14 @@ Content-Type: application/octet-stream\r
 
         resp = @httpcli.post(@endpoint, body, hdr)
 
-        if (resp.status != 200)
-          if resp.status == 401 && !retried
-            @logger.debug "Got 401 - reinitializing Kerberos and retrying one more time"
-            init_krb
-            return send_request(msg, true)
-          else
-            raise WinRMHTTPTransportError.new("Bad HTTP response returned from server", resp.status)
-          end
+        if resp.status == 401 && !retried
+          @logger.debug "Got 401 - reinitializing Kerberos and retrying one more time"
+          init_krb
+          return send_request(msg, true)
         end
 
-        winrm_decrypt(resp.http_body.content)
+        handler = WinRM::ResponseHandler.new(winrm_decrypt(resp.http_body.content), resp.status)
+        handler.parse_to_xml()
       end
 
 
