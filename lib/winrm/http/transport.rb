@@ -119,9 +119,29 @@ module WinRM
       # SOAP response. If an error occurrs an appropriate error is raised.
       #
       # @param [String] The XML SOAP message
-      # @param [Boolean] Has the request been retried already? Defaults to false.
       # @returns [REXML::Document] The parsed response body
-      def send_request(message, retried=false)
+      def send_request(message)
+        resp = send_kerberos_request(message)
+
+        if resp.status == 401
+          @logger.debug "Got 401 - reinitializing Kerberos and retrying one more time"
+          init_krb
+          resp = send_kerberos_request(message)
+        end
+
+        handler = WinRM::ResponseHandler.new(winrm_decrypt(resp.http_body.content), resp.status)
+        handler.parse_to_xml()
+      end
+
+
+      private
+
+      # Sends the SOAP payload to the WinRM service and returns the service's
+      # HTTP response.
+      #
+      # @param [String] The XML SOAP message
+      # @returns [Object] The HTTP response object
+      def send_kerberos_request(message)
         log_soap_message(message)
         original_length = message.length
         pad_len, emsg = winrm_encrypt(message)
@@ -141,19 +161,8 @@ Content-Type: application/octet-stream\r
 
         resp = @httpcli.post(@endpoint, body, hdr)
         log_soap_message(resp.http_body.content)
-
-        if resp.status == 401 && !retried
-          @logger.debug "Got 401 - reinitializing Kerberos and retrying one more time"
-          init_krb
-          return send_request(message, true)
-        end
-
-        handler = WinRM::ResponseHandler.new(winrm_decrypt(resp.http_body.content), resp.status)
-        handler.parse_to_xml()
+        resp
       end
-
-
-      private
 
       def init_krb
         @logger.debug "Initializing Kerberos for #{@service}"
