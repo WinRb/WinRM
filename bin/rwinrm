@@ -79,10 +79,11 @@ def repl(options)
       client.write_stdin(shell_id, command_id, "#{buf}\r\n")
     end
   end
-
-rescue => e
+rescue Interrupt
+  # ctrl-c
+rescue StandardError => e
   puts e.message
-  exit 100
+  exit 1
 end
 
 repl(parse_options())
