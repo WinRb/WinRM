@@ -81,7 +81,7 @@ module WinRM
     # @option shell_opts [Hash] :env_vars environment variables to set for the shell. For instance;
     #   :env_vars => {:myvar1 => 'val1', :myvar2 => 'var2'}
     # @return [String] The ShellId from the SOAP response.  This is our open shell instance on the remote machine.
-    def open_shell(shell_opts = {})
+    def open_shell(shell_opts = {}, &block)
       i_stream = shell_opts.has_key?(:i_stream) ? shell_opts[:i_stream] : 'stdin'
       o_stream = shell_opts.has_key?(:o_stream) ? shell_opts[:o_stream] : 'stdout stderr'
       codepage = shell_opts.has_key?(:codepage) ? shell_opts[:codepage] : 437
@@ -113,7 +113,16 @@ module WinRM
 
       resp_doc = send_message(builder.target!)
       shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
-      shell_id
+
+      if block_given?
+        begin
+          yield shell_id
+        ensure
+          close_shell(shell_id)
+        end
+      else
+        shell_id
+      end
     end
 
     # Run a command on a machine with an open shell
@@ -121,7 +130,7 @@ module WinRM
     # @param [String] command The command to run on the remote machine
     # @param [Array<String>] arguments An array of arguments for this command
     # @return [String] The CommandId from the SOAP response.  This is the ID we need to query in order to get output.
-    def run_command(shell_id, command, arguments = [], cmd_opts = {})
+    def run_command(shell_id, command, arguments = [], cmd_opts = {}, &block)
       consolemode = cmd_opts.has_key?(:console_mode_stdin) ? cmd_opts[:console_mode_stdin] : 'TRUE'
       skipcmd     = cmd_opts.has_key?(:skip_cmd_shell) ? cmd_opts[:skip_cmd_shell] : 'FALSE'
 
@@ -147,7 +156,16 @@ module WinRM
 
       resp_doc = send_message(xml)
       command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
-      command_id
+      
+      if block_given?
+        begin
+          yield command_id
+        ensure
+          cleanup_command(shell_id, command_id)
+        end
+      else
+        command_id
+      end
     end
 
     def write_stdin(shell_id, command_id, stdin)
@@ -261,13 +279,15 @@ module WinRM
     # Run a CMD command
     # @param [String] command The command to run on the remote system
     # @param [Array <String>] arguments arguments to the command
+    # @param [String] an existing and open shell id to reuse
     # @return [Hash] :stdout and :stderr
     def run_cmd(command, arguments = [], &block)
-      shell_id = open_shell
-      command_id =  run_command(shell_id, command, arguments)
-      command_output = get_command_output(shell_id, command_id, &block)
-      cleanup_command(shell_id, command_id)
-      close_shell(shell_id)
+      command_output = nil
+      open_shell do |shell_id|
+        run_command(shell_id, command, arguments) do |command_id|
+          command_output = get_command_output(shell_id, command_id, &block)
+        end
+      end
       command_output
     end
     alias :cmd :run_cmd
@@ -275,18 +295,14 @@ module WinRM
 
     # Run a Powershell script that resides on the local box.
     # @param [IO,String] script_file an IO reference for reading the Powershell script or the actual file contents
+    # @param [String] an existing and open shell id to reuse
     # @return [Hash] :stdout and :stderr
     def run_powershell_script(script_file, &block)
       # if an IO object is passed read it..otherwise assume the contents of the file were passed
       script = script_file.kind_of?(IO) ? script_file.read : script_file
       script = script.encode('UTF-16LE', 'UTF-8')
       script = Base64.strict_encode64(script)
-      shell_id = open_shell
-      command_id = run_command(shell_id, "powershell -encodedCommand #{script}")
-      command_output = get_command_output(shell_id, command_id, &block)
-      cleanup_command(shell_id, command_id)
-      close_shell(shell_id)
-      command_output
+      run_cmd("powershell -encodedCommand #{script}", &block)
     end
     alias :powershell :run_powershell_script
 
