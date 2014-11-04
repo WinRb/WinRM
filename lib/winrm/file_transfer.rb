@@ -17,8 +17,12 @@ module WinRM
     # @param [Array<String>] One or more paths that will be copied to the remote path. These can be files or directories to be deeply copied
     # @param [String] The directory on the remote endpoint to copy the local items to. This path may contain powershell style environment variables
     # @option opts [String] options to be used for the copy. Currently only :quiet is supported to suppress the progress bar
+    # @yield [Fixnum] Number of bytes copied in current payload sent to the winrm endpoint
+    # @yield [Fixnum] The total number of bytes to be copied
+    # @yield [String] Path of file being copied
+    # @yield [String] Target path on the winrm endpoint
     # @return [Fixnum] The total number of bytes copied
-    def self.upload(service, local_path, remote_path, opts = {})
+    def self.upload(service, local_path, remote_path, opts = {}, &block)
       file = nil
       local_path = [local_path] if local_path.is_a? String
 
@@ -31,7 +35,7 @@ module WinRM
         end
       end
 
-      file.upload
+      file.upload(&block)
     ensure
       file.close unless file.nil?
     end
