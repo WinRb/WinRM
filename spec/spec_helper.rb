@@ -2,6 +2,7 @@ require 'rubygems'
 require 'bundler/setup'
 require 'winrm'
 require 'json'
+require_relative 'matchers'
 
 module ConnectionHelper
 
