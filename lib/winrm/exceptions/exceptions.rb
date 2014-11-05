@@ -20,7 +20,11 @@ module WinRM
   # Authorization Error
   class WinRMAuthorizationError < WinRMError; end
 
-  class WinRMUploadFailed < WinRMError; end
+  # Error that occurs when a file upload fails
+  class WinRMUploadError < WinRMError; end
+
+  # Error that occurs when a file download fails
+  class WinRMDownloadError < WinRMError; end
 
   # A Fault returned in the SOAP response. The XML node is a WSManFault
   class WinRMWSManFault < WinRMError

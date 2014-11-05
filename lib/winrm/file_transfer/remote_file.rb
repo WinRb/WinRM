@@ -25,8 +25,8 @@ module WinRM
     end
 
     def upload(&block)
-      raise WinRMUploadFailed.new("This RemoteFile is closed.") if closed
-      raise WinRMUploadFailed.new("Cannot find path: '#{local_path}'") unless File.exist?(local_path)
+      raise WinRMUploadError.new("This RemoteFile is closed.") if closed
+      raise WinRMUploadError.new("Cannot find path: '#{local_path}'") unless File.exist?(local_path)
 
       @remote_path, should_upload = powershell_batch do | builder |
         builder << resolve_remote_command
@@ -170,7 +170,7 @@ module WinRM
       end
 
       if !command_output[:exitcode].zero? or !err_stream.empty?
-        raise WinRMUploadFailed,
+        raise WinRMUploadError,
           :from => local_path,
           :to => remote_path,
           :message => command_output.inspect

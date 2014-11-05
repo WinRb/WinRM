@@ -42,10 +42,10 @@ describe WinRM::RemoteZipFile, :integration => true do
   end
 
   context 'Upload a bad path' do
-    it 'raises WinRMUploadFailed' do
+    it 'raises WinRMUploadError' do
       expect {
         subject.add_file('c:/some/bad/path')
-        }.to raise_error(WinRM::WinRMUploadFailed)
+        }.to raise_error(WinRM::WinRMUploadError)
     end
   end
 end
