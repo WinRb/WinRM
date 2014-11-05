@@ -5,12 +5,12 @@ module WinRM
 
     attr_reader :archive
 
-    def initialize(service, remote_path, opts = {})
+    def initialize(service, remote_path)
       @logger = Logging.logger[self]
       @archive = create_archive(remote_path)
       @unzip_remote_path = remote_path
       remote_path = "$env:temp/WinRM_file_transfer"
-      super(service, @archive, remote_path, opts)
+      super(service, @archive, remote_path)
     end
 
     def add_file(path)
