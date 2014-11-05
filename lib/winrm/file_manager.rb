@@ -11,6 +11,17 @@ module WinRM
       @service = service
     end
 
+    # Checks to see if the given path exists on the target file system.
+    # @param [String] The full path to the directory or file
+    # @return [Boolean] True if the file/dir exists, otherwise false.
+    def exists?(path)
+      script = <<-EOH
+        $path = [System.IO.Path]::GetFullPath('#{path}')
+        if (Test-Path $path) { exit 0 } else { exit 1 }")
+      EOH
+      @service.powershell(script)[:exitcode] == 0
+    end
+
     # Upload one or more local files and directories to a remote directory
     # @example copy a single directory to a winrm endpoint
     #
