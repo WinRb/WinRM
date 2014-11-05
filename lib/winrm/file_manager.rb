@@ -11,6 +11,20 @@ module WinRM
       @service = service
     end
 
+    # Downloads the specified remote file to the specified local path
+    # @param [String] The full path on the remote machine
+    # @param [String] The full path to write the file to locally
+    def download(remote_path, local_path)
+      script = <<-EOH
+        $path = [System.IO.Path]::GetFullPath('#{remote_path}')
+        [System.convert]::ToBase64String([System.IO.File]::ReadAllBytes($path))
+      EOH
+      output = @service.powershell(script)
+      contents = output[:data].map!{|line| line[:stdout]}.join.gsub("\\n\\r", '')
+      out = Base64.decode64(contents)
+      IO.binwrite(local_path, out)
+    end
+
     # Checks to see if the given path exists on the target file system.
     # @param [String] The full path to the directory or file
     # @return [Boolean] True if the file/dir exists, otherwise false.
