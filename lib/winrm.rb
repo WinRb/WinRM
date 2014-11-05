@@ -35,4 +35,4 @@ end
 
 require 'winrm/helpers/iso8601_duration'
 require 'winrm/soap_provider'
-require 'winrm/file_transfer'
+require 'winrm/file_manager'
