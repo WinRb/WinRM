@@ -17,80 +17,45 @@
 $:.push File.expand_path('../../lib', __FILE__)
 
 require 'readline'
-require 'optparse'
+require 'io/console'
 require 'winrm'
+
+def help_msg
+  puts "Usage: rwinrm user@host"
+  puts ""
+end
 
 def parse_options
   options = {}
+  raise "Missing required options" unless ARGV.length == 1
+  
+  m = /^(?<user>\w+)@{1}(?<host>[a-zA-Z0-9\.]+)(?<port>:[0-9]+)?/.match(ARGV[0])
+  raise "#{ARGV[0]} is an invalid host" unless m
+  options[:user] = m[:user]
+  options[:endpoint] = "http://#{m[:host]}#{m[:port] || ':5985'}/wsman"
+
+  # Get the password
+  print "Password: "
+  options[:pass] = STDIN.noecho(&:gets).chomp
+  puts
+
+  # Set some defaults required by WinRM WS
   options[:auth_type] = :plaintext
   options[:basic_auth_only] = true
-  options[:mode] = :repl
-
-  optparse = OptionParser.new do |opts|
-    opts.banner = "Usage: rwinrm [command] [local_path] [remote_path] endpoint [options]"
-    opts.separator  ""
-    opts.separator  "Commands"
-    opts.separator  "     repl(default)"
-    opts.separator  "     upload"
-    opts.separator  ""
-    opts.separator  "Options"
-
-    opts.on('-u', '--user username', String, 'WinRM user name') do |v|
-      options[:user] = v
-    end
-
-    opts.on('-p', '--pass password', String, 'WinRM user password') do |v|
-      options[:pass] = v
-    end
-
-    opts.on('-h', '--help', 'Display this screen') do
-      puts optparse
-      exit
-    end
-  end
-
-  optparse.parse!
-
-  if ARGV[0] && ARGV[0].downcase !~ /\A#{URI::regexp(['http', 'https'])}\z/
-    options[:mode] = ARGV.shift.downcase.to_sym
-
-    case options[:mode]
-    when :upload
-      options[:local_path] = ARGV.shift
-      options[:remote_path] = ARGV.shift
-
-      raise OptionParser::MissingArgument.new(:local_path) if options[:local_path].nil?
-      raise OptionParser::MissingArgument.new(:remote_path) if options[:remote_path].nil?
-    when :repl
-    else
-      raise OptionParser::InvalidArgument.new(options[:mode])
-    end
-  end
-  options[:endpoint] = ARGV.shift
-
-  raise OptionParser::MissingArgument.new(:endpoint) if options[:endpoint].nil?
 
   options
-rescue OptionParser::InvalidOption, OptionParser::MissingArgument, OptionParser::InvalidArgument
-  puts $!.message
-  puts optparse
+rescue StandardError => e
+  puts e.message
+  help_msg
   exit 1
 end
 
-def winrm_client(options)
-  WinRM::WinRMWebService.new(
-      options[:endpoint],
-      options[:auth_type].to_sym,
-      options)
-end
+def repl(options)
+  client = WinRM::WinRMWebService.new(
+    options[:endpoint],
+    options[:auth_type].to_sym,
+    options)
 
-def upload(client, options)
-  bytes = WinRM::FileTransfer.upload(client, options[:local_path], options[:remote_path])
-  shell_id = client.open_shell()
-  puts "#{bytes} total bytes transfered"
-end
-
-def repl(client, options)
   shell_id = client.open_shell()
   command_id = client.run_command(shell_id, 'cmd')
 
@@ -111,17 +76,14 @@ def repl(client, options)
       client.write_stdin(shell_id, command_id, "#{buf}\r\n")
     end
   end
-end
-
-def run(options)
-  client = winrm_client(options)
-  method(options[:mode]).call(client, options)
-  exit 0
 rescue Interrupt
   # ctrl-c
+rescue WinRM::WinRMAuthorizationError
+  puts "Authentication failed, bad user name or password"
+  exit 1
 rescue StandardError => e
   puts e.message
   exit 1
 end
 
-run(parse_options())
+repl(parse_options())
