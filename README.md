@@ -81,9 +81,20 @@ Or an array of several files and/or directories can be included:
 ```ruby
 WinRM::FileTransfer.upload(client, ['c:/dev/file1.txt','c:/dev/dir1'], '$env:AppData')
 ```
-**Note**:The winrm protocol poseses some limitations that can adversely affect the performance of large file transfers. By default, the above upload call will display a progress bar to indicate the progress of a file transfer currently underway. This progress bar can be suppressed by setting the `:quiet` option to `true`:
+
+#### Suppressing the progress bar
+The winrm protocol posesses some limitations that can adversely affect the performance of large file transfers. By default, the above upload call will display a progress bar to indicate the progress of a file transfer currently underway. This progress bar can be suppressed by setting the `:quiet` option to `true`:
 ```ruby
 WinRM::FileTransfer.upload(client, 'c:/dev/my_dir', '$env:AppData', :quiet => true)
+```
+
+#### Handling progress events
+If you want to implemnt your own custom progress handling, you can pass a code block and use the proggress data that `upload` yields to this block:
+```ruby
+WinRM::FileTransfer.upload(client, 'c:/dev/my_dir', '$env:AppData', :quiet => true) do |bytes_copied, total_bytes, local_path, remote_path|
+  bar = ProgressBar.create(:total => total_bytes.count) unless bar.nil?
+  bar.progress += bytes_copied
+end
 ```
 
 ## Troubleshooting

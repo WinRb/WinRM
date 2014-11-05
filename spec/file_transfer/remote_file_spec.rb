@@ -15,6 +15,15 @@ describe WinRM::RemoteFile, :integration => true do
       expect(subject.upload).to be > 0
       expect(File.exist?(File.join(destination, File.basename(this_file)))).to be_truthy
     end
+    it 'yields progress data' do
+      total = subject.upload do |bytes_copied, total_bytes, local_path, remote_path|
+        expect(total_bytes).to be > 0
+        expect(bytes_copied).to eq(total_bytes)
+        expect(local_path).to eq(subject.local_path)
+        expect(remote_path).to eq(subject.remote_path)
+      end
+      expect(total).to be > 0
+    end
     it 'copies the exact file content' do
       expect(subject.upload).to be > 0
       expect(File.read(File.join(destination, File.basename(this_file)))).to eq(File.read(this_file))
