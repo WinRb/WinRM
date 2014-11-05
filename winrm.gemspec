@@ -24,7 +24,7 @@ Gem::Specification.new do |s|
   s.extra_rdoc_files = %w(README.md LICENSE)
 
   s.bindir = "bin"
-  s.executables   = ['rwinrm']
+  s.executables   = ['rwinrm', 'rwinrmcp']
   s.required_ruby_version	= '>= 1.9.0'
   s.add_runtime_dependency  'gssapi', '~> 1.0'
   s.add_runtime_dependency  'httpclient', '~> 2.2', '>= 2.2.0.2'
