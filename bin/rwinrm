@@ -65,6 +65,7 @@ def repl(options)
       STDERR.write stderr
     end
   end
+  read_thread.abort_on_exception = true
 
   while buf = Readline.readline('', true)
     if buf =~ /^exit/
