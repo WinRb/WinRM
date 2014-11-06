@@ -1,6 +1,5 @@
 require 'io/console'
 require 'json'
-require 'ruby-progressbar'
 
 module WinRM
   class RemoteFile
