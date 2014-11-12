@@ -16,23 +16,26 @@
 
 $:.push File.expand_path('../../lib', __FILE__)
 
-require 'readline'
 require 'io/console'
 require 'winrm'
 
 def help_msg
-  puts "Usage: rwinrm user@host"
+  puts "Usage: rwinrmcp sourcefile user@host:directory/targetfile"
   puts ""
 end
 
 def parse_options
   options = {}
-  raise "Missing required options" unless ARGV.length == 1
+  raise "Missing required options" unless ARGV.length == 2
   
-  m = /^(?<user>\w+)@{1}(?<host>[a-zA-Z0-9\.]+)(?<port>:[0-9]+)?/.match(ARGV[0])
-  raise "#{ARGV[0]} is an invalid host" unless m
+  options[:source_path] = ARGV[0]
+  raise "Cannot find source file: #{options[:source_path]}" unless File.exists?(options[:source_path])
+
+  m = /^(?<user>\w+)@{1}(?<host>[a-zA-Z0-9\.]+)(?<port>:[0-9]+)?:{1}(?<file>.+)/.match(ARGV[1])
+  raise "#{ARGV[1]} is an invalid destination" unless m
   options[:user] = m[:user]
   options[:endpoint] = "http://#{m[:host]}#{m[:port] || ':5985'}/wsman"
+  options[:dest_path] = m[:file]
 
   # Get the password
   print "Password: "
@@ -50,33 +53,18 @@ rescue StandardError => e
   exit 1
 end
 
-def repl(options)
-  client = WinRM::WinRMWebService.new(
+def file_manager(options)
+  service = WinRM::WinRMWebService.new(
     options[:endpoint],
     options[:auth_type].to_sym,
     options)
+  WinRM::FileManager.new(service)
+end
 
-  shell_id = client.open_shell()
-  command_id = client.run_command(shell_id, 'cmd')
-
-  read_thread = Thread.new do
-    client.get_command_output(shell_id, command_id) do |stdout, stderr|
-      STDOUT.write stdout
-      STDERR.write stderr
-    end
-  end
-  read_thread.abort_on_exception = true
-
-  while buf = Readline.readline('', true)
-    if buf =~ /^exit/
-      read_thread.exit()
-      client.cleanup_command(shell_id, command_id)
-      client.close_shell(shell_id)
-      exit 0
-    else
-      client.write_stdin(shell_id, command_id, "#{buf}\r\n")
-    end
-  end
+def run(options)
+  bytes = file_manager(options).upload(options[:source_path], options[:dest_path])
+  puts "#{bytes} total bytes transfered"
+  exit 0
 rescue Interrupt
   # ctrl-c
 rescue WinRM::WinRMAuthorizationError
@@ -87,4 +75,4 @@ rescue StandardError => e
   exit 1
 end
 
-repl(parse_options())
+run(parse_options())

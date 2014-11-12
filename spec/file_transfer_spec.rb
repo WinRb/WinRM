@@ -1,20 +1,21 @@
-describe WinRM::FileTransfer, :unit => true do
-  
+describe WinRM::FileManager, :unit => true do
   let(:this_file) { __FILE__ }
-  let(:remote_file) {double('RemoteFile')}
-  let(:remote_zip_file) {double('RemoteZipFile')}
+  let(:remote_file) { double('RemoteFile') }
+  let(:remote_zip_file) { double('RemoteZipFile') }
+  let(:service) { double('service') }
+
+  subject { WinRM::FileManager.new(service) }
   
-  before {
+  before(:each) do
     allow(WinRM::RemoteFile).to receive(:new).and_return(remote_file)
     allow(WinRM::RemoteZipFile).to receive(:new).and_return(remote_zip_file)
-  }
-  subject {WinRM::FileTransfer}
+  end
 
   context 'copying a single file' do
     it 'uploads a remote_file' do
       expect(remote_file).to receive(:upload)
       expect(remote_file).to receive(:close)
-      subject.upload("service", this_file, "c:/directory")
+      subject.upload(this_file, "c:/directory")
     end
   end
 
@@ -23,7 +24,7 @@ describe WinRM::FileTransfer, :unit => true do
       expect(remote_zip_file).to receive(:add_file).with(File.dirname(this_file))
       expect(remote_zip_file).to receive(:upload)
       expect(remote_zip_file).to receive(:close)
-      subject.upload("service", File.dirname(this_file), "c:/directory")
+      subject.upload(File.dirname(this_file), "c:/directory")
     end
   end
 
@@ -33,7 +34,7 @@ describe WinRM::FileTransfer, :unit => true do
       expect(remote_zip_file).to receive(:add_file).with(this_file)
       expect(remote_zip_file).to receive(:add_file).with(File.dirname(this_file))
       expect(remote_zip_file).to receive(:close)
-      subject.upload("service", [File.dirname(this_file), this_file], "c:/directory")
+      subject.upload([File.dirname(this_file), this_file], "c:/directory")
     end
   end
 end

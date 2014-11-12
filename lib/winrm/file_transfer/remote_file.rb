@@ -1,6 +1,5 @@
 require 'io/console'
 require 'json'
-require 'ruby-progressbar'
 
 module WinRM
   class RemoteFile
@@ -10,9 +9,8 @@ module WinRM
     attr_reader :closed
     attr_reader :options
 
-    def initialize(service, local_path, remote_path, opts = {})
+    def initialize(service, local_path, remote_path)
       @logger = Logging.logger[self]
-      @options = opts
       @closed = false
       @service = service
       @shell = service.open_shell
@@ -26,8 +24,8 @@ module WinRM
     end
 
     def upload(&block)
-      raise WinRMUploadFailed.new("This RemoteFile is closed.") if closed
-      raise WinRMUploadFailed.new("Cannot find path: '#{local_path}'") unless File.exist?(local_path)
+      raise WinRMUploadError.new("This RemoteFile is closed.") if closed
+      raise WinRMUploadError.new("Cannot find path: '#{local_path}'") unless File.exist?(local_path)
 
       @remote_path, should_upload = powershell_batch do | builder |
         builder << resolve_remote_command
@@ -109,15 +107,10 @@ module WinRM
       logger.debug("Uploading '#{local_path}' to temp file '#{remote_path}'")
       base64_host_file = Base64.encode64(IO.binread(local_path)).gsub("\n", "")
       base64_array = base64_host_file.chars.to_a
-      unless options[:quiet]
-        console_width = IO.console.winsize[1]
-        bar = ProgressBar.create(:title => "Copying #{File.basename(local_path)}...", :total => base64_array.count, :length => console_width-1)
-      end
       bytes_copied = 0
       base64_array.each_slice(8000 - remote_path.size) do |chunk|
         cmd("echo #{chunk.join} >> \"#{remote_path}\"")
         bytes_copied += chunk.count
-        bar.progress += bytes_copied unless options[:quiet]
         yield bytes_copied, base64_array.count, local_path, remote_path if block_given?
       end
       base64_array.length
@@ -176,7 +169,7 @@ module WinRM
       end
 
       if !command_output[:exitcode].zero? or !err_stream.empty?
-        raise WinRMUploadFailed,
+        raise WinRMUploadError,
           :from => local_path,
           :to => remote_path,
           :message => command_output.inspect

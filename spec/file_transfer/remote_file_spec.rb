@@ -63,18 +63,18 @@ describe WinRM::RemoteFile, :integration => true do
   context 'Upload a file after RemoteFile is closed' do
     subject {WinRM::RemoteFile.new(service, this_file, destination, :quiet => true)}
 
-    it 'raises WinRMUploadFailed' do
+    it 'raises WinRMUploadError' do
       expect(subject.upload).to be > 0
       subject.close
-      expect{subject.upload}.to raise_error(WinRM::WinRMUploadFailed)
+      expect{subject.upload}.to raise_error(WinRM::WinRMUploadError)
     end
   end
 
   context 'Upload a bad path' do
     subject {WinRM::RemoteFile.new(service, 'c:/some/bad/path', destination, :quiet => true)}
 
-    it 'raises WinRMUploadFailed' do
-      expect { subject.upload }.to raise_error(WinRM::WinRMUploadFailed)
+    it 'raises WinRMUploadError' do
+      expect { subject.upload }.to raise_error(WinRM::WinRMUploadError)
     end
   end
 end
