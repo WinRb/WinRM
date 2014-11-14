@@ -12,6 +12,18 @@ module WinRMSpecs
       i[:stderr]
     end.join('\r\n').gsub(/(\\r\\n)+$/, '')
   end
+
+  def self.run_command(service, shell, command)
+    command_output = nil
+    out_stream = []
+    service.run_command(shell, command) do |command_id|
+      command_output = service.get_command_output(shell, command_id) do |stdout|
+        out_stream << stdout if stdout
+      end
+    end
+
+    out_stream.join.chomp
+  end
 end
 
 RSpec::Matchers.define :have_stdout_match do |expected_stdout|
@@ -20,6 +32,27 @@ RSpec::Matchers.define :have_stdout_match do |expected_stdout|
   end
   failure_message do |actual_output|
     "expected that '#{WinRMSpecs.stdout(actual_output)}' would match #{expected_stdout}"
+  end
+end
+
+RSpec::Matchers.define :have_remote_file do |expected_file_name|
+  match do | remote_file |
+    WinRMSpecs.run_command(remote_file.service, remote_file.shell, "if exist #{expected_file_name} echo true") == 'true'
+  end
+  failure_message do |remote_file|
+    "expected that '#{expected_file_name}' would exist on #{remote_file.service.endpoint}"
+  end
+end
+
+RSpec::Matchers.define :have_same_content do | local_path, remote_path |
+  actual_content = nil
+  expected_content = File.read(local_path).chomp
+  match do | remote_file |
+    actual_content = WinRMSpecs.run_command(remote_file.service, remote_file.shell, "type #{remote_path.gsub("/","\\")}").gsub("\r","")
+    actual_content == expected_content
+  end
+  failure_message do | expected_file_content |
+    "expected '#{expected_content}' with length #{expected_content.length} to match contents of #{remote_path}: #{actual_content} with length #{actual_content.length}"
   end
 end
 

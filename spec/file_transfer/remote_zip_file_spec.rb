@@ -2,8 +2,11 @@ describe WinRM::RemoteZipFile, :integration => true do
   
   let(:this_dir) { File.dirname(__FILE__) }
   let(:service) { winrm_connection }
-  let(:destination) {"#{ENV['temp']}/WinRM_tests"}
-  before { FileUtils.rm_rf(Dir.glob("#{ENV['temp'].gsub("\\","/")}/WinRM_*")) }
+  let(:destination) {"C:/Users/Administrator/AppData/Local/Temp/winrm_tests"}
+  before { 
+    subject.service.run_command(subject.shell, "del /S/Q #{destination.gsub('/','\\')}") 
+    subject.service.run_command(subject.shell, "del /S/Q C:\\Users\\Administrator\\AppData\\Local\\Temp\\WinRM_file_transfer") 
+  }
   after { subject.close }
   subject {WinRM::RemoteZipFile.new(service, destination)}
 
@@ -11,10 +14,10 @@ describe WinRM::RemoteZipFile, :integration => true do
     it 'copies the directory' do
       subject.add_file(this_dir)
       expect(subject.upload).to be > 0
-      expect(File.read(File.join(destination, "file_transfer", "remote_file_spec.rb"))).to eq(File.read(File.join(this_dir, 'remote_file_spec.rb')))
-      expect(File.read(File.join(destination, "file_transfer", "remote_zip_file_spec.rb"))).to eq(File.read(File.join(this_dir, 'remote_zip_file_spec.rb')))
-      expect(File.exist?(File.join(this_dir, "file_transfer.zip"))).to be_falsey
-      expect(File.exist?(File.join(destination, "file_transfer.zip"))).to be_falsey
+      expect(subject).to have_same_content(File.join(this_dir, 'remote_file_spec.rb'), File.join(destination, "file_transfer", "remote_file_spec.rb"))
+      expect(subject).to have_same_content(File.join(this_dir, 'remote_zip_file_spec.rb'), File.join(destination, "file_transfer", "remote_zip_file_spec.rb"))
+      expect(subject).not_to have_remote_file(File.join(this_dir, "file_transfer.zip"))
+      expect(subject).not_to have_remote_file(File.join(destination, "file_transfer.zip"))
     end
   end
 
@@ -35,9 +38,9 @@ describe WinRM::RemoteZipFile, :integration => true do
       spec_helper = File.join(File.dirname(this_dir), 'spec_helper.rb')
       subject.add_file(spec_helper)
       expect(subject.upload).to be > 0
-      expect(File.read(File.join(destination, "file_transfer", "remote_file_spec.rb"))).to eq(File.read(File.join(this_dir, 'remote_file_spec.rb')))
-      expect(File.read(File.join(destination, "file_transfer", "remote_zip_file_spec.rb"))).to eq(File.read(File.join(this_dir, 'remote_zip_file_spec.rb')))
-      expect(File.read(File.join(destination, "spec_helper.rb"))).to eq(File.read(spec_helper))
+      expect(subject).to have_same_content(File.join(this_dir, 'remote_file_spec.rb'), File.join(destination, "file_transfer", "remote_file_spec.rb"))
+      expect(subject).to have_same_content(File.join(this_dir, 'remote_zip_file_spec.rb'), File.join(destination, "file_transfer", "remote_zip_file_spec.rb"))
+      expect(subject).to have_same_content(spec_helper, File.join(destination, "spec_helper.rb"))
     end
   end
 
