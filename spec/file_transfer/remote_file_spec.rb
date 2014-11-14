@@ -2,18 +2,21 @@ describe WinRM::RemoteFile, :integration => true do
   
   let(:this_file) { __FILE__ }
   let(:service) { winrm_connection }
-  let(:destination) {"#{ENV['temp']}/WinRM_tests"}
+  let(:destination) {"C:/Users/Administrator/AppData/Local/Temp/winrm_tests"}
   after {
-    subject.close
+    if !subject.closed
+      subject.service.run_command(subject.shell, "del /S/Q #{destination.gsub('/','\\')}")
+      subject.close
+    end
     FileUtils.rm_rf(destination)
   }
 
   context 'Upload a new file to directory path' do
-    subject {WinRM::RemoteFile.new(service, this_file, destination, :quiet => true)}
+    subject {WinRM::RemoteFile.new(service, this_file, destination)}
 
     it 'copies the file inside the directory' do
       expect(subject.upload).to be > 0
-      expect(File.exist?(File.join(destination, File.basename(this_file)))).to be_truthy
+      expect(subject).to have_remote_file(File.join(destination, File.basename(this_file)))
     end
     it 'yields progress data' do
       total = subject.upload do |bytes_copied, total_bytes, local_path, remote_path|
@@ -26,14 +29,14 @@ describe WinRM::RemoteFile, :integration => true do
     end
     it 'copies the exact file content' do
       expect(subject.upload).to be > 0
-      expect(File.read(File.join(destination, File.basename(this_file)))).to eq(File.read(this_file))
+      expect(subject).to have_same_content(this_file, subject.remote_path)
     end
 
   end
 
   context 'Upload an identical file to directory path' do
-    subject {WinRM::RemoteFile.new(service, this_file, destination, :quiet => true)}
-    let (:next_transfer) {WinRM::RemoteFile.new(service, this_file, destination, :quiet => true)}
+    subject {WinRM::RemoteFile.new(service, this_file, destination)}
+    let (:next_transfer) {WinRM::RemoteFile.new(service, this_file, destination)}
 
     it 'does not copy the file' do
       expect(subject.upload).to be > 0
@@ -42,26 +45,26 @@ describe WinRM::RemoteFile, :integration => true do
   end
 
   context 'Upload a file to file path' do
-    subject {WinRM::RemoteFile.new(service, this_file, File.join(destination, File.basename(this_file)), :quiet => true)}
+    subject {WinRM::RemoteFile.new(service, this_file, File.join(destination, File.basename(this_file)))}
 
     it 'copies the file to the exact path' do
       expect(subject.upload).to be > 0
-      expect(File.exist?(File.join(destination, File.basename(this_file)))).to be_truthy
+      expect(subject).to have_remote_file(File.join(destination, File.basename(this_file)))
     end
   end
 
   context 'Upload a new file to nested directory' do
     let (:nested) {File.join(destination, 'nested')}
-    subject {WinRM::RemoteFile.new(service, this_file, nested, :quiet => true)}
+    subject {WinRM::RemoteFile.new(service, this_file, nested)}
 
     it 'copies the file to the nested path' do
       expect(subject.upload).to be > 0
-      expect(File.exist?(File.join(nested, File.basename(this_file)))).to be_truthy
+      expect(subject).to have_remote_file(File.join(nested, File.basename(this_file)))
     end
   end
 
   context 'Upload a file after RemoteFile is closed' do
-    subject {WinRM::RemoteFile.new(service, this_file, destination, :quiet => true)}
+    subject {WinRM::RemoteFile.new(service, this_file, destination)}
 
     it 'raises WinRMUploadError' do
       expect(subject.upload).to be > 0
@@ -71,7 +74,7 @@ describe WinRM::RemoteFile, :integration => true do
   end
 
   context 'Upload a bad path' do
-    subject {WinRM::RemoteFile.new(service, 'c:/some/bad/path', destination, :quiet => true)}
+    subject {WinRM::RemoteFile.new(service, 'c:/some/bad/path', destination)}
 
     it 'raises WinRMUploadError' do
       expect { subject.upload }.to raise_error(WinRM::WinRMUploadError)

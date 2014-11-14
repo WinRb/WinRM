@@ -8,6 +8,8 @@ module WinRM
     attr_reader :remote_path
     attr_reader :closed
     attr_reader :options
+    attr_reader :service
+    attr_reader :shell
 
     def initialize(service, local_path, remote_path)
       @logger = Logging.logger[self]
@@ -50,8 +52,6 @@ module WinRM
     protected
 
     attr_reader :logger
-    attr_reader :service
-    attr_reader :shell
 
     def self.close(shell_id, service)
       proc { service.close_shell(shell_id) }
