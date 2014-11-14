@@ -1,4 +1,4 @@
-describe "Test WinRM primitive methods" do
+describe "winrm client primitives" do
   before(:all) do
     @winrm = winrm_connection
   end
@@ -7,8 +7,7 @@ describe "Test WinRM primitive methods" do
 
     it 'should #open_shell and #close_shell' do
       sid = @winrm.open_shell
-      # match a UUID
-      expect(sid).to match(/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/)
+      expect(sid).to be_a_uid
       expect(@winrm.close_shell(sid)).to be true
     end
 
@@ -16,7 +15,7 @@ describe "Test WinRM primitive methods" do
       sid = @winrm.open_shell
 
       cmd_id = @winrm.run_command(sid, 'ipconfig', %w{/all})
-      expect(sid).to match(/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/)
+      expect(sid).to be_a_uid
 
       expect(@winrm.cleanup_command(sid, cmd_id)).to be true
       @winrm.close_shell(sid)
@@ -27,8 +26,9 @@ describe "Test WinRM primitive methods" do
       cmd_id = @winrm.run_command(sid, 'ipconfig', %w{/all})
 
       output = @winrm.get_command_output(sid, cmd_id)
-      expect(output[:exitcode]).to eq(0)
-      expect(output[:data]).to_not be_empty
+      expect(output).to have_exit_code 0
+      expect(output).to have_stdout_match /.+/
+      expect(output).to have_no_stderr
 
       @winrm.cleanup_command(sid, cmd_id)
       @winrm.close_shell(sid)

@@ -1,0 +1,36 @@
+<s:Envelope xml:lang='en-US' xmlns:s='http://www.w3.org/2003/05/soap-envelope' xmlns:a='http://schemas.xmlsoap.org/ws/2004/08/addressing' xmlns:x='http://schemas.xmlsoap.org/ws/2004/09/transfer' xmlns:e='http://schemas.xmlsoap.org/ws/2004/08/eventing' xmlns:n='http://schemas.xmlsoap.org/ws/2004/09/enumeration' xmlns:w='http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd'>
+  <s:Header>
+    <a:Action>http://schemas.xmlsoap.org/ws/2004/09/enumeration/fault</a:Action>
+    <a:MessageID>uuid:AF8907B2-F47E-4DE5-A4AA-E1EC36EA0E49</a:MessageID>
+    <a:To>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</a:To>
+    <a:RelatesTo>uuid:B90EC4BB-4484-4ADA-920B-019517747915</a:RelatesTo>
+  </s:Header>
+  <s:Body>
+    <s:Fault>
+      <s:Code>
+        <s:Value>s:Sender</s:Value>
+        <s:Subcode>
+          <s:Value>n:CannotProcessFilter</s:Value>
+        </s:Subcode>
+      </s:Code>
+      <s:Reason>
+        <s:Text xml:lang='en-US'>
+          The data source could not process the filter. The filter might be
+          missing or it might be invalid. Change the filter and try the request
+          again. 
+        </s:Text>
+      </s:Reason>
+      <s:Detail>
+        <f:WSManFault xmlns:f='http://schemas.microsoft.com/wbem/wsman/1/wsmanfault' Code='2150858778' Machine=''>
+          <f:Message>
+            <f:ProviderFault provider='WMIv1 plugin for Windows Remote Management ' path='%systemroot%\system32\WsmWmiPl.dll'>
+              <f:WSManFault xmlns:f='http://schemas.microsoft.com/wbem/wsman/1/wsmanfault' Code='2150858778' Machine='' xml:lang='en-US'>
+                <f:Message>The specified class does not exist in the given namespace. </f:Message>
+              </f:WSManFault>
+            </f:ProviderFault>
+          </f:Message>
+        </f:WSManFault>
+      </s:Detail>
+    </s:Fault>
+  </s:Body>
+</s:Envelope>
