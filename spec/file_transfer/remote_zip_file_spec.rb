@@ -5,7 +5,7 @@ describe WinRM::RemoteZipFile, :integration => true do
   let(:destination) {"#{ENV['temp']}/WinRM_tests"}
   before { FileUtils.rm_rf(Dir.glob("#{ENV['temp'].gsub("\\","/")}/WinRM_*")) }
   after { subject.close }
-  subject {WinRM::RemoteZipFile.new(service, destination, :quiet => true)}
+  subject {WinRM::RemoteZipFile.new(service, destination)}
 
   context 'Upload a new directory' do
     it 'copies the directory' do
@@ -19,7 +19,7 @@ describe WinRM::RemoteZipFile, :integration => true do
   end
 
   context 'Upload an identical directory' do
-    let (:next_transfer) {WinRM::RemoteZipFile.new(service, destination, :quiet => true)}
+    let (:next_transfer) {WinRM::RemoteZipFile.new(service, destination)}
 
     it 'does not copy the directory' do
       subject.add_file(this_dir)
