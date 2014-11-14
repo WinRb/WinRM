@@ -8,3 +8,4 @@ spec/spec/creds*.json
 spec/config.yml
 traces/
 Gemfile.lock
+.vagrant

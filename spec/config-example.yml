@@ -6,7 +6,7 @@
 
 ## Plain Text
 auth_type: plaintext
-endpoint: "http://localhost:5985/wsman"
+endpoint: "http://localhost:55985/wsman"
 options:
   user: vagrant
   pass: vagrant
