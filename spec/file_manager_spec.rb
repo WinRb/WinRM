@@ -7,7 +7,7 @@ describe WinRM::FileManager, :integration => true do
 
   context 'temp_dir' do
     it 'should return the remote guests temp dir' do
-      expect(subject.temp_dir).to eq('C:\Users\vagrant\AppData\Local\Temp')
+      expect(subject.temp_dir).to match(/C:\\Users\\\w+\\AppData\\Local\\Temp/)
     end
   end
 
