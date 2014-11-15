@@ -64,8 +64,6 @@ module WinRM
       local_path = [local_path] if local_path.is_a? String
       file = create_remote_file(local_path, remote_path)
       file.upload(&block)
-    ensure
-      file.close unless file.nil?
     end
 
     private

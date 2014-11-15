@@ -6,28 +6,21 @@ module WinRM
 
     attr_reader :local_path
     attr_reader :remote_path
-    attr_reader :closed
-    attr_reader :options
     attr_reader :service
     attr_reader :shell
 
     def initialize(service, local_path, remote_path)
       @logger = Logging.logger[self]
-      @closed = false
       @service = service
-      @shell = service.open_shell
       @local_path = local_path
       @remote_path = full_remote_path(local_path, remote_path)
       @logger.debug("Creating RemoteFile of local '#{local_path}' at '#{@remote_path}'")
-    ensure
-      if !shell.nil?
-        ObjectSpace.define_finalizer( self, self.class.close(shell, service) )
-      end
     end
 
     def upload(&block)
-      raise WinRMUploadError.new("This RemoteFile is closed.") if closed
       raise WinRMUploadError.new("Cannot find path: '#{local_path}'") unless File.exist?(local_path)
+
+      @shell = @service.open_shell()
 
       @remote_path, should_upload = powershell_batch do | builder |
         builder << resolve_remote_command
@@ -42,20 +35,14 @@ module WinRM
         logger.debug("Files are equal. Not copying #{local_path} to #{remote_path}")
       end
       size
+    ensure
+      @service.close_shell(@shell) if @shell
     end
-
-    def close
-      service.close_shell(shell) unless shell.nil? or closed
-      @closed = true
-    end
+    
 
     protected
 
     attr_reader :logger
-
-    def self.close(shell_id, service)
-      proc { service.close_shell(shell_id) }
-    end
 
     def full_remote_path(local_path, remote_path)
       base_file_name = File.basename(local_path)
@@ -169,8 +156,8 @@ module WinRM
       command_output = nil
       out_stream = []
       err_stream = []
-      service.run_command(shell, command, arguments) do |command_id|
-        command_output = service.get_command_output(shell, command_id) do |stdout, stderr|
+      service.run_command(@shell, command, arguments) do |command_id|
+        command_output = service.get_command_output(@shell, command_id) do |stdout, stderr|
           out_stream << stdout if stdout
           err_stream << stderr if stderr
         end
