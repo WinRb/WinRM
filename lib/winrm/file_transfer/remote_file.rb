@@ -6,7 +6,6 @@ module WinRM
 
     attr_reader :local_path
     attr_reader :remote_path
-    attr_reader :service
     attr_reader :shell
 
     def initialize(service, local_path, remote_path)
@@ -156,8 +155,8 @@ module WinRM
       command_output = nil
       out_stream = []
       err_stream = []
-      service.run_command(@shell, command, arguments) do |command_id|
-        command_output = service.get_command_output(@shell, command_id) do |stdout, stderr|
+      @service.run_command(@shell, command, arguments) do |command_id|
+        command_output = @service.get_command_output(@shell, command_id) do |stdout, stderr|
           out_stream << stdout if stdout
           err_stream << stderr if stderr
         end
