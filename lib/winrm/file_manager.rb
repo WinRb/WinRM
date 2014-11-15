@@ -39,7 +39,7 @@ module WinRM
     # Gets the current user's TEMP directory on the remote system
     # @return [String] Full path to the temp directory
     def temp_dir
-      @guest_temp ||= (@shell.cmd('echo %TEMP%'))[:data][0][:stdout].chomp
+      @guest_temp ||= (@service.cmd('echo %TEMP%'))[:data][0][:stdout].chomp
     end
 
     # Upload one or more local files and directories to a remote directory
