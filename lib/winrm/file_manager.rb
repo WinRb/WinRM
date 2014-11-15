@@ -36,6 +36,12 @@ module WinRM
       @service.powershell(script)[:exitcode] == 0
     end
 
+    # Gets the current user's TEMP directory on the remote system
+    # @return [String] Full path to the temp directory
+    def temp_dir
+      @guest_temp ||= (@shell.cmd('echo %TEMP%'))[:data][0][:stdout].chomp
+    end
+
     # Upload one or more local files and directories to a remote directory
     # @example copy a single directory to a winrm endpoint
     #
