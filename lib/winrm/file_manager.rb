@@ -114,7 +114,17 @@ module WinRM
 
     def create_remote_file(local_paths, remote_path)
       if local_paths.count == 1 && !File.directory?(local_paths[0])
-        return RemoteFile.new(@service, local_paths[0], remote_path)
+        # singular local file path
+        src_file = local_paths[0]
+        dest_file = remote_path.gsub('\\', '/')
+        
+        # If the src has a file extension and the destination does not
+        # we can assume the caller specified the dest as a directory
+        if File.extname(src_file) != '' && File.extname(dest_file) == ''
+          dest_file = File.join(dest_file, File.basename(src_file))
+        end
+
+        return RemoteFile.new(@service, src_file, dest_file)
       end
       zip_file = RemoteZipFile.new(@service, remote_path)
       local_paths.each { |path| zip_file.add_file(path) }

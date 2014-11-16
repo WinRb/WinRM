@@ -1,14 +1,8 @@
 describe WinRM::FileManager, :integration => true do
   let(:service) { winrm_connection }
-  let(:src_file) { __FILE__ }
   let(:dest_dir) { File.join(subject.temp_dir, 'winrm_filemanager_test') }
-  let(:dest_file) { File.join(dest_dir, File.basename(src_file)) }
 
   subject { WinRM::FileManager.new(service) }
-
-  before(:each) do
-    expect(subject.delete(dest_dir)).to be true
-  end
 
   context 'exists?' do
     it 'should exist' do
@@ -17,34 +11,14 @@ describe WinRM::FileManager, :integration => true do
     end
   end
 
-  context 'create dir' do
+  context 'create and delete dir' do
     it 'should create the directory recursively' do
-      subject.create_dir(dest_dir)
-      expect(subject.exists?(dest_dir)).to be true
-    end
-
-    it 'should by idempotent' do
-      subject.create_dir(dest_dir)
-      subject.create_dir(dest_dir)
-      expect(subject.exists?(dest_dir)).to be true
-    end
-  end
-
-  context 'delete' do
-    before(:each) do
-      subject.create_dir(dest_dir)
-    end
-
-    it 'should delete the empty directory' do
-      expect(subject.delete(dest_dir)).to be true
-      expect(subject.exists?(dest_dir)).to be false
-    end
-
-    it 'should delete the directory and all content' do
       subdir = File.join(dest_dir, 'subdir1', 'subdir2')
-      subject.create_dir(subdir)
-      expect(subject.delete(dest_dir)).to be true
-      expect(subject.exists?(dest_dir)).to be false
+      expect(subject.create_dir(subdir)).to be true
+      expect(subject.exists?(subdir)).to be true
+      expect(subject.create_dir(subdir)).to be true
+      expect(subject.delete(subdir)).to be true
+      expect(subject.exists?(subdir)).to be false
     end
   end
 
@@ -55,6 +29,13 @@ describe WinRM::FileManager, :integration => true do
   end
 
   context 'upload file' do
+    let(:src_file) { __FILE__ }
+    let(:dest_file) { File.join(dest_dir, File.basename(src_file)) }
+
+    before(:each) do
+      expect(subject.delete(dest_dir)).to be true
+    end
+
     it 'should upload the file to the specified file' do
       subject.upload(src_file, dest_file)
       expect(subject.exists?(dest_file)).to be true
@@ -96,8 +77,10 @@ describe WinRM::FileManager, :integration => true do
     end
 
     it 'should upload file when content differs' do
-      service.cmd("echo 'foo' > #{dest_file}")
-      bytes_uploaded = subject.upload(src_file, dest_dir)
+      another_src_file = File.join(File.expand_path(File.dirname(__FILE__)), 'matchers.rb')
+      subject.upload(another_src_file, dest_file)
+      expect(subject.exists?(dest_file)).to be true
+      bytes_uploaded = subject.upload(src_file, dest_file)
       expect(bytes_uploaded).to be > 0
     end
   end

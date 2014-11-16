@@ -12,7 +12,7 @@ module WinRM
       @logger = Logging.logger[self]
       @service = service
       @local_path = local_path
-      @remote_path = full_remote_path(local_path, remote_path)
+      @remote_path = remote_path
       @logger.debug("Creating RemoteFile of local '#{local_path}' at '#{@remote_path}'")
     end
 
@@ -45,15 +45,6 @@ module WinRM
 
     attr_reader :logger
 
-    def full_remote_path(local_path, remote_path)
-      remote_path = remote_path.gsub('\\', '/')
-      base_file_name = File.basename(local_path)
-      if File.basename(remote_path) != base_file_name
-        remote_path = File.join(remote_path, base_file_name)
-      end
-      remote_path
-    end
-
     def resolve_remote_command
       <<-EOH
         $dest_file_path = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("#{remote_path}")
@@ -72,22 +63,20 @@ module WinRM
       <<-EOH
         $dest_file_path = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("#{remote_path}")
 
-        if (Test-Path $dest_file_path) {
+        if (test-path $dest_file_path) {
           $crypto_prov = new-object -TypeName System.Security.Cryptography.MD5CryptoServiceProvider
-          try {
-            $file = [System.IO.File]::Open($dest_file_path,
-              [System.IO.Filemode]::Open, [System.IO.FileAccess]::Read)
-            $guest_md5 = ([System.BitConverter]::ToString($crypto_prov.ComputeHash($file)))
-            $guest_md5 = $guest_md5.Replace("-","").ToLower()
-          }
-          finally {
-            $file.Dispose()
-          }
+
+          $file = [System.IO.File]::Open($dest_file_path,
+            [System.IO.Filemode]::Open, [System.IO.FileAccess]::Read)
+          $guest_md5 = ([System.BitConverter]::ToString($crypto_prov.ComputeHash($file)))
+          $guest_md5 = $guest_md5.Replace("-","").ToLower()
+          $file.Close()
+
           if ($guest_md5 -eq '#{local_md5}') {
             return $false
           }
+          ri $dest_file_path -force
         }
-        if(Test-Path $dest_file_path){remove-item $dest_file_path -Force}
         return $true
       EOH
     end
