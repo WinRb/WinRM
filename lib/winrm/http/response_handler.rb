@@ -46,7 +46,8 @@ module WinRM
     def raise_if_error()
       return if @status_code == 200 
       raise_if_auth_error()
-      raise_if_soap_fault()
+      raise_if_wsman_fault()
+      raise_if_wmi_error()
       raise_transport_error()
     end
 
@@ -54,11 +55,22 @@ module WinRM
       raise WinRMAuthorizationError.new if @status_code == 401 
     end
 
-    def raise_if_soap_fault()
+    def raise_if_wsman_fault()
       soap_errors = REXML::XPath.match(response_xml, "//#{NS_SOAP_ENV}:Body/#{NS_SOAP_ENV}:Fault/*")
       if !soap_errors.empty?
         fault = REXML::XPath.first(soap_errors, "//#{NS_WSMAN_FAULT}:WSManFault")
-        raise WinRMWSManFault.new(fault.to_s, fault.attributes['Code'])
+        raise WinRMWSManFault.new(fault.to_s, fault.attributes['Code']) unless fault.nil?
+      end
+    end
+
+    def raise_if_wmi_error()
+      soap_errors = REXML::XPath.match(response_xml, "//#{NS_SOAP_ENV}:Body/#{NS_SOAP_ENV}:Fault/*")
+      if !soap_errors.empty?
+        error = REXML::XPath.first(soap_errors, "//#{NS_WSMAN_MSFT}:MSFT_WmiError")
+        if !error.nil?
+          error_code = REXML::XPath.first(error, "//#{NS_WSMAN_MSFT}:error_Code").text
+          raise WinRMWMIError.new(error.to_s, error_code)
+        end
       end
     end
 

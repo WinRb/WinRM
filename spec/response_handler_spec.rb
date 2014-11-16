@@ -41,4 +41,18 @@ describe 'response handler', :unit => true do
       end
     end
   end
+
+  describe "failed 500 WMI error response" do
+    let(:wmi_error) { File.read("spec/stubs/responses/wmi_error_v2.xml") }
+
+    it 'raises a WinRMWMIError' do
+      handler = WinRM::ResponseHandler.new(wmi_error, 500)
+      begin
+        handler.parse_to_xml()
+      rescue WinRM::WinRMWMIError => e
+        expect(e.error_code).to eq('2150859173')
+        expect(e.error).to include('The WS-Management service cannot process the request.')
+      end
+    end
+  end
 end

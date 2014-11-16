@@ -32,4 +32,21 @@ describe "Exceptions", :unit => true do
       expect(error).to be_kind_of(WinRM::WinRMError)
     end
   end
+
+  describe WinRM::WinRMWMIError do
+
+    let (:error) { WinRM::WinRMWMIError.new("message text", 77777) }
+
+    it 'exposes the error text as an attribute' do
+      expect(error.error).to eq('message text')
+    end
+
+    it 'exposes the error code as an attribute' do
+      expect(error.error_code).to eq 77777
+    end
+
+    it 'is a winrm error' do
+      expect(error).to be_kind_of(WinRM::WinRMError)
+    end
+  end
 end
