@@ -38,6 +38,18 @@ module WinRM
     end
   end
 
+  # A Fault returned in the SOAP response. The XML node is a MSFT_WmiError
+  class WinRMWMIError < WinRMError
+    attr_reader :error_code
+    attr_reader :error
+
+    def initialize(error, error_code)
+      @error = error
+      @error_code = error_code
+      super("[WMI ERROR CODE: #{error_code}]: #{error}")
+    end
+  end
+
   # non-200 response without a SOAP fault
   class WinRMHTTPTransportError < WinRMError
     attr_reader :status_code
