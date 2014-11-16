@@ -9,29 +9,72 @@ module WinRM
     # @param [WinRMWebService] WinRM web service client
     def initialize(service)
       @service = service
+      @logger = Logging.logger[self]
+    end
+
+    # Create the specifed directory recursively
+    # @param [String] The remote dir to create
+    # @return [Boolean] True if successful, otherwise false
+    def create_dir(path)
+      @logger.debug("create_dir: #{path}")
+      script = <<-EOH
+        $path = [System.IO.Path]::GetFullPath('#{path}')
+        if (!(test-path $path)) {
+          ni -itemtype directory -force -path $path | out-null
+          exit $LASTEXITCODE
+        }
+        exit 0
+      EOH
+      @service.powershell(script)[:exitcode] == 0
+    end
+
+    # Deletes the file or directory at the specified path
+    # @param [String] The path to remove
+    # @return [Boolean] True if successful, otherwise False
+    def delete(path)
+      @logger.debug("deleting: #{path}")
+      script = <<-EOH
+        $path = [System.IO.Path]::GetFullPath('#{path}')
+        if (test-path $path) {
+          ri $path -force -recurse
+          exit $LASTEXITCODE
+        }
+        exit 0
+      EOH
+      @service.powershell(script)[:exitcode] == 0
     end
 
     # Downloads the specified remote file to the specified local path
     # @param [String] The full path on the remote machine
     # @param [String] The full path to write the file to locally
     def download(remote_path, local_path)
+      @logger.debug("downloading: #{remote_path} -> #{local_path}")
       script = <<-EOH
         $path = [System.IO.Path]::GetFullPath('#{remote_path}')
-        [System.convert]::ToBase64String([System.IO.File]::ReadAllBytes($path))
+        if (test-path $path) {
+          [System.convert]::ToBase64String([System.IO.File]::ReadAllBytes($path))
+          exit 0
+        }
+        exit 1
       EOH
       output = @service.powershell(script)
+      return false if output[:exitcode] != 0
+
       contents = output[:data].map!{|line| line[:stdout]}.join.gsub("\\n\\r", '')
       out = Base64.decode64(contents)
       IO.binwrite(local_path, out)
+
+      true
     end
 
     # Checks to see if the given path exists on the target file system.
     # @param [String] The full path to the directory or file
     # @return [Boolean] True if the file/dir exists, otherwise false.
     def exists?(path)
+      @logger.debug("exists?: #{path}")
       script = <<-EOH
         $path = [System.IO.Path]::GetFullPath('#{path}')
-        if (Test-Path $path) { exit 0 } else { exit 1 }")
+        if (test-path $path) { exit 0 } else { exit 1 }
       EOH
       @service.powershell(script)[:exitcode] == 0
     end
@@ -39,7 +82,7 @@ module WinRM
     # Gets the current user's TEMP directory on the remote system
     # @return [String] Full path to the temp directory
     def temp_dir
-      @guest_temp ||= (@service.cmd('echo %TEMP%'))[:data][0][:stdout].chomp
+      @guest_temp ||= (@service.cmd('echo %TEMP%'))[:data][0][:stdout].chomp.gsub('\\', '/')
     end
 
     # Upload one or more local files and directories to a remote directory
@@ -61,6 +104,7 @@ module WinRM
     # @yieldparam [String] Target path on the winrm endpoint
     # @return [Fixnum] The total number of bytes copied
     def upload(local_path, remote_path, &block)
+      @logger.debug("uploading: #{local_path} -> #{remote_path}")
       local_path = [local_path] if local_path.is_a? String
       file = create_remote_file(local_path, remote_path)
       file.upload(&block)

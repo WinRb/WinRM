@@ -26,6 +26,8 @@ module WinRM
         builder << is_dirty_command
       end
 
+      @remote_path = @remote_path.gsub('\\', '/')
+
       if should_upload
         size = upload_to_remote(&block)
         powershell_batch {|builder| builder << create_post_upload_command}
@@ -44,6 +46,7 @@ module WinRM
     attr_reader :logger
 
     def full_remote_path(local_path, remote_path)
+      remote_path = remote_path.gsub('\\', '/')
       base_file_name = File.basename(local_path)
       if File.basename(remote_path) != base_file_name
         remote_path = File.join(remote_path, base_file_name)
