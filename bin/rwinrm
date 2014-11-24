@@ -56,8 +56,9 @@ def repl(options)
     options[:auth_type].to_sym,
     options)
 
+  client.set_timeout(3600)
   shell_id = client.open_shell()
-  command_id = client.run_command(shell_id, 'cmd')
+  command_id = client.run_command(shell_id, 'cmd', "/K prompt [#{ARGV[0]}]$P$G")
 
   read_thread = Thread.new do
     client.get_command_output(shell_id, command_id) do |stdout, stderr|
