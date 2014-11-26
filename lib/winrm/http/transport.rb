@@ -24,12 +24,14 @@ module WinRM
     # is possible to use GSSAPI with Keep-Alive.
     class HttpTransport
 
+      DEFAULT_RECEIVE_TIMEOUT=3600 # Set this to an unreasonable amount for now because WinRM has timeouts
+     
       attr_reader :endpoint
-
-      def initialize(endpoint)
+			
+      def initialize(endpoint, opts)
         @endpoint = endpoint.is_a?(String) ? URI.parse(endpoint) : endpoint
         @httpcli = HTTPClient.new(:agent_name => 'Ruby WinRM Client')
-        @httpcli.receive_timeout = 3600 # Set this to an unreasonable amount for now because WinRM has timeouts
+        @httpcli.receive_timeout = opts[:receive_timeout] ? opts[:receive_timeout] : DEFAULT_RECEIVE_TIMEOUT
         @logger = Logging.logger[self]
       end
 
@@ -45,7 +47,7 @@ module WinRM
           end
           return doc
         else
-          raise WinRMHTTPTransportError, "Bad HTTP response returned from server", resp.status
+          raise WinRMHTTPTransportError.new("Bad HTTP response returned from server", resp.status)
         end
       end
 
@@ -71,7 +73,7 @@ module WinRM
 
     class HttpPlaintext < HttpTransport
       def initialize(endpoint, user, pass, opts)
-        super(endpoint)
+        super(endpoint, opts)
         @httpcli.set_auth(nil, user, pass)
         no_sspi_auth! if opts[:disable_sspi]
         basic_auth_only! if opts[:basic_auth_only]
@@ -82,7 +84,7 @@ module WinRM
     # Uses SSL to secure the transport
     class HttpSSL < HttpTransport
       def initialize(endpoint, user, pass, ca_trust_path = nil, opts)
-        super(endpoint)
+        super(endpoint, opts)
         @httpcli.set_auth(endpoint, user, pass)
         @httpcli.ssl_config.set_trust_ca(ca_trust_path) unless ca_trust_path.nil?
         no_sspi_auth! if opts[:disable_sspi]
@@ -98,7 +100,7 @@ module WinRM
       # @param [String<optional>] service the service name, default is HTTP
       # @param [String<optional>] keytab the path to a keytab file if you are using one
       def initialize(endpoint, realm, service = nil, keytab = nil, opts)
-        super(endpoint)
+        super(endpoint, opts)
         # Remove the GSSAPI auth from HTTPClient because we are doing our own thing
         auths = @httpcli.www_auth.instance_variable_get('@authenticator')
         auths.delete_if {|i| i.is_a?(HTTPClient::SSPINegotiateAuth)}
