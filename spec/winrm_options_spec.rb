@@ -11,7 +11,7 @@ describe "Test WinRM options" do
 			
     it 'should have receive timeout of 10' do      
 			transportclass 	= @winrm.instance_variable_get(:@xfer)
-			httpcli					= transportclass.instance_variable_get(:@httpcli)
+			httpcli         = transportclass.instance_variable_get(:@httpcli)
 			expect(httpcli.receive_timeout).to eql(10)
 			
 		end
@@ -24,7 +24,7 @@ describe "Test WinRM options" do
 	
 		it 'should have a default timeout of 3600' do
 			transportclass 	= @winrm.instance_variable_get(:@xfer)
-			httpcli					= transportclass.instance_variable_get(:@httpcli)
+			httpcli	        = transportclass.instance_variable_get(:@httpcli)
 			expect(httpcli.receive_timeout).to eql(3600)
 			
 		end
