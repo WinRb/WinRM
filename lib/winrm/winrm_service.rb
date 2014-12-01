@@ -37,6 +37,7 @@ module WinRM
     # @param [Hash] opts Misc opts for the various transports.
     #   @see WinRM::HTTP::HttpTransport
     #   @see WinRM::HTTP::HttpGSSAPI
+    #   @see WinRM::HTTP::HttpNegotiate
     #   @see WinRM::HTTP::HttpSSL
     def initialize(endpoint, transport = :kerberos, opts = {})
       @endpoint = endpoint
@@ -45,18 +46,29 @@ module WinRM
       @locale = DEFAULT_LOCALE
       setup_logger
       configure_retries(opts)
-      case transport
-      when :kerberos
-        require 'gssapi'
-        require 'gssapi/extensions'
-        @xfer = HTTP::HttpGSSAPI.new(endpoint, opts[:realm], opts[:service], opts[:keytab], opts)
-      when :plaintext
-        @xfer = HTTP::HttpPlaintext.new(endpoint, opts[:user], opts[:pass], opts)
-      when :ssl
-        @xfer = HTTP::HttpSSL.new(endpoint, opts[:user], opts[:pass], opts[:ca_trust_path], opts)
-      else
+      begin
+        @xfer = send "init_#{transport}_transport", opts.merge({endpoint: endpoint})
+      rescue Exception => e
         raise "Invalid transport '#{transport}' specified, expected: kerberos, plaintext, ssl."
       end
+    end
+
+    def init_negotiate_transport(opts)
+      HTTP::HttpNegotiate.new(opts[:endpoint], opts[:user], opts[:pass], opts)
+    end
+
+    def init_kerberos_transport(opts)
+      require 'gssapi'
+      require 'gssapi/extensions'
+      HTTP::HttpGSSAPI.new(opts[:endpoint], opts[:realm], opts[:service], opts[:keytab], opts)
+    end
+
+    def init_plaintext_transport(opts)
+      HTTP::HttpPlaintext.new(opts[:endpoint], opts[:user], opts[:pass], opts)
+    end
+
+    def init_ssl_transport(opts)
+      HTTP::HttpSSL.new(opts[:endpoint], opts[:user], opts[:pass], opts[:ca_trust_path], opts)
     end
 
     # Operation timeout.

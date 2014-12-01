@@ -38,6 +38,11 @@ As of version 1.5.0 `WinRM::WinRMWebService` methods `cmd`, `run_cmd`, `powershe
 
 Use the `run_cmd` and `run_powershell_script` of the `WinRM::CommandExecutor` class instead. The `CommandExecutor` allows multiple commands to be run from the same WinRM shell providing a significant performance improvement when issuing multiple calls.
 
+#### NTLM/Negotiate
+```ruby
+winrm = WinRM::WinRMWebService.new(endpoint, :negotiate, :user => myuser, :pass mypass)
+```
+
 #### Plaintext
 ```ruby
 WinRM::WinRMWebService.new(endpoint, :plaintext, :user => myuser, :pass => mypass, :disable_sspi => true)

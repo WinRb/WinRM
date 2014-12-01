@@ -2,9 +2,13 @@ AllCops:
   Exclude:
     - 'appveyor.yml'
     - 'lib/winrm/winrm_service.rb'
+    - 'lib/winrm/http/transport.rb'
 
 Style/Encoding:
   Enabled: true
 
 Metrics/LineLength:
   Max: 100
+
+StringLiterals:
+  Enabled: false

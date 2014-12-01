@@ -128,6 +128,7 @@ module WinRM
       end
     end
 
+
     # Plain text, insecure, HTTP transport
     class HttpPlaintext < HttpTransport
       def initialize(endpoint, user, pass, opts)
@@ -136,6 +137,85 @@ module WinRM
         no_sspi_auth! if opts[:disable_sspi]
         basic_auth_only! if opts[:basic_auth_only]
         no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
+      end
+    end
+
+
+    # NTLM/Negotiate, secure, HTTP transport
+    class HttpNegotiate < HttpTransport
+      def initialize(endpoint, user, pass, opts)
+        super(endpoint)
+        no_sspi_auth!
+        @user, @pass = user, pass
+        @ntlmcli = Net::NTLM::Client.new(user, pass)
+        @retryable = true
+        no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
+      end
+
+      def send_request(message)
+        init_auth if @ntlmcli.session.nil?
+
+        original_length = message.length
+
+        emessage = @ntlmcli.session.seal_message message
+        signature = @ntlmcli.session.sign_message message
+        seal = "\x10\x00\x00\x00#{signature}#{emessage}"
+
+        hdr = {
+          "Connection" => "Keep-Alive",
+          "Content-Type" => "multipart/encrypted;protocol=\"application/HTTP-SPNEGO-session-encrypted\";boundary=\"Encrypted Boundary\""
+        }
+
+        body = <<-EOF.gsub(/^\s{10}/,"")
+          --Encrypted Boundary\r
+          Content-Type: application/HTTP-SPNEGO-session-encrypted\r
+          OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{original_length}\r
+          --Encrypted Boundary\r
+          Content-Type: application/octet-stream\r
+          #{seal}--Encrypted Boundary--\r
+        EOF
+
+        resp = @httpcli.post(@endpoint, body, hdr)
+        if resp.status == 401 && @retryable
+          @retryable = false
+          init_auth
+          send_request(message)
+        else
+          @retryable = true
+          handler = WinRM::ResponseHandler.new(winrm_decrypt(resp.body), resp.status)
+          handler.parse_to_xml()
+        end
+      end
+
+      def winrm_decrypt(str)
+        str.force_encoding('BINARY')
+        str.sub!(/^.*Content-Type: application\/octet-stream\r\n(.*)--Encrypted.*$/m, '\1')
+
+        signature = str[4..19]
+        message = @ntlmcli.session.unseal_message str[20..-1]
+        if @ntlmcli.session.verify_signature(signature, message)
+          message
+        else
+          raise WinRMWebServiceError, "Could not verify SOAP message."
+        end
+      end
+
+      def init_auth
+        @logger.debug "Initializing Negotiate for #{@service}"
+        auth1 = @ntlmcli.init_context
+        hdr = {"Authorization" => "Negotiate #{auth1.encode64}",
+               "Connection" => "Keep-Alive",
+               "Content-Type" => "application/soap+xml;charset=UTF-8"
+        }
+        @logger.debug "Sending HTTP POST for Negotiate Authentication"
+        r = @httpcli.post(@endpoint, "", hdr)
+        itok = r.header["WWW-Authenticate"].pop.split.last
+        auth3 = @ntlmcli.init_context itok
+        hdr = {"Authorization" => "Negotiate #{auth3.encode64}",
+          "Connection" => "Keep-Alive",
+          "Content-Type" => "application/soap+xml;charset=UTF-8"
+        }
+        @httpcli.post(@endpoint, "", hdr)
       end
     end
 
@@ -210,13 +290,13 @@ module WinRM
             'boundary="Encrypted Boundary"'
         }
 
-        body = <<-EOF
---Encrypted Boundary\r
-Content-Type: application/HTTP-Kerberos-session-encrypted\r
-OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{original_length + pad_len}\r
---Encrypted Boundary\r
-Content-Type: application/octet-stream\r
-#{emsg}--Encrypted Boundary\r
+        body = <<-EOF.gsub(/^\s{10}/,"")
+          --Encrypted Boundary\r
+          Content-Type: application/HTTP-Kerberos-session-encrypted\r
+          OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{original_length + pad_len}\r
+          --Encrypted Boundary\r
+          Content-Type: application/octet-stream\r
+          #{emsg}--Encrypted Boundary--\r
         EOF
 
         resp = @httpcli.post(@endpoint, body, hdr)
