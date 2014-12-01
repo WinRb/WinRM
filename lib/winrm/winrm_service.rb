@@ -41,6 +41,8 @@ module WinRM
       @locale = DEFAULT_LOCALE
       @logger = Logging.logger[self]
       case transport
+      when :negotiate
+        @xfer = HTTP::HttpNegotiate.new(endpoint, opts[:user], opts[:pass], opts)
       when :kerberos
         require 'gssapi'
         require 'gssapi/extensions'
