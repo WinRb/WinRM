@@ -101,4 +101,6 @@ describe WinRM::Output, :unit => true do
       end
     end
   end
+
+  pending "parse CLIXML errors and convert to Strings and/or Exceptions"
 end
