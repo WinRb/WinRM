@@ -148,7 +148,7 @@ module WinRM
         EOH
         idx += 1
       end
-      commands << "$(ConvertTo-Json $result)"
+      commands << "$(ConvertTo-Json -Compress $result)"
 
       result = []
       JSON.parse(powershell(commands.join("\n"))).each do |k,v|
