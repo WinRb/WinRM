@@ -211,7 +211,7 @@ module WinRM
       end
 
       resp_doc = send_message(builder.target!)
-      output = {:data => []}
+      output = Output.new
       REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |n|
         next if n.text.nil? || n.text.empty?
         stream = { n.attributes['Name'].to_sym => Base64.decode64(n.text) }
