@@ -37,10 +37,28 @@ end
 
 RSpec::Matchers.define :have_remote_file do |expected_file_name|
   match do | remote_file |
-    WinRMSpecs.run_command(remote_file.service, remote_file.shell, "if exist #{expected_file_name} echo true") == 'true'
+    begin
+      exists = WinRMSpecs.run_command(remote_file.service, remote_file.shell, "if exist #{expected_file_name} echo true")
+      expect(exists).to eql('true'),
+        "expected that '#{expected_file_name}' would exist on #{remote_file.service.endpoint}"
+
+      @with_attributes ||= {}
+      @with_attributes.each do | name, expected_value |
+        cmd = "Get-ItemProperty -Path #{expected_file_name} | Select -ExpandProperty #{name}"
+        actual_value = remote_file.service.powershell(cmd).output.strip
+        expect(actual_value).to eq(expected_value.to_s),
+          "expected #{expected_file_name} to have property #{name} == #{expected_value}, but it was #{actual_value}"
+      end
+    rescue RSpec::Expectations::ExpectationNotMetError => e
+      @failure_reason = e.message
+      raise
+    end
+  end
+  chain :with_attributes do |attributes|
+    @with_attributes = attributes
   end
   failure_message do |remote_file|
-    "expected that '#{expected_file_name}' would exist on #{remote_file.service.endpoint}"
+    @failure_reason || "an unexpected error occured while checking for '#{expected_file_name}' on #{remote_file.service.endpoint}"
   end
 end
 

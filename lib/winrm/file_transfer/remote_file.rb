@@ -43,7 +43,7 @@ module WinRM
       end
       size
     end
-    
+
     def close
       service.close_shell(shell) unless shell.nil? or closed
       @closed = true
