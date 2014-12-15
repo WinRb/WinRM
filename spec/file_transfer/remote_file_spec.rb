@@ -1,6 +1,7 @@
 describe WinRM::RemoteFile, :integration => true do
-  
+
   let(:this_file) { __FILE__ }
+  let(:empty_file) { Tempfile.new('empty').path }
   let(:service) { winrm_connection }
   let(:destination) {"C:/Users/Administrator/AppData/Local/Temp/winrm_tests"}
   after {
@@ -50,6 +51,16 @@ describe WinRM::RemoteFile, :integration => true do
     it 'copies the file to the exact path' do
       expect(subject.upload).to be > 0
       expect(subject).to have_remote_file(File.join(destination, File.basename(this_file)))
+    end
+  end
+
+
+  context 'Upload an empty file' do
+    subject {WinRM::RemoteFile.new(service, empty_file, File.join(destination, File.basename(empty_file)))}
+
+    it 'creates an empty file at the exact path' do
+      expect(subject.upload).to be 0
+      expect(subject).to have_remote_file(File.join(destination, File.basename(empty_file))).with_attributes('Length' => 0)
     end
   end
 

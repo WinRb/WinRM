@@ -43,7 +43,7 @@ module WinRM
       end
       size
     end
-    
+
     def close
       service.close_shell(shell) unless shell.nil? or closed
       @closed = true
@@ -108,10 +108,14 @@ module WinRM
       base64_host_file = Base64.encode64(IO.binread(local_path)).gsub("\n", "")
       base64_array = base64_host_file.chars.to_a
       bytes_copied = 0
-      base64_array.each_slice(8000 - remote_path.size) do |chunk|
-        cmd("echo #{chunk.join} >> \"#{remote_path}\"")
-        bytes_copied += chunk.count
-        yield bytes_copied, base64_array.count, local_path, remote_path if block_given?
+      if base64_array.empty?
+        powershell("New-Item '#{remote_path}' -type file")
+      else
+        base64_array.each_slice(8000 - remote_path.size) do |chunk|
+          cmd("echo #{chunk.join} >> \"#{remote_path}\"")
+          bytes_copied += chunk.count
+          yield bytes_copied, base64_array.count, local_path, remote_path if block_given?
+        end
       end
       base64_array.length
     end
@@ -119,8 +123,12 @@ module WinRM
     def decode_command
       <<-EOH
         $base64_string = Get-Content '#{remote_path}'
-        $bytes = [System.Convert]::FromBase64String($base64_string)
-        [System.IO.File]::WriteAllBytes('#{remote_path}', $bytes) | Out-Null
+        if ($base64_string -eq $null) {
+          New-Item -ItemType file -Force '#{remote_path}'
+        } else {
+          $bytes = [System.Convert]::FromBase64String($base64_string)
+          [System.IO.File]::WriteAllBytes('#{remote_path}', $bytes) | Out-Null
+        }
       EOH
     end
 
@@ -140,7 +148,7 @@ module WinRM
         EOH
         idx += 1
       end
-      commands << "$(ConvertTo-Json $result)"
+      commands << "$(ConvertTo-Json -Compress $result)"
 
       result = []
       JSON.parse(powershell(commands.join("\n"))).each do |k,v|
