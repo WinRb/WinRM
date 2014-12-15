@@ -21,4 +21,6 @@ RSpec::Core::RakeTask.new(:integration) do |task|
   task.rspec_opts << '-tintegration'
 end
 
-task :default => "spec"
+task :default => :spec
+
+task :all => [:spec, :integration]

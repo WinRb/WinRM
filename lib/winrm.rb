@@ -33,6 +33,7 @@ module WinRM
   end
 end
 
+require 'winrm/output'
 require 'winrm/helpers/iso8601_duration'
 require 'winrm/soap_provider'
 require 'winrm/file_manager'

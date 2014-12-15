@@ -24,6 +24,38 @@ describe 'winrm client cmd', :integration => true do
     it { should have_no_stderr }
   end
 
+  describe 'capturing output from stdout and stderr' do
+    subject(:output) do
+      # Note: Multiple lines doesn't work:
+      # script = <<-eos
+      # echo Hello
+      # echo , world! 1>&2
+      # eos
+
+      script = "echo Hello & echo , world! 1>&2"
+
+      @captured_stdout, @captured_stderr = "", ""
+      @winrm.cmd(script) do |stdout, stderr|
+        @captured_stdout << stdout if stdout
+        @captured_stderr << stderr if stderr
+      end
+    end
+
+    it 'should have stdout' do
+      expect(output.stdout).to eq("Hello \r\n")
+      expect(output.stdout).to eq(@captured_stdout)
+    end
+
+    it 'should have stderr' do
+      expect(output.stderr).to eq(", world! \r\n")
+      expect(output.stderr).to eq(@captured_stderr)
+    end
+
+    it 'should have output' do
+      expect(output.output).to eq("Hello \r\n, world! \r\n")
+    end
+  end
+
   describe 'ipconfig with /all argument' do
     subject(:output) { @winrm.cmd('ipconfig', %w{/all}) }
     it { should have_exit_code 0 }

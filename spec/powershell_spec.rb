@@ -55,6 +55,40 @@ describe 'winrm client powershell', :integration => true do
     end
     it { should match(/Windows IP Configuration/) }
   end
+
+  describe 'capturing output from Write-Host and Write-Error' do
+    subject(:output) do
+      script = <<-eos
+      Write-Host 'Hello'
+      $host.ui.WriteErrorLine(', world!')
+      eos
+
+      @captured_stdout, @captured_stderr = "", ""
+      @winrm.powershell(script) do |stdout, stderr|
+        @captured_stdout << stdout if stdout
+        @captured_stderr << stderr if stderr
+      end
+    end
+
+    it 'should have stdout' do
+      expect(output.stdout).to eq("Hello\n")
+      expect(output.stdout).to eq(@captured_stdout)
+    end
+
+    it 'should have stderr' do
+      # TODO: Option to parse CLIXML
+      # expect(output.output).to eq("Hello\n, world!")
+      # expect(output.stderr).to eq(", world!")
+      expect(output.stderr).to eq("#< CLIXML\r\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><S S=\"Error\">, world!_x000D__x000A_</S></Objs>")
+      expect(output.stderr).to eq(@captured_stderr)
+    end
+
+    it 'should have output' do
+      # TODO: Option to parse CLIXML
+      # expect(output.output).to eq("Hello\n, world!")
+      expect(output.output).to eq("Hello\n#< CLIXML\r\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><S S=\"Error\">, world!_x000D__x000A_</S></Objs>")
+    end
+  end
 end
 
 

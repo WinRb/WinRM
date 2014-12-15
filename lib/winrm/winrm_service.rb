@@ -151,12 +151,13 @@ module WinRM
 
       # Grab the command element and unescape any single quotes - issue 69
       xml = builder.target!
+      # Note: This won't match is the command spans multiple lines, should it have a multline flag (/m)?
       escaped_cmd = /<#{NS_WIN_SHELL}:Command>(.+)<\/#{NS_WIN_SHELL}:Command>/.match(xml)[1]
       xml.sub!(escaped_cmd, escaped_cmd.gsub(/&#39;/, "'"))
 
       resp_doc = send_message(xml)
       command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
-      
+
       if block_given?
         begin
           yield command_id
@@ -211,7 +212,7 @@ module WinRM
       end
 
       resp_doc = send_message(builder.target!)
-      output = {:data => []}
+      output = Output.new
       REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |n|
         next if n.text.nil? || n.text.empty?
         stream = { n.attributes['Name'].to_sym => Base64.decode64(n.text) }
