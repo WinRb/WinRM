@@ -159,14 +159,16 @@ module WinRM
       <<-EOH
       try
       {
-        $zipPath = [System.IO.Path]::GetFullPath('#{temp_file}')
-        $destination = [System.IO.Path]::GetFullPath('#{dest_file}')
+        $zip = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{temp_file}')
+        $zipFile = [System.IO.Path]::GetFullPath($zip)
+        $dest = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{dest_file}')
+        $destDir = [System.IO.Path]::GetFullPath($dest)
 
-        mkdir $destination -ErrorAction SilentlyContinue | Out-Null
+        mkdir $destDir -ErrorAction SilentlyContinue | Out-Null
         
         $shellApplication = new-object -com shell.application 
-        $zipPackage = $shellApplication.NameSpace($zipPath) 
-        $destinationFolder = $shellApplication.NameSpace($destination) 
+        $zipPackage = $shellApplication.NameSpace($zipFile) 
+        $destinationFolder = $shellApplication.NameSpace($destDir) 
         $destinationFolder.CopyHere($zipPackage.Items(),0x10) | Out-Null
       }
       catch
