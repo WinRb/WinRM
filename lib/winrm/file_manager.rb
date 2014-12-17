@@ -1,5 +1,6 @@
 require 'winrm/file_transfer/remote_file'
 require 'winrm/file_transfer/remote_zip_file'
+require_relative 'file_transfer/temp_zip_file'
 
 module WinRM
   # Perform file transfer operations between a local machine and winrm endpoint
@@ -96,23 +97,80 @@ module WinRM
     #
     # @param [Array<String>] One or more paths that will be copied to the remote path.
     #   These can be files or directories to be deeply copied
-    # @param [String] The directory on the remote endpoint to copy the local items to.
+    # @param [String] The target directory or file
     #   This path may contain powershell style environment variables
     # @yieldparam [Fixnum] Number of bytes copied in current payload sent to the winrm endpoint
     # @yieldparam [Fixnum] The total number of bytes to be copied
     # @yieldparam [String] Path of file being copied
     # @yieldparam [String] Target path on the winrm endpoint
     # @return [Fixnum] The total number of bytes copied
-    def upload(local_path, remote_path, &block)
-      @logger.debug("uploading: #{local_path} -> #{remote_path}")
-      local_path = [local_path] if local_path.is_a? String
-      file = create_remote_file(local_path, remote_path)
-      file.upload(&block)
+    def upload(local_paths, remote_path, &block)
+      local_paths = [local_paths] if local_paths.is_a? String
+      remote_path = remote_path.gsub('\\', '/')
+      upload_path = File.join(temp_dir, "winrm-upload-#{rand()}").gsub('\\', '/')
+
+      # TODO: Handle single file uploads
+
+      # Create and upload the zip file
+      temp_zip = create_temp_zip_file(local_paths)
+      remote_file = RemoteFile.new(@service, temp_zip.path, upload_path)
+      bytes = remote_file.upload(&block)
+
+      # Extract the zip file
+      output = @service.powershell(extract_zip_command(upload_path, remote_path))
+      raise WinRMUploadError.new(output.output) if output[:exitcode] != 0
+
+      bytes
+
+      #file = create_remote_file(local_path, remote_path)
+      #file.upload(&block)
+
+    ensure
+      temp_zip.delete() if temp_zip
     end
 
     private
 
+    def create_temp_zip_file(local_paths)
+      temp_zip = WinRM::TempZipFile.new()
+      local_paths.each do |local_path|
+        if File.directory?(local_path)
+          temp_zip.add_directory(local_path)
+        elsif File.file?(local_path)
+          temp_zip.add_file(local_path)
+        else
+          raise "#{local_path} doesn't exist"
+        end
+      end
+      temp_zip
+    end
+
+    def extract_zip_command(temp_file, dest_file)
+      <<-EOH
+      try
+      {
+        $zipPath = [System.IO.Path]::GetFullPath('#{temp_file}')
+        $destination = [System.IO.Path]::GetFullPath('#{dest_file}')
+
+        mkdir $destination -ErrorAction SilentlyContinue | Out-Null
+        
+        $shellApplication = new-object -com shell.application 
+        $zipPackage = $shellApplication.NameSpace($zipPath) 
+        $destinationFolder = $shellApplication.NameSpace($destination) 
+        $destinationFolder.CopyHere($zipPackage.Items(),0x10) | Out-Null
+      }
+      catch
+      {
+        exit 1
+      }
+      exit 0
+      EOH
+    end
+
+
+
     def create_remote_file(local_paths, remote_path)
+      # Handle uploading a single file
       if local_paths.count == 1 && !File.directory?(local_paths[0])
         # singular local file path
         src_file = local_paths[0]
@@ -126,6 +184,7 @@ module WinRM
 
         return RemoteFile.new(@service, src_file, dest_file)
       end
+
       zip_file = RemoteZipFile.new(@service, remote_path)
       local_paths.each { |path| zip_file.add_file(path) }
       zip_file
