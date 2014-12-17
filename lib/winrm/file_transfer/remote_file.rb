@@ -6,18 +6,20 @@ module WinRM
 
     attr_reader :local_path
     attr_reader :remote_path
+    attr_reader :temp_path
     attr_reader :shell
 
-    def initialize(service, local_path, remote_path)
+    def initialize(service, local_path, remote_path, remote_temp_dir)
       @logger = Logging.logger[self]
       @service = service
       @local_path = local_path
       @remote_path = remote_path
-      @logger.debug("Creating RemoteFile of local '#{local_path}' at '#{@remote_path}'")
+      @temp_path = File.join(remote_temp_dir, "winrm-upload-#{rand()}").gsub('\\', '/')
     end
 
     def upload(&block)
-      raise WinRMUploadError.new("Cannot find path: '#{local_path}'") unless File.exist?(local_path)
+      @logger.debug("Uploading: '#{@local_path}' -> '#{@remote_path}'")
+      raise WinRMUploadError.new("Cannot find path: '#{@local_path}'") unless File.exist?(@local_path)
 
       @shell = @service.open_shell()
 
@@ -30,10 +32,10 @@ module WinRM
 
       if should_upload
         size = upload_to_remote(&block)
-        powershell_batch {|builder| builder << create_post_upload_command}
+        powershell_batch { |builder| builder << create_post_upload_command }
       else
         size = 0
-        logger.debug("Files are equal. Not copying #{local_path} to #{remote_path}")
+        logger.debug("Files are equal. Not copying #{@local_path} to #{@remote_path}")
       end
       size
     ensure
@@ -47,7 +49,7 @@ module WinRM
 
     def resolve_remote_command
       <<-EOH
-        $dest_file_path = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("#{remote_path}")
+        $dest_file_path = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("#{@remote_path}")
 
         if (!(Test-Path $dest_file_path)) {
           $dest_dir = ([System.IO.Path]::GetDirectoryName($dest_file_path))
@@ -59,9 +61,9 @@ module WinRM
     end
 
     def is_dirty_command
-      local_md5 = Digest::MD5.file(local_path).hexdigest
+      local_md5 = Digest::MD5.file(@local_path).hexdigest
       <<-EOH
-        $dest_file_path = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("#{remote_path}")
+        $dest_file_path = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("#{@remote_path}")
 
         if (test-path $dest_file_path) {
           $crypto_prov = new-object -TypeName System.Security.Cryptography.MD5CryptoServiceProvider
@@ -82,17 +84,17 @@ module WinRM
     end
 
     def upload_to_remote(&block)
-      logger.debug("Uploading '#{local_path}' to temp file '#{remote_path}'")
-      base64_host_file = Base64.encode64(IO.binread(local_path)).gsub("\n", "")
+      logger.debug("Uploading '#{@local_path}' to temp file '#{@temp_path}'")
+      base64_host_file = Base64.encode64(IO.binread(@local_path)).gsub("\n", "")
       base64_array = base64_host_file.chars.to_a
       bytes_copied = 0
       if base64_array.empty?
-        powershell("New-Item '#{remote_path}' -type file")
+        powershell("New-Item '#{@temp_path}' -type file")
       else
-        base64_array.each_slice(8000 - remote_path.size) do |chunk|
-          cmd("echo #{chunk.join} >> \"#{remote_path}\"")
+        base64_array.each_slice(8000 - @temp_path.size) do |chunk|
+          cmd("echo #{chunk.join} >> \"#{@temp_path}\"")
           bytes_copied += chunk.count
-          yield bytes_copied, base64_array.count, local_path, remote_path if block_given?
+          yield bytes_copied, base64_array.count, @local_path, @remote_path if block_given?
         end
       end
       base64_array.length
@@ -100,12 +102,15 @@ module WinRM
 
     def decode_command
       <<-EOH
-        $base64_string = Get-Content '#{remote_path}'
-        if ($base64_string -eq $null) {
-          New-Item -ItemType file -Force '#{remote_path}'
+        $tempFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{@temp_path}')
+        $destFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{@remote_path}')
+
+        $base64Content = Get-Content $tempFile
+        if ($base64Content -eq $null) {
+          New-Item -ItemType file -Force $destFile
         } else {
-          $bytes = [System.Convert]::FromBase64String($base64_string)
-          [System.IO.File]::WriteAllBytes('#{remote_path}', $bytes) | Out-Null
+          $bytes = [System.Convert]::FromBase64String($base64Content)
+          [System.IO.File]::WriteAllBytes($destFile, $bytes) | Out-Null
         }
       EOH
     end
@@ -156,8 +161,8 @@ module WinRM
 
       if !command_output[:exitcode].zero? or !err_stream.empty?
         raise WinRMUploadError,
-          :from => local_path,
-          :to => remote_path,
+          :from => @local_path,
+          :to => @remote_path,
           :message => command_output.inspect
       end
       out_stream.join.chomp

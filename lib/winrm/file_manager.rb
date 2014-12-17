@@ -107,24 +107,34 @@ module WinRM
     def upload(local_paths, remote_path, &block)
       local_paths = [local_paths] if local_paths.is_a? String
       remote_path = remote_path.gsub('\\', '/')
-      upload_path = File.join(temp_dir, "winrm-upload-#{rand()}").gsub('\\', '/')
+      bytes = 0
 
-      # TODO: Handle single file uploads
+      # Specifying a single src file to upload is a special case
+      if local_paths.count == 1 && !File.directory?(local_paths[0])
+        src_file = local_paths[0]
 
-      # Create and upload the zip file
-      temp_zip = create_temp_zip_file(local_paths)
-      remote_file = RemoteFile.new(@service, temp_zip.path, upload_path)
-      bytes = remote_file.upload(&block)
+        # If the src has a file extension and the destination does not
+        # we can assume the caller specified the dest as a directory
+        if File.extname(src_file) != '' && File.extname(remote_path) == ''
+          remote_path = File.join(remote_path, File.basename(src_file))
+        end
 
-      # Extract the zip file
-      output = @service.powershell(extract_zip_command(upload_path, remote_path))
-      raise WinRMUploadError.new(output.output) if output[:exitcode] != 0
+        remote_file = RemoteFile.new(@service, src_file, remote_path, temp_dir)
+        bytes = remote_file.upload(&block)       
+      else
+        upload_path = File.join(temp_dir, "winrm-upload-#{rand()}.zip").gsub('\\', '/')
+
+        # Create and upload the zip file
+        temp_zip = create_temp_zip_file(local_paths)
+        remote_file = RemoteFile.new(@service, temp_zip.path, upload_path, temp_dir)
+        bytes = remote_file.upload(&block)
+
+        # Extract the zip file
+        output = @service.powershell(extract_zip_command(upload_path, remote_path))
+        raise WinRMUploadError.new(output.output) if output[:exitcode] != 0
+      end
 
       bytes
-
-      #file = create_remote_file(local_path, remote_path)
-      #file.upload(&block)
-
     ensure
       temp_zip.delete() if temp_zip
     end
@@ -167,27 +177,5 @@ module WinRM
       EOH
     end
 
-
-
-    def create_remote_file(local_paths, remote_path)
-      # Handle uploading a single file
-      if local_paths.count == 1 && !File.directory?(local_paths[0])
-        # singular local file path
-        src_file = local_paths[0]
-        dest_file = remote_path.gsub('\\', '/')
-        
-        # If the src has a file extension and the destination does not
-        # we can assume the caller specified the dest as a directory
-        if File.extname(src_file) != '' && File.extname(dest_file) == ''
-          dest_file = File.join(dest_file, File.basename(src_file))
-        end
-
-        return RemoteFile.new(@service, src_file, dest_file)
-      end
-
-      zip_file = RemoteZipFile.new(@service, remote_path)
-      local_paths.each { |path| zip_file.add_file(path) }
-      zip_file
-    end
   end
 end
