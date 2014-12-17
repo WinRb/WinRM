@@ -14,7 +14,6 @@ describe WinRM::FileManager, :unit => true do
   context 'copying a single file' do
     it 'uploads a remote_file' do
       expect(remote_file).to receive(:upload)
-      expect(remote_file).to receive(:close)
       subject.upload(this_file, "c:/directory")
     end
   end
@@ -23,7 +22,6 @@ describe WinRM::FileManager, :unit => true do
     it 'uploads a remote_zip_file' do
       expect(remote_zip_file).to receive(:add_file).with(File.dirname(this_file))
       expect(remote_zip_file).to receive(:upload)
-      expect(remote_zip_file).to receive(:close)
       subject.upload(File.dirname(this_file), "c:/directory")
     end
   end
@@ -33,7 +31,6 @@ describe WinRM::FileManager, :unit => true do
       expect(remote_zip_file).to receive(:upload)
       expect(remote_zip_file).to receive(:add_file).with(this_file)
       expect(remote_zip_file).to receive(:add_file).with(File.dirname(this_file))
-      expect(remote_zip_file).to receive(:close)
       subject.upload([File.dirname(this_file), this_file], "c:/directory")
     end
   end
