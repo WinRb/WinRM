@@ -21,7 +21,7 @@ module WinRM
       @logger.debug("Uploading file: #{@local_path} -> #{@remote_path}")
       raise WinRMUploadError.new("Cannot find path: #{@local_path}") unless File.exist?(@local_path)
 
-      @cmd_executor = WinRM::CommandExecutor.new(@service, @local_path, @remote_path)
+      @cmd_executor = WinRM::CommandExecutor.new(@service)
       @cmd_executor.open()
 
       @temp_path = @cmd_executor.run_powershell(resolve_tempfile_command).chomp
@@ -35,6 +35,12 @@ module WinRM
       end
 
       return size
+    rescue WinRMUploadError => e
+      # add additional context, from and to
+      raise WinRMUploadError,
+        :from => @local_path,
+        :to => @remote_path,
+        :message => e.message
     ensure
       @cmd_executor.close() if @cmd_executor
     end

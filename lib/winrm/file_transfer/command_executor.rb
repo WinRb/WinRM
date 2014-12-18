@@ -3,10 +3,8 @@ require_relative '../helpers/powershell_script'
 module WinRM
   # Executes commands used by the WinRM file management module
   class CommandExecutor
-    def initialize(service, local_path, remote_path)
+    def initialize(service)
       @service = service
-      @local_path = local_path
-      @remote_path = remote_path
     end
 
     def open()
@@ -31,21 +29,20 @@ module WinRM
       @service.run_command(@shell, command, arguments) do |command_id|
         result = @service.get_command_output(@shell, command_id)
       end
-
-      if result[:exitcode] != 0 || result.stderr.length > 0
-        raise WinRMUploadError,
-          :from => @local_path,
-          :to => @remote_path,
-          :message => result.output
-      end
-
+      assert_command_succeed(result)
       result.stdout
     end
 
     private
 
     def assert_shell_is_open()
-      raise 'Shell must be open before using' unless @shell_open
+      raise 'You must call open before calling any run methods' unless @shell_open
+    end
+
+    def assert_command_succeed(result)
+      if result[:exitcode] != 0 || result.stderr.length > 0
+        raise WinRMUploadError, :message => result.output
+      end
     end
   end
 end
