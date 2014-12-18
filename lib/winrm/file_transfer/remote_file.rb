@@ -1,6 +1,6 @@
 require 'io/console'
 require 'json'
-require_relative '../helpers/powershell_script'
+require_relative 'command_executor'
 
 module WinRM
   class RemoteFile
@@ -21,12 +21,14 @@ module WinRM
       @logger.debug("Uploading file: #{@local_path} -> #{@remote_path}")
       raise WinRMUploadError.new("Cannot find path: #{@local_path}") unless File.exist?(@local_path)
 
-      @shell = @service.open_shell()
-      @temp_path = run_powershell(resolve_tempfile_command).chomp
+      @cmd_executor = WinRM::CommandExecutor.new(@service, @local_path, @remote_path)
+      @cmd_executor.open()
+
+      @temp_path = @cmd_executor.run_powershell(resolve_tempfile_command).chomp
 
       if !@temp_path.to_s.empty?
         size = upload_to_tempfile(&block)
-        run_powershell(decode_tempfile_command)
+        @cmd_executor.run_powershell(decode_tempfile_command)
       else
         size = 0
         @logger.debug("Files are equal. Not copying #{@local_path} to #{@remote_path}")
@@ -34,7 +36,7 @@ module WinRM
 
       return size
     ensure
-      @service.close_shell(@shell) if @shell
+      @cmd_executor.close() if @cmd_executor
     end
     
     protected
@@ -45,38 +47,16 @@ module WinRM
       base64_array = base64_host_file.chars.to_a
       bytes_copied = 0
       if base64_array.empty?
-        run_powershell(create_empty_destfile_command)
+        @cmd_executor.run_powershell(create_empty_destfile_command)
       else
         base64_array.each_slice(8000 - @temp_path.size) do |chunk|
-          run_cmd("echo #{chunk.join} >> \"#{@temp_path}\"")
+          @cmd_executor.run_cmd("echo #{chunk.join} >> \"#{@temp_path}\"")
           bytes_copied += chunk.count
           yield bytes_copied, base64_array.count, @local_path, @remote_path if block_given?
         end
       end
       base64_array.length
     end
-
-    def run_powershell(script_text)
-      script = WinRM::PowershellScript.new(script_text)
-      run_cmd("powershell", ['-encodedCommand', script.encoded()])
-    end
-
-    def run_cmd(command, arguments = [])
-      result = nil
-      @service.run_command(@shell, command, arguments) do |command_id|
-        result = @service.get_command_output(@shell, command_id)
-      end
-
-      if result[:exitcode] != 0 || result.stderr.length > 0
-        raise WinRMUploadError,
-          :from => @local_path,
-          :to => @remote_path,
-          :message => result.output
-      end
-
-      result.stdout
-    end
-
 
     def resolve_tempfile_command()
       local_md5 = Digest::MD5.file(@local_path).hexdigest

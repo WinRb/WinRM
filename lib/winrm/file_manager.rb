@@ -1,5 +1,4 @@
-require 'winrm/file_transfer/remote_file'
-require 'winrm/file_transfer/remote_zip_file'
+require_relative 'file_transfer/remote_file'
 require_relative 'file_transfer/temp_zip_file'
 
 module WinRM
