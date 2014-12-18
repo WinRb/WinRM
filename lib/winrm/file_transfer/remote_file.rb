@@ -1,7 +1,7 @@
 require_relative 'command_executor'
-require_relative 'base64_temp_file_decoder'
-require_relative 'md5_temp_file_resolver'
+require_relative 'base64_file_decoder'
 require_relative 'base64_file_uploader'
+require_relative 'md5_temp_file_resolver'
 
 module WinRM
   class RemoteFile
@@ -34,7 +34,7 @@ module WinRM
       file_uploader = WinRM::Base64FileUploader.new(@command_executor)
       size = file_uploader.upload_to_temp_file(@local_path, @temp_path, @remote_path, &block)
 
-      decoder = WinRM::Base64TempFileDecoder.new(@command_executor)
+      decoder = WinRM::Base64FileDecoder.new(@command_executor)
       decoder.decode(@temp_path, @remote_path)
 
       size

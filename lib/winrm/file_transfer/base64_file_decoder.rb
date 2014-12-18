@@ -1,23 +1,23 @@
 require_relative 'command_executor'
 
 module WinRM
-  class Base64TempFileDecoder
+  class Base64FileDecoder
 
     def initialize(command_executor)
       @command_executor = command_executor
     end
 
-    def decode(temp_file_path, dest_file_path)
-      script = decode_script(temp_file_path, dest_file_path)
+    def decode(base64_encoded_file, dest_file)
+      script = decode_script(base64_encoded_file, dest_file)
       @command_executor.run_powershell(script)
     end
 
     private
 
-    def decode_script(temp_file_path, dest_file_path)
+    def decode_script(base64_encoded_file, dest_file)
       <<-EOH
-        $tempFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{temp_file_path}')
-        $destFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{dest_file_path}')
+        $tempFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{base64_encoded_file}')
+        $destFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{dest_file}')
 
         # ensure the file's containing directory exists
         $destDir = ([System.IO.Path]::GetDirectoryName($destFile))
