@@ -15,7 +15,6 @@ module WinRM
       @service = service
       @local_path = local_path
       @remote_path = remote_path
-      #@temp_path = File.join(remote_temp_dir, "winrm-upload-#{rand()}").gsub('\\', '/')
     end
 
     def upload(&block)
