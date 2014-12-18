@@ -10,25 +10,22 @@ module WinRM
     attr_reader :temp_path
     attr_reader :shell
 
-    def initialize(service, local_path, remote_path, remote_temp_dir)
+    def initialize(command_executor, local_path, remote_path)
       @logger = Logging.logger[self]
-      @service = service
       @local_path = local_path
       @remote_path = remote_path
+      @command_executor = command_executor
     end
 
     def upload(&block)
       @logger.debug("Uploading file: #{@local_path} -> #{@remote_path}")
       raise WinRMUploadError.new("Cannot find path: #{@local_path}") unless File.exist?(@local_path)
 
-      @cmd_executor = WinRM::CommandExecutor.new(@service)
-      @cmd_executor.open()
-
-      @temp_path = @cmd_executor.run_powershell(resolve_tempfile_command).chomp
+      @temp_path = @command_executor.run_powershell(resolve_tempfile_command).chomp
 
       if !@temp_path.to_s.empty?
         size = upload_to_tempfile(&block)
-        @cmd_executor.run_powershell(decode_tempfile_command)
+        @command_executor.run_powershell(decode_tempfile_command)
       else
         size = 0
         @logger.debug("Files are equal. Not copying #{@local_path} to #{@remote_path}")
@@ -41,8 +38,6 @@ module WinRM
         :from => @local_path,
         :to => @remote_path,
         :message => e.message
-    ensure
-      @cmd_executor.close() if @cmd_executor
     end
     
     protected
@@ -53,10 +48,10 @@ module WinRM
       base64_array = base64_host_file.chars.to_a
       bytes_copied = 0
       if base64_array.empty?
-        @cmd_executor.run_powershell(create_empty_destfile_command)
+        @command_executor.run_powershell(create_empty_destfile_command)
       else
         base64_array.each_slice(8000 - @temp_path.size) do |chunk|
-          @cmd_executor.run_cmd("echo #{chunk.join} >> \"#{@temp_path}\"")
+          @command_executor.run_cmd("echo #{chunk.join} >> \"#{@temp_path}\"")
           bytes_copied += chunk.count
           yield bytes_copied, base64_array.count, @local_path, @remote_path if block_given?
         end

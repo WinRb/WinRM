@@ -1,5 +1,6 @@
 require_relative 'file_transfer/remote_file'
 require_relative 'file_transfer/temp_zip_file'
+require_relative 'file_transfer/command_executor'
 
 module WinRM
   # Perform file transfer operations between a local machine and winrm endpoint
@@ -108,6 +109,9 @@ module WinRM
       remote_path = remote_path.gsub('\\', '/')
       bytes = 0
 
+      cmd_executor = WinRM::CommandExecutor.new(@service)
+      cmd_executor.open()
+
       # Specifying a single src file to upload is a special case
       if local_paths.count == 1 && !File.directory?(local_paths[0])
         src_file = local_paths[0]
@@ -118,14 +122,14 @@ module WinRM
           remote_path = File.join(remote_path, File.basename(src_file))
         end
 
-        remote_file = RemoteFile.new(@service, src_file, remote_path, temp_dir)
+        remote_file = RemoteFile.new(cmd_executor, src_file, remote_path)
         bytes = remote_file.upload(&block)       
       else
         upload_path = File.join(temp_dir, "winrm-upload-#{rand()}.zip").gsub('\\', '/')
 
         # Create and upload the zip file
         temp_zip = create_temp_zip_file(local_paths)
-        remote_file = RemoteFile.new(@service, temp_zip.path, upload_path, temp_dir)
+        remote_file = RemoteFile.new(cmd_executor, temp_zip.path, upload_path)
         bytes = remote_file.upload(&block)
 
         # Extract the zip file
@@ -135,6 +139,7 @@ module WinRM
 
       bytes
     ensure
+      cmd_executor.close() if cmd_executor
       temp_zip.delete() if temp_zip
     end
 
