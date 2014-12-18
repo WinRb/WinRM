@@ -14,85 +14,41 @@ module WinRM
       @service = service
       @local_path = local_path
       @remote_path = remote_path
-      @temp_path = File.join(remote_temp_dir, "winrm-upload-#{rand()}").gsub('\\', '/')
+      #@temp_path = File.join(remote_temp_dir, "winrm-upload-#{rand()}").gsub('\\', '/')
     end
 
     def upload(&block)
-      @logger.debug("Uploading: '#{@local_path}' -> '#{@remote_path}'")
-      raise WinRMUploadError.new("Cannot find path: '#{@local_path}'") unless File.exist?(@local_path)
+      @logger.debug("Uploading file: #{@local_path} -> #{@remote_path}")
+      raise WinRMUploadError.new("Cannot find path: #{@local_path}") unless File.exist?(@local_path)
 
       @shell = @service.open_shell()
+      @temp_path = run_powershell(resolve_tempfile_command).chomp
 
-      @remote_path, should_upload = powershell_batch do | builder |
-        builder << resolve_remote_command
-        builder << is_dirty_command
-      end
-
-      @remote_path = @remote_path.gsub('\\', '/')
-
-      if should_upload
-        size = upload_to_remote(&block)
-        powershell_batch { |builder| builder << create_post_upload_command }
+      if !@temp_path.to_s.empty?
+        size = upload_to_tempfile(&block)
+        run_powershell(decode_tempfile_command)
       else
         size = 0
-        logger.debug("Files are equal. Not copying #{@local_path} to #{@remote_path}")
+        @logger.debug("Files are equal. Not copying #{@local_path} to #{@remote_path}")
       end
-      size
+
+      return size
     ensure
       @service.close_shell(@shell) if @shell
     end
     
-
     protected
 
-    attr_reader :logger
-
-    def resolve_remote_command
-      <<-EOH
-        $dest_file_path = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("#{@remote_path}")
-
-        if (!(Test-Path $dest_file_path)) {
-          $dest_dir = ([System.IO.Path]::GetDirectoryName($dest_file_path))
-          New-Item -ItemType directory -Force -Path $dest_dir | Out-Null
-        }
-
-        $dest_file_path
-      EOH
-    end
-
-    def is_dirty_command
-      local_md5 = Digest::MD5.file(@local_path).hexdigest
-      <<-EOH
-        $dest_file_path = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("#{@remote_path}")
-
-        if (test-path $dest_file_path) {
-          $crypto_prov = new-object -TypeName System.Security.Cryptography.MD5CryptoServiceProvider
-
-          $file = [System.IO.File]::Open($dest_file_path,
-            [System.IO.Filemode]::Open, [System.IO.FileAccess]::Read)
-          $guest_md5 = ([System.BitConverter]::ToString($crypto_prov.ComputeHash($file)))
-          $guest_md5 = $guest_md5.Replace("-","").ToLower()
-          $file.Close()
-
-          if ($guest_md5 -eq '#{local_md5}') {
-            return $false
-          }
-          ri $dest_file_path -force
-        }
-        return $true
-      EOH
-    end
-
-    def upload_to_remote(&block)
-      logger.debug("Uploading '#{@local_path}' to temp file '#{@temp_path}'")
+    def upload_to_tempfile(&block)
+      @logger.debug("Uploading to temp file #{@temp_path}")
       base64_host_file = Base64.encode64(IO.binread(@local_path)).gsub("\n", "")
       base64_array = base64_host_file.chars.to_a
       bytes_copied = 0
       if base64_array.empty?
-        powershell("New-Item '#{@temp_path}' -type file")
+        run_powershell(create_empty_destfile_command)
       else
         base64_array.each_slice(8000 - @temp_path.size) do |chunk|
-          cmd("echo #{chunk.join} >> \"#{@temp_path}\"")
+          run_cmd("echo #{chunk.join} >> \"#{@temp_path}\"")
           bytes_copied += chunk.count
           yield bytes_copied, base64_array.count, @local_path, @remote_path if block_given?
         end
@@ -100,11 +56,70 @@ module WinRM
       base64_array.length
     end
 
-    def decode_command
+    def run_powershell(script)
+      script = "$ProgressPreference='SilentlyContinue';" + script
+      @logger.debug("executing powershell script: \n#{script}")
+      script = script.encode('UTF-16LE', 'UTF-8')
+      script = Base64.strict_encode64(script)
+      run_cmd("powershell", ['-encodedCommand', script])
+    end
+
+    def run_cmd(command, arguments = [])
+      result = nil
+      @service.run_command(@shell, command, arguments) do |command_id|
+        result = @service.get_command_output(@shell, command_id)
+      end
+
+      if result[:exitcode] != 0 || result.stderr.length > 0
+        raise WinRMUploadError,
+          :from => @local_path,
+          :to => @remote_path,
+          :message => result.output
+      end
+
+      result.stdout
+    end
+
+
+    def resolve_tempfile_command()
+      local_md5 = Digest::MD5.file(@local_path).hexdigest
+      <<-EOH
+        # get the resolved target path
+        $destFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("#{@remote_path}")
+
+        # check if file is up to date
+        if (Test-Path $destFile) {
+          $cryptoProv = New-Object -TypeName System.Security.Cryptography.MD5CryptoServiceProvider
+
+          $file = [System.IO.File]::Open($destFile,
+            [System.IO.Filemode]::Open, [System.IO.FileAccess]::Read)
+          $guestMd5 = ([System.BitConverter]::ToString($cryptoProv.ComputeHash($file)))
+          $guestMd5 = $guestMd5.Replace("-","").ToLower()
+          $file.Close()
+
+          # file content is up to date, send back an empty file path to signal this
+          if ($guestMd5 -eq '#{local_md5}') {
+            return ''
+          }
+        }
+
+        # file doesn't exist or out of date, return a unique temp file path to upload to
+        return [System.IO.Path]::GetTempFileName()
+      EOH
+    end
+
+    def decode_tempfile_command()
       <<-EOH
         $tempFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{@temp_path}')
         $destFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{@remote_path}')
 
+        # ensure the file's containing directory exists
+        $destDir = ([System.IO.Path]::GetDirectoryName($destFile))
+        if (!(Test-Path $destDir)) {
+          New-Item -ItemType directory -Force -Path $destDir | Out-Null
+        }
+
+        # get the encoded temp file contents, decode, and write to final dest file
         $base64Content = Get-Content $tempFile
         if ($base64Content -eq $null) {
           New-Item -ItemType file -Force $destFile
@@ -115,57 +130,12 @@ module WinRM
       EOH
     end
 
-    def create_post_upload_command
-      [decode_command]
+    def create_empty_destfile_command()
+      <<-EOH
+        $destFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{@remote_path}')
+        New-Item $destFile -type file
+      EOH
     end
 
-    def powershell_batch(&block)
-      ps_builder = []
-      yield ps_builder
-
-      commands = [ "$result = @{}" ]
-      idx = 0
-      ps_builder.flatten.each do |cmd_item|
-        commands << <<-EOH
-          $result.ret#{idx} = Invoke-Command { #{cmd_item} }
-        EOH
-        idx += 1
-      end
-      commands << "$(ConvertTo-Json -Compress $result)"
-
-      result = []
-      JSON.parse(powershell(commands.join("\n"))).each do |k,v|
-        result << v unless v.nil?
-      end
-      result unless result.empty?
-    end
-
-    def powershell(script)
-      script = "$ProgressPreference='SilentlyContinue';" + script
-      logger.debug("executing powershell script: \n#{script}")
-      script = script.encode('UTF-16LE', 'UTF-8')
-      script = Base64.strict_encode64(script)
-      cmd("powershell", ['-encodedCommand', script])
-    end
-
-    def cmd(command, arguments = [])
-      command_output = nil
-      out_stream = []
-      err_stream = []
-      @service.run_command(@shell, command, arguments) do |command_id|
-        command_output = @service.get_command_output(@shell, command_id) do |stdout, stderr|
-          out_stream << stdout if stdout
-          err_stream << stderr if stderr
-        end
-      end
-
-      if !command_output[:exitcode].zero? or !err_stream.empty?
-        raise WinRMUploadError,
-          :from => @local_path,
-          :to => @remote_path,
-          :message => command_output.inspect
-      end
-      out_stream.join.chomp
-    end
   end
 end
