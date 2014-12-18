@@ -1,12 +1,16 @@
 require_relative 'command_executor'
 
 module WinRM
+  # Decodes a base64 file on a target machine and writes it out
   class Base64FileDecoder
 
     def initialize(command_executor)
       @command_executor = command_executor
     end
 
+    # Decodes the given base64 encoded file and writes it to another file.
+    # @param [String] Path to the base64 encoded file on the target machine.
+    # @param [String] Path to the unencoded file on the target machine.
     def decode(base64_encoded_file, dest_file)
       script = decode_script(base64_encoded_file, dest_file)
       @command_executor.run_powershell(script)
