@@ -1,5 +1,6 @@
 require 'io/console'
 require 'json'
+require_relative '../helpers/powershell_script'
 
 module WinRM
   class RemoteFile
@@ -56,12 +57,9 @@ module WinRM
       base64_array.length
     end
 
-    def run_powershell(script)
-      script = "$ProgressPreference='SilentlyContinue';" + script
-      @logger.debug("executing powershell script: \n#{script}")
-      script = script.encode('UTF-16LE', 'UTF-8')
-      script = Base64.strict_encode64(script)
-      run_cmd("powershell", ['-encodedCommand', script])
+    def run_powershell(script_text)
+      script = WinRM::PowershellScript.new(script_text)
+      run_cmd("powershell", ['-encodedCommand', script.encoded()])
     end
 
     def run_cmd(command, arguments = [])
