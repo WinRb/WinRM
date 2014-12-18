@@ -1,6 +1,7 @@
 require 'io/console'
 require 'json'
 require_relative 'command_executor'
+require_relative 'base64_temp_file_decoder'
 
 module WinRM
   class RemoteFile
@@ -25,7 +26,8 @@ module WinRM
 
       if !@temp_path.to_s.empty?
         size = upload_to_tempfile(&block)
-        @command_executor.run_powershell(decode_tempfile_command)
+        decoder = WinRM::Base64TempFileDecoder.new(@command_executor)
+        decoder.decode(@temp_path, @remote_path)
       else
         size = 0
         @logger.debug("Files are equal. Not copying #{@local_path} to #{@remote_path}")
@@ -83,28 +85,6 @@ module WinRM
 
         # file doesn't exist or out of date, return a unique temp file path to upload to
         return [System.IO.Path]::GetTempFileName()
-      EOH
-    end
-
-    def decode_tempfile_command()
-      <<-EOH
-        $tempFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{@temp_path}')
-        $destFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{@remote_path}')
-
-        # ensure the file's containing directory exists
-        $destDir = ([System.IO.Path]::GetDirectoryName($destFile))
-        if (!(Test-Path $destDir)) {
-          New-Item -ItemType directory -Force -Path $destDir | Out-Null
-        }
-
-        # get the encoded temp file contents, decode, and write to final dest file
-        $base64Content = Get-Content $tempFile
-        if ($base64Content -eq $null) {
-          New-Item -ItemType file -Force $destFile
-        } else {
-          $bytes = [System.Convert]::FromBase64String($base64Content)
-          [System.IO.File]::WriteAllBytes($destFile, $bytes) | Out-Null
-        }
       EOH
     end
 
