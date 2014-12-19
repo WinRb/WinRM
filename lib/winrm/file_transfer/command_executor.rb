@@ -29,7 +29,7 @@ module WinRM
       @service.run_command(@shell, command, arguments) do |command_id|
         result = @service.get_command_output(@shell, command_id)
       end
-      assert_command_succeed(result)
+      assert_command_success(result)
       result.stdout
     end
 
@@ -39,7 +39,7 @@ module WinRM
       raise 'You must call open before calling any run methods' unless @shell_open
     end
 
-    def assert_command_succeed(result)
+    def assert_command_success(result)
       if result[:exitcode] != 0 || result.stderr.length > 0
         raise WinRMUploadError, result.output
       end
