@@ -35,7 +35,6 @@ module WinRM
     end
     
     def add_file(file)
-      raise "#{file} doesn't exist" unless File.exists?(file)
       raise "#{file} isn't a file" unless File.file?(file)
       add_file_entry(file, File.dirname(file))
     end

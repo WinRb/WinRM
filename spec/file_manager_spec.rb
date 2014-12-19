@@ -1,6 +1,7 @@
 describe WinRM::FileManager, :integration => true do
+  let(:dest_dir) { File.join(subject.temp_dir, "winrm_#{rand(2**16)}") }
+  let(:src_dir) { File.expand_path(File.dirname(__FILE__)) }
   let(:service) { winrm_connection }
-  let(:dest_dir) { File.join(subject.temp_dir, 'winrm_filemanager_test') }
 
   subject { WinRM::FileManager.new(service) }
 
@@ -64,10 +65,12 @@ describe WinRM::FileManager, :integration => true do
     end
 
     it 'copies the exact file content' do
-      downloaded_file = File.join(Dir.tmpdir, 'downloaded')
+      downloaded_file = Tempfile.new('downloaded')
+      downloaded_file.close()
       subject.upload(src_file, dest_file)
       subject.download(dest_file, downloaded_file)
       expect(File.read(downloaded_file).chomp).to eq(File.read(src_file).chomp)
+      downloaded_file.unlink
     end
 
     it 'should not upload the file when content matches' do
@@ -77,11 +80,37 @@ describe WinRM::FileManager, :integration => true do
     end
 
     it 'should upload file when content differs' do
-      another_src_file = File.join(File.expand_path(File.dirname(__FILE__)), 'matchers.rb')
+      another_src_file = File.join(src_dir, 'matchers.rb')
       subject.upload(another_src_file, dest_file)
       expect(subject.exists?(dest_file)).to be true
       bytes_uploaded = subject.upload(src_file, dest_file)
       expect(bytes_uploaded).to be > 0
+    end
+
+    it 'raises WinRMUploadError when a bad source path is specified' do
+      expect { subject.upload('c:/some/non-existant/path/foo', dest_file) }.to raise_error
+    end
+  end
+
+  context 'upload directory' do
+    it 'copies the entire directory' do
+      downloaded_file = Tempfile.new('downloaded')
+      downloaded_file.close()
+
+      bytes_uploaded = subject.upload(src_dir, dest_dir)
+      expect(bytes_uploaded).to be > 0
+      
+      Dir.glob(src_dir + '/*.rb').each do |host_file|
+        host_file_rel = host_file[src_dir.length..-1]
+        remote_file = File.join(dest_dir, host_file_rel)
+
+        expect(subject.exists?(remote_file)).to be true
+
+        subject.download(remote_file, downloaded_file.path)
+        expect(File.read(downloaded_file.path)).to eq(File.read(host_file))
+      end
+
+      downloaded_file.delete()
     end
   end
 end
