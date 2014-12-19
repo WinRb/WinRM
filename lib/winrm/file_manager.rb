@@ -1,6 +1,5 @@
 require_relative 'file_transfer/remote_file'
 require_relative 'file_transfer/temp_zip_file'
-require_relative 'file_transfer/command_executor'
 
 module WinRM
   # Perform file transfer operations between a local machine and winrm endpoint
@@ -108,23 +107,18 @@ module WinRM
       local_paths = [local_paths] if local_paths.is_a? String
       bytes = 0
 
-      cmd_executor = WinRM::CommandExecutor.new(@service)
-      cmd_executor.open()
-
       if local_paths.count == 1 && !File.directory?(local_paths[0])
-        bytes = upload_file(cmd_executor, local_paths[0], remote_path, &block)
+        bytes = upload_file(local_paths[0], remote_path, &block)
       else
-        bytes = upload_multiple_files(cmd_executor, local_paths, remote_path, &block)
+        bytes = upload_multiple_files(local_paths, remote_path, &block)
       end
 
       bytes
-    ensure
-      cmd_executor.close() if cmd_executor
     end
 
     private
 
-    def upload_file(cmd_executor, src_file, remote_path, &block)
+    def upload_file(src_file, remote_path, &block)
       # If the src has a file extension and the destination does not
       # we can assume the caller specified the dest as a directory
       if File.extname(src_file) != '' && File.extname(remote_path) == ''
@@ -132,15 +126,15 @@ module WinRM
       end
 
       # Upload the single file and decode on the target
-      remote_file = RemoteFile.single_remote_file(cmd_executor)
+      remote_file = RemoteFile.single_remote_file(@service)
       remote_file.upload(src_file, remote_path, &block) 
     end
 
-    def upload_multiple_files(cmd_executor, local_paths, remote_path, &block)
+    def upload_multiple_files(local_paths, remote_path, &block)
       temp_zip = create_temp_zip_file(local_paths)
 
       # Upload and extract the zip file on the target
-      remote_file = RemoteFile.multi_remote_file(cmd_executor)
+      remote_file = RemoteFile.multi_remote_file(@service)
       remote_file.upload(temp_zip.path, remote_path, &block)
     ensure
       temp_zip.delete() if temp_zip
