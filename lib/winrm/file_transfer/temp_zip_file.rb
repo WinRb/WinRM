@@ -12,6 +12,18 @@ module WinRM
       @path = @zip_file.path
     end
 
+    # Adds a file or directory to the temporary zip file
+    # @param [String] Directory or file path to add into zip
+    def add(path)
+      if File.directory?(path)
+        add_directory(path)
+      elsif File.file?(path)
+        add_file(path)
+      else
+        raise "#{path} doesn't exist"
+      end
+    end
+
     # Adds all files in the specified directory recursively into the zip file
     # @param [String] Directory to add into zip
     def add_directory(dir)

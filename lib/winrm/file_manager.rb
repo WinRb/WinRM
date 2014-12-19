@@ -139,15 +139,7 @@ module WinRM
 
     def create_temp_zip_file(local_paths)
       temp_zip = WinRM::TempZipFile.new()
-      local_paths.each do |local_path|
-        if File.directory?(local_path)
-          temp_zip.add_directory(local_path)
-        elsif File.file?(local_path)
-          temp_zip.add_file(local_path)
-        else
-          raise "#{local_path} doesn't exist"
-        end
-      end
+      local_paths.each { |p| temp_zip.add(p) }
       temp_zip
     end
 
