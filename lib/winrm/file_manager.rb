@@ -128,7 +128,7 @@ module WinRM
     end
 
     def upload_multiple_files(local_paths, remote_path, &block)
-      temp_zip = create_temp_zip_file(local_paths)
+      temp_zip = FileManager.create_temp_zip_file(local_paths)
 
       # Upload and extract the zip file on the target
       remote_file = RemoteFile.multi_remote_file(@service)
@@ -137,7 +137,7 @@ module WinRM
       temp_zip.delete() if temp_zip
     end
 
-    def create_temp_zip_file(local_paths)
+    def self.create_temp_zip_file(local_paths)
       temp_zip = WinRM::TempZipFile.new()
       local_paths.each { |p| temp_zip.add(p) }
       temp_zip
