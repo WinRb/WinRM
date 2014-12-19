@@ -19,7 +19,7 @@ describe WinRM::TempZipFile, :integration => true do
   context 'add_file' do
     it 'should raise error when file doesn not exist' do
       expect { subject.add_file('/etc/foo/does/not/exist') }.to \
-        raise_error('/etc/foo/does/not/exist doesn\'t exist')
+        raise_error('/etc/foo/does/not/exist isn\'t a file')
     end
 
     it 'should raise error when file is a directory' do

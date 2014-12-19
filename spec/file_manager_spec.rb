@@ -92,6 +92,23 @@ describe WinRM::FileManager, :integration => true do
     end
   end
 
+  context 'upload empty file' do
+    let(:src_file) { __FILE__ }
+    let(:empty_src_file) { Tempfile.new('empty').path }
+    let(:dest_file) { File.join(dest_dir, 'emptyfile.txt') }
+
+    it 'creates a new empty file' do
+      expect(subject.upload(empty_src_file, dest_file)).to be 0
+      expect(subject.exists?(dest_file)).to be true
+    end
+
+    it 'overwrites an existing file' do
+      expect(subject.upload(src_file, dest_file)).to be > 0
+      expect(subject.upload(empty_src_file, dest_file)).to be 0
+      expect(subject.exists?(dest_file)).to be true
+    end
+  end
+
   context 'upload directory' do
     it 'copies the entire directory' do
       downloaded_file = Tempfile.new('downloaded')
