@@ -105,15 +105,12 @@ module WinRM
     # @return [Fixnum] The total number of bytes copied
     def upload(local_paths, remote_path, &block)
       local_paths = [local_paths] if local_paths.is_a? String
-      bytes = 0
 
-      if local_paths.count == 1 && !File.directory?(local_paths[0])
-        bytes = upload_file(local_paths[0], remote_path, &block)
+      if FileManager.src_is_single_file?(local_paths)
+        upload_file(local_paths[0], remote_path, &block)
       else
-        bytes = upload_multiple_files(local_paths, remote_path, &block)
+        upload_multiple_files(local_paths, remote_path, &block)
       end
-
-      bytes
     end
 
     private
@@ -152,6 +149,10 @@ module WinRM
         end
       end
       temp_zip
+    end
+
+    def self.src_is_single_file?(local_paths)
+      local_paths.count == 1 && File.file?(local_paths[0])
     end
   end
 end
