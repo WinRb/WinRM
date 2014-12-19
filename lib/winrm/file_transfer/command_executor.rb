@@ -41,7 +41,7 @@ module WinRM
 
     def assert_command_succeed(result)
       if result[:exitcode] != 0 || result.stderr.length > 0
-        raise WinRMUploadError, :message => result.output
+        raise WinRMUploadError, result.output
       end
     end
   end

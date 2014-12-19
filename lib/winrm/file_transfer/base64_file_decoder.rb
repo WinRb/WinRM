@@ -16,7 +16,7 @@ module WinRM
       @command_executor.run_powershell(script)
     end
 
-    private
+    protected
 
     def decode_script(base64_encoded_file, dest_file)
       <<-EOH

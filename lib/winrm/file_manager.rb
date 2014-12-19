@@ -1,5 +1,9 @@
 require_relative 'file_transfer/remote_file'
 require_relative 'file_transfer/temp_zip_file'
+require_relative 'file_transfer/base64_file_decoder'
+require_relative 'file_transfer/base64_zip_file_decoder'
+require_relative 'file_transfer/base64_file_uploader'
+require_relative 'file_transfer/md5_temp_file_resolver'
 require_relative 'file_transfer/command_executor'
 
 module WinRM
@@ -122,19 +126,22 @@ module WinRM
           remote_path = File.join(remote_path, File.basename(src_file))
         end
 
-        remote_file = RemoteFile.new(cmd_executor, src_file, remote_path)
-        bytes = remote_file.upload(&block)       
+        remote_file = create_remote_file(cmd_executor)
+        bytes = remote_file.upload(src_file, remote_path, &block)       
       else
-        upload_path = File.join(temp_dir, "winrm-upload-#{rand()}.zip").gsub('\\', '/')
+        #upload_path = File.join(temp_dir, "winrm-upload-#{rand()}.zip").gsub('\\', '/')
 
         # Create and upload the zip file
         temp_zip = create_temp_zip_file(local_paths)
-        remote_file = RemoteFile.new(cmd_executor, temp_zip.path, upload_path)
-        bytes = remote_file.upload(&block)
+        #remote_file = RemoteFile.new(cmd_executor, temp_zip.path, upload_path)
+        #bytes = remote_file.upload(&block)
 
         # Extract the zip file
-        output = @service.powershell(extract_zip_command(upload_path, remote_path))
-        raise WinRMUploadError.new(output.output) if output[:exitcode] != 0
+        remote_file = create_remote_file(cmd_executor, true)
+        bytes = remote_file.upload(temp_zip.path, remote_path, &block) 
+
+        #output = @service.powershell(extract_zip_command(upload_path, remote_path))
+        #raise WinRMUploadError.new(output.output) if output[:exitcode] != 0
       end
 
       bytes
@@ -144,6 +151,17 @@ module WinRM
     end
 
     private
+
+    def create_remote_file(cmd_executor, zip = false)
+      temp_file_resolver = WinRM::Md5TempFileResolver.new(cmd_executor)
+      file_uploader = WinRM::Base64FileUploader.new(cmd_executor)
+      file_decoder = if zip then
+        WinRM::Base64ZipFileDecoder.new(cmd_executor)
+      else
+        WinRM::Base64FileDecoder.new(cmd_executor)
+      end
+      WinRM::RemoteFile.new(temp_file_resolver, file_uploader, file_decoder)
+    end
 
     def create_temp_zip_file(local_paths)
       temp_zip = WinRM::TempZipFile.new()
@@ -158,30 +176,5 @@ module WinRM
       end
       temp_zip
     end
-
-    def extract_zip_command(temp_file, dest_file)
-      <<-EOH
-      try
-      {
-        $zip = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{temp_file}')
-        $zipFile = [System.IO.Path]::GetFullPath($zip)
-        $dest = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{dest_file}')
-        $destDir = [System.IO.Path]::GetFullPath($dest)
-
-        mkdir $destDir -ErrorAction SilentlyContinue | Out-Null
-        
-        $shellApplication = new-object -com shell.application 
-        $zipPackage = $shellApplication.NameSpace($zipFile) 
-        $destinationFolder = $shellApplication.NameSpace($destDir) 
-        $destinationFolder.CopyHere($zipPackage.Items(),0x10) | Out-Null
-      }
-      catch
-      {
-        exit 1
-      }
-      exit 0
-      EOH
-    end
-
   end
 end
