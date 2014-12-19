@@ -39,19 +39,19 @@ describe WinRM::FileManager, :integration => true do
 
     it 'should upload the file to the specified file' do
       subject.upload(src_file, dest_file)
-      expect(subject.exists?(dest_file)).to be true
+      expect(subject).to have_created(dest_file).with_content(src_file)
     end
 
     it 'should upload the file to the specified directory' do
       subject.upload(src_file, dest_dir)
-      expect(subject.exists?(dest_file)).to be true
+      expect(subject).to have_created(dest_file).with_content(src_file)
     end
 
     it 'should upload the file to the specified nested directory' do
       dest_sub_dir = File.join(dest_dir, 'subdir')
       dest_sub_dir_file = File.join(dest_sub_dir, File.basename(src_file))
       subject.upload(src_file, dest_sub_dir)
-      expect(subject.exists?(dest_sub_dir_file)).to be true
+      expect(subject).to have_created(dest_sub_dir_file)
     end
 
     it 'yields progress data' do
@@ -64,15 +64,6 @@ describe WinRM::FileManager, :integration => true do
       expect(total).to be > 0
     end
 
-    it 'copies the exact file content' do
-      downloaded_file = Tempfile.new('downloaded')
-      downloaded_file.close()
-      subject.upload(src_file, dest_file)
-      subject.download(dest_file, downloaded_file)
-      expect(File.read(downloaded_file).chomp).to eq(File.read(src_file).chomp)
-      downloaded_file.unlink
-    end
-
     it 'should not upload the file when content matches' do
       subject.upload(src_file, dest_dir)
       bytes_uploaded = subject.upload(src_file, dest_dir)
@@ -82,7 +73,6 @@ describe WinRM::FileManager, :integration => true do
     it 'should upload file when content differs' do
       another_src_file = File.join(src_dir, 'matchers.rb')
       subject.upload(another_src_file, dest_file)
-      expect(subject.exists?(dest_file)).to be true
       bytes_uploaded = subject.upload(src_file, dest_file)
       expect(bytes_uploaded).to be > 0
     end
@@ -99,35 +89,25 @@ describe WinRM::FileManager, :integration => true do
 
     it 'creates a new empty file' do
       expect(subject.upload(empty_src_file, dest_file)).to be 0
-      expect(subject.exists?(dest_file)).to be true
+      expect(subject).to have_created(dest_file).with_content('')
     end
 
     it 'overwrites an existing file' do
       expect(subject.upload(src_file, dest_file)).to be > 0
       expect(subject.upload(empty_src_file, dest_file)).to be 0
-      expect(subject.exists?(dest_file)).to be true
+      expect(subject).to have_created(dest_file).with_content('')
     end
   end
 
   context 'upload directory' do
     it 'copies the entire directory' do
-      downloaded_file = Tempfile.new('downloaded')
-      downloaded_file.close()
-
       bytes_uploaded = subject.upload(src_dir, dest_dir)
       expect(bytes_uploaded).to be > 0
-      
       Dir.glob(src_dir + '/*.rb').each do |host_file|
         host_file_rel = host_file[src_dir.length..-1]
         remote_file = File.join(dest_dir, host_file_rel)
-
-        expect(subject.exists?(remote_file)).to be true
-
-        subject.download(remote_file, downloaded_file.path)
-        expect(File.read(downloaded_file.path)).to eq(File.read(host_file))
+        expect(subject).to have_created(remote_file).with_content(host_file)
       end
-
-      downloaded_file.delete()
     end
   end
 end
