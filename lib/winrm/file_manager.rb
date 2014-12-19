@@ -1,9 +1,5 @@
 require_relative 'file_transfer/remote_file'
 require_relative 'file_transfer/temp_zip_file'
-require_relative 'file_transfer/base64_file_decoder'
-require_relative 'file_transfer/base64_zip_file_decoder'
-require_relative 'file_transfer/base64_file_uploader'
-require_relative 'file_transfer/md5_temp_file_resolver'
 require_relative 'file_transfer/command_executor'
 
 module WinRM
@@ -110,57 +106,44 @@ module WinRM
     # @return [Fixnum] The total number of bytes copied
     def upload(local_paths, remote_path, &block)
       local_paths = [local_paths] if local_paths.is_a? String
-      remote_path = remote_path.gsub('\\', '/')
       bytes = 0
 
       cmd_executor = WinRM::CommandExecutor.new(@service)
       cmd_executor.open()
 
-      # Specifying a single src file to upload is a special case
       if local_paths.count == 1 && !File.directory?(local_paths[0])
-        src_file = local_paths[0]
-
-        # If the src has a file extension and the destination does not
-        # we can assume the caller specified the dest as a directory
-        if File.extname(src_file) != '' && File.extname(remote_path) == ''
-          remote_path = File.join(remote_path, File.basename(src_file))
-        end
-
-        remote_file = create_remote_file(cmd_executor)
-        bytes = remote_file.upload(src_file, remote_path, &block)       
+        bytes = upload_file(cmd_executor, local_paths[0], remote_path, &block)
       else
-        #upload_path = File.join(temp_dir, "winrm-upload-#{rand()}.zip").gsub('\\', '/')
-
-        # Create and upload the zip file
-        temp_zip = create_temp_zip_file(local_paths)
-        #remote_file = RemoteFile.new(cmd_executor, temp_zip.path, upload_path)
-        #bytes = remote_file.upload(&block)
-
-        # Extract the zip file
-        remote_file = create_remote_file(cmd_executor, true)
-        bytes = remote_file.upload(temp_zip.path, remote_path, &block) 
-
-        #output = @service.powershell(extract_zip_command(upload_path, remote_path))
-        #raise WinRMUploadError.new(output.output) if output[:exitcode] != 0
+        bytes = upload_multiple_files(cmd_executor, local_paths, remote_path, &block)
       end
 
       bytes
     ensure
       cmd_executor.close() if cmd_executor
-      temp_zip.delete() if temp_zip
     end
 
     private
 
-    def create_remote_file(cmd_executor, zip = false)
-      temp_file_resolver = WinRM::Md5TempFileResolver.new(cmd_executor)
-      file_uploader = WinRM::Base64FileUploader.new(cmd_executor)
-      file_decoder = if zip then
-        WinRM::Base64ZipFileDecoder.new(cmd_executor)
-      else
-        WinRM::Base64FileDecoder.new(cmd_executor)
+    def upload_file(cmd_executor, src_file, remote_path, &block)
+      # If the src has a file extension and the destination does not
+      # we can assume the caller specified the dest as a directory
+      if File.extname(src_file) != '' && File.extname(remote_path) == ''
+        remote_path = File.join(remote_path, File.basename(src_file))
       end
-      WinRM::RemoteFile.new(temp_file_resolver, file_uploader, file_decoder)
+
+      # Upload the single file and decode on the target
+      remote_file = RemoteFile.single_remote_file(cmd_executor)
+      remote_file.upload(src_file, remote_path, &block) 
+    end
+
+    def upload_multiple_files(cmd_executor, local_paths, remote_path, &block)
+      temp_zip = create_temp_zip_file(local_paths)
+
+      # Upload and extract the zip file on the target
+      remote_file = RemoteFile.multi_remote_file(cmd_executor)
+      remote_file.upload(temp_zip.path, remote_path, &block)
+    ensure
+      temp_zip.delete() if temp_zip
     end
 
     def create_temp_zip_file(local_paths)
