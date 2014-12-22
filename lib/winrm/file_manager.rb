@@ -60,7 +60,7 @@ module WinRM
       output = @service.powershell(script)
       return false if output[:exitcode] != 0
 
-      contents = output[:data].map!{|line| line[:stdout]}.join.gsub("\\n\\r", '')
+      contents = output.stdout.gsub("\\n\\r", '')
       out = Base64.decode64(contents)
       IO.binwrite(local_path, out)
 
@@ -79,10 +79,11 @@ module WinRM
       @service.powershell(script)[:exitcode] == 0
     end
 
-    # Gets the current user's TEMP directory on the remote system
+    # Gets the current user's TEMP directory on the remote system, for example
+    # 'C:/Windows/Temp'
     # @return [String] Full path to the temp directory
     def temp_dir
-      @guest_temp ||= (@service.cmd('echo %TEMP%'))[:data][0][:stdout].chomp.gsub('\\', '/')
+      @guest_temp ||= (@service.cmd('echo %TEMP%')).stdout.chomp.gsub('\\', '/')
     end
 
     # Upload one or more local files and directories to a remote directory
