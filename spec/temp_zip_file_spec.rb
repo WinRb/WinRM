@@ -54,4 +54,25 @@ describe WinRM::TempZipFile, :integration => true do
       end
     end
   end
+
+  context 'add' do
+    it 'should add all files when given a directory' do
+      subject.add(src_dir)
+      entries = ['temp_zip_file_spec.rb', 'stubs/responses/open_shell_v1.xml']
+      entries.each do |entry|
+        expect(Zip::File.open(subject.path).find_entry(entry)).not_to be_nil
+      end
+    end
+
+    it 'should add a file when given only a file' do
+      subject.add(src_file)
+      entry_name = File.basename(src_file)
+      expect(Zip::File.open(subject.path).find_entry(entry_name)).not_to be_nil
+    end
+
+    it 'should raise error when given a non-path' do
+      expect { subject.add('garbage') }.to \
+        raise_error("garbage doesn't exist")
+    end
+  end
 end
