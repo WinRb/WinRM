@@ -1,20 +1,18 @@
-=begin
-  This file is part of WinRM; the Ruby library for Microsoft WinRM.
+# Copyright 2010 Dan Wanek <dan.wanek@gmail.com>
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-  Copyright © 2010 Dan Wanek <dan.wanek@gmail.com>
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-=end
+require_relative 'response_handler'
 
 module WinRM
   module HTTP
@@ -24,31 +22,30 @@ module WinRM
     # is possible to use GSSAPI with Keep-Alive.
     class HttpTransport
 
-      DEFAULT_RECEIVE_TIMEOUT=3600 # Set this to an unreasonable amount for now because WinRM has timeouts
+      # Set this to an unreasonable amount because WinRM has its own timeouts
+      DEFAULT_RECEIVE_TIMEOUT = 3600 
      
       attr_reader :endpoint
 			
       def initialize(endpoint, opts)
         @endpoint = endpoint.is_a?(String) ? URI.parse(endpoint) : endpoint
         @httpcli = HTTPClient.new(:agent_name => 'Ruby WinRM Client')
-        @httpcli.receive_timeout = opts[:receive_timeout] ? opts[:receive_timeout] : DEFAULT_RECEIVE_TIMEOUT
+        @httpcli.receive_timeout = opts[:receive_timeout] || DEFAULT_RECEIVE_TIMEOUT
         @logger = Logging.logger[self]
       end
 
+      # Sends the SOAP payload to the WinRM service and returns the service's
+      # SOAP response. If an error occurrs an appropriate error is raised.
+      #
+      # @param [String] The XML SOAP message
+      # @returns [REXML::Document] The parsed response body
       def send_request(message)
+        log_soap_message(message)
         hdr = {'Content-Type' => 'application/soap+xml;charset=UTF-8', 'Content-Length' => message.length}
         resp = @httpcli.post(@endpoint, message, hdr)
-        if(resp.status == 200)
-          # Version 1.1 of WinRM adds the namespaces in the document instead of the envelope so we have to
-          # add them ourselves here. This should have no affect version 2.
-          doc = Nokogiri::XML(resp.http_body.content)
-          doc.collect_namespaces.each_pair do |k,v|
-            doc.root.add_namespace((k.split(/:/).last),v) unless doc.namespaces.has_key?(k)
-          end
-          return doc
-        else
-          raise WinRMHTTPTransportError.new("Bad HTTP response returned from server", resp.status)
-        end
+        log_soap_message(resp.http_body.content)
+        handler = WinRM::ResponseHandler.new(resp.http_body.content, resp.status)
+        handler.parse_to_xml()
       end
 
       # We'll need this to force basic authentication if desired
@@ -68,6 +65,19 @@ module WinRM
         @httpcli.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
       end
 
+      protected
+
+      def log_soap_message(message)
+        return unless @logger.debug?
+        
+        xml_msg = REXML::Document.new(message)
+        formatter = REXML::Formatters::Pretty.new(2)
+        formatter.compact = true
+        formatter.write(xml_msg, @logger)
+        @logger.debug("\n")
+      rescue StandardError => e
+        @logger.debug("Couldn't log SOAP request/response: #{e.message} - #{message}")
+      end
     end
 
 
@@ -102,20 +112,42 @@ module WinRM
       def initialize(endpoint, realm, service = nil, keytab = nil, opts)
         super(endpoint, opts)
         # Remove the GSSAPI auth from HTTPClient because we are doing our own thing
-        auths = @httpcli.www_auth.instance_variable_get('@authenticator')
-        auths.delete_if {|i| i.is_a?(HTTPClient::SSPINegotiateAuth)}
+        no_sspi_auth!
         service ||= 'HTTP'
         @service = "#{service}/#{@endpoint.host}@#{realm}"
         init_krb
       end
 
-      def set_auth(user,pass)
-        # raise Error
+      # Sends the SOAP payload to the WinRM service and returns the service's
+      # SOAP response. If an error occurrs an appropriate error is raised.
+      #
+      # @param [String] The XML SOAP message
+      # @returns [REXML::Document] The parsed response body
+      def send_request(message)
+        resp = send_kerberos_request(message)
+
+        if resp.status == 401
+          @logger.debug "Got 401 - reinitializing Kerberos and retrying one more time"
+          init_krb
+          resp = send_kerberos_request(message)
+        end
+
+        handler = WinRM::ResponseHandler.new(winrm_decrypt(resp.http_body.content), resp.status)
+        handler.parse_to_xml()
       end
 
-      def send_request(msg)
-        original_length = msg.length
-        pad_len, emsg = winrm_encrypt(msg)
+
+      private
+
+      # Sends the SOAP payload to the WinRM service and returns the service's
+      # HTTP response.
+      #
+      # @param [String] The XML SOAP message
+      # @returns [Object] The HTTP response object
+      def send_kerberos_request(message)
+        log_soap_message(message)
+        original_length = message.length
+        pad_len, emsg = winrm_encrypt(message)
         hdr = {
           "Connection" => "Keep-Alive",
           "Content-Type" => "multipart/encrypted;protocol=\"application/HTTP-Kerberos-session-encrypted\";boundary=\"Encrypted Boundary\""
@@ -130,14 +162,10 @@ Content-Type: application/octet-stream\r
 #{emsg}--Encrypted Boundary\r
         EOF
 
-        r = @httpcli.post(@endpoint, body, hdr)
-
-        winrm_decrypt(r.http_body.content)
+        resp = @httpcli.post(@endpoint, body, hdr)
+        log_soap_message(resp.http_body.content)
+        resp
       end
-
-
-      private
-
 
       def init_krb
         @logger.debug "Initializing Kerberos for #{@service}"
@@ -220,7 +248,7 @@ Content-Type: application/octet-stream\r
 
         @logger.debug "SOAP message decrypted (MAJ: #{maj_stat}, MIN: #{min_stat.read_int}):\n#{iov1[:buffer].value}"
 
-        Nokogiri::XML(iov1[:buffer].value)
+        iov1[:buffer].value
       end
 
     end
