@@ -30,8 +30,7 @@ describe WinRM::TempZipFile, :integration => true do
 
     it 'should add a file to the zip' do
       subject.add_file(src_file)
-      entry_name = File.basename(src_file)
-      expect(Zip::File.open(subject.path).find_entry(entry_name)).not_to be_nil
+      expect(subject).to contain_zip_entries(File.basename(src_file))
     end
   end
   
@@ -48,26 +47,19 @@ describe WinRM::TempZipFile, :integration => true do
 
     it 'should add all files in directory to the zip recursively' do
       subject.add_directory(src_dir)
-      entries = ['temp_zip_file_spec.rb', 'stubs/responses/open_shell_v1.xml']
-      entries.each do |entry|
-        expect(Zip::File.open(subject.path).find_entry(entry)).not_to be_nil
-      end
+      expect(subject).to contain_zip_entries(['temp_zip_file_spec.rb', 'stubs/responses/open_shell_v1.xml'])
     end
   end
 
   context 'add' do
     it 'should add all files when given a directory' do
       subject.add(src_dir)
-      entries = ['temp_zip_file_spec.rb', 'stubs/responses/open_shell_v1.xml']
-      entries.each do |entry|
-        expect(Zip::File.open(subject.path).find_entry(entry)).not_to be_nil
-      end
+      expect(subject).to contain_zip_entries(['temp_zip_file_spec.rb', 'stubs/responses/open_shell_v1.xml'])
     end
 
     it 'should add a file when given only a file' do
       subject.add(src_file)
-      entry_name = File.basename(src_file)
-      expect(Zip::File.open(subject.path).find_entry(entry_name)).not_to be_nil
+      expect(subject).to contain_zip_entries(File.basename(src_file))
     end
 
     it 'should raise error when given a non-path' do

@@ -107,3 +107,18 @@ but instead got content:
     end
   end
 end
+
+RSpec::Matchers.define :contain_zip_entries do |zip_entries|
+  match do |temp_zip_file|
+    zip_entries = [zip_entries] if zip_entries.is_a? String
+    zip_file = Zip::File.open(temp_zip_file.path)
+    @missing_entries = []
+    zip_entries.each do |entry|
+      @missing_entries << entry unless zip_file.find_entry(entry)
+    end
+    @missing_entries.empty?
+  end
+  failure_message do |temp_zip_file|
+    "Expected #{temp_zip_file.path} to contain zip entries: #{@missing_entries}"
+  end
+end
