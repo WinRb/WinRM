@@ -20,8 +20,8 @@ module WinRM
 
     def decode_script(base64_encoded_file, dest_file)
       <<-EOH
-        $tempFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{base64_encoded_file}')
-        $destFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{dest_file}')
+        $tempFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("#{base64_encoded_file}")
+        $destFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("#{dest_file}")
 
         # ensure the file's containing directory exists
         $destDir = ([System.IO.Path]::GetDirectoryName($destFile))

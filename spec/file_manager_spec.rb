@@ -47,6 +47,12 @@ describe WinRM::FileManager, :integration => true do
       expect(subject).to have_created(dest_file).with_content(src_file)
     end
 
+    it 'should upload the file to the specified directory with env var' do
+      subject.upload(src_file, '$env:Temp')
+      expected_dest_file = File.join(subject.temp_dir, File.basename(src_file))
+      expect(subject).to have_created(expected_dest_file).with_content(src_file)
+    end
+
     it 'should upload the file to the specified nested directory' do
       dest_sub_dir = File.join(dest_dir, 'subdir')
       dest_sub_dir_file = File.join(dest_sub_dir, File.basename(src_file))

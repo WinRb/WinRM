@@ -24,9 +24,9 @@ module WinRM
 
     def unzip_script(zip_file, dest_file)
       <<-EOH
-        $zip = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{zip_file}')
+        $zip = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("#{zip_file}")
         $zipFile = [System.IO.Path]::GetFullPath($zip)
-        $dest = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('#{dest_file}')
+        $dest = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("#{dest_file}")
         $destDir = [System.IO.Path]::GetFullPath($dest)
 
         mkdir $destDir -ErrorAction SilentlyContinue | Out-Null
