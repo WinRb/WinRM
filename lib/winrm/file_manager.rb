@@ -104,6 +104,7 @@ module WinRM
     # @yieldparam [String] Target path on the winrm endpoint
     # @return [Fixnum] The total number of bytes copied
     def upload(local_paths, remote_path, &block)
+      @logger.debug("uploading: #{local_paths} -> #{remote_path}")
       local_paths = [local_paths] if local_paths.is_a? String
 
       if FileManager.src_is_single_file?(local_paths)
