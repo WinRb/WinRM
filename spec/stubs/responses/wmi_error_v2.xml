@@ -1,0 +1,41 @@
+<s:Envelope xmlns:a='http://schemas.xmlsoap.org/ws/2004/08/addressing' xmlns:e='http://schemas.xmlsoap.org/ws/2004/08/eventing' xml:lang='en-US' xmlns:n='http://schemas.xmlsoap.org/ws/2004/09/enumeration' xmlns:p='http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd' xmlns:s='http://www.w3.org/2003/05/soap-envelope' xmlns:w='http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd' xmlns:x='http://schemas.xmlsoap.org/ws/2004/09/transfer'>
+  <s:Header>
+    <a:Action>http://schemas.dmtf.org/wbem/wsman/1/wsman/fault</a:Action>
+    <a:MessageID>uuid:B8829021-48C3-4F27-B94B-491DAC4F29B1</a:MessageID>
+    <a:To>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</a:To>
+  </s:Header>
+  <s:Body>
+    <s:Fault>
+      <s:Code>
+        <s:Value>s:Sender</s:Value>
+        <s:Subcode>
+          <s:Value>w:QuotaLimit</s:Value>
+        </s:Subcode>
+      </s:Code>
+      <s:Reason>
+        <s:Text xml:lang='en-US'>The WS-Management service cannot process the request. The maximum number of concurrent shells for this user has been exceeded. Close existing shells or raise the quota for this user. </s:Text>
+      </s:Reason>
+      <s:Detail>
+        <p:MSFT_WmiError b:IsCIM_Error='true' xmlns:b='http://schemas.dmtf.org/wbem/wsman/1/cimbinding.xsd' xmlns:cim='http://schemas.dmtf.org/wbem/wscim/1/common' xmlns:p='http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/MSFT_WmiError' xsi:type='p:MSFT_WmiError_Type' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+          <p:CIMStatusCode xsi:type='cim:cimUnsignedInt'>27</p:CIMStatusCode>
+          <p:CIMStatusCodeDescription xsi:nil='true' xsi:type='cim:cimString'/>
+          <p:ErrorSource xsi:nil='true' xsi:type='cim:cimString'/>
+          <p:ErrorSourceFormat xsi:type='cim:cimUnsignedShort'>0</p:ErrorSourceFormat>
+          <p:ErrorType xsi:type='cim:cimUnsignedShort'>0</p:ErrorType>
+          <p:Message xsi:type='cim:cimString'>The WS-Management service cannot process the request. This user is allowed a maximum number of 30 concurrent shells, which has been exceeded. Close existing shells or raise the quota for this user. </p:Message>
+          <p:MessageID xsi:type='cim:cimString'>HRESULT 0x803381a5</p:MessageID>
+          <p:OtherErrorSourceFormat xsi:nil='true' xsi:type='cim:cimString'/>
+          <p:OtherErrorType xsi:nil='true' xsi:type='cim:cimString'/>
+          <p:OwningEntity xsi:nil='true' xsi:type='cim:cimString'/>
+          <p:PerceivedSeverity xsi:type='cim:cimUnsignedShort'>0</p:PerceivedSeverity>
+          <p:ProbableCause xsi:type='cim:cimUnsignedShort'>0</p:ProbableCause>
+          <p:ProbableCauseDescription xsi:nil='true' xsi:type='cim:cimString'/>
+          <p:error_Category xsi:type='cim:cimUnsignedInt'>30</p:error_Category>
+          <p:error_Code xsi:type='cim:cimUnsignedInt'>2150859173</p:error_Code>
+          <p:error_Type xsi:type='cim:cimString'>HRESULT</p:error_Type>
+          <p:error_WindowsErrorMessage xsi:type='cim:cimString'>The WS-Management service cannot process the request. This user is allowed a maximum number of 30 concurrent shells, which has been exceeded. Close existing shells or raise the quota for this user. </p:error_WindowsErrorMessage>
+        </p:MSFT_WmiError>
+      </s:Detail>
+    </s:Fault>
+  </s:Body>
+</s:Envelope>

@@ -8,6 +8,9 @@ not limitted to, running batch scripts, powershell scripts and fetching WMI
 variables.  For more information on WinRM, please visit Microsoft's WinRM
 site: http://msdn.microsoft.com/en-us/library/aa384426(v=VS.85).aspx
 
+## Supported WinRM Versions
+WinRM 1.1 is supported, however 2.0 and higher is recommended. [See MSDN](http://technet.microsoft.com/en-us/library/ff520073(v=ws.10).aspx) for information about WinRM versions and supported operating systems.
+
 ## Install
 `gem install -r winrm` then on the server `winrm quickconfig` as admin
 
@@ -69,8 +72,30 @@ iex $cmd
 WinRM::WinRMWebService.new(endpoint, :kerberos, :realm => 'MYREALM.COM')
 ```
 
+### Uploading files
+Files may be copied from the local machine to the winrm endpoint. Individual
+files or directories may be specified:
+```ruby
+service = WinRM::WinRMWebService.new(...
+file_manager = WinRM::FileManager.new(service)
+file_manager.upload('c:/dev/my_dir', '$env:AppData')
+```
+Or an array of several files and/or directories can be included:
+```ruby
+file_manager.upload(['c:/dev/file1.txt','c:/dev/dir1'], '$env:AppData')
+```
+
+#### Handling progress events
+If you want to implemnt your own custom progress handling, you can pass a code
+block and use the proggress data that `upload` yields to this block:
+```ruby
+file_manager.upload('c:/dev/my_dir', '$env:AppData') do |bytes_copied, total_bytes, local_path, remote_path|
+  puts "#{bytes_copied}bytes of #{total_bytes}bytes copied"
+end
+```
+
 ## Troubleshooting
-You may have some errors like ```WinRM::WinRMHTTPTransportError: Bad HTTP response returned from server (401).```.
+You may have some errors like ```WinRM::WinRMAuthorizationError```.
 You can run the following commands on the server to try to solve the problem:
 ```
 winrm set winrm/config/client/auth @{Basic="true"}
@@ -128,18 +153,14 @@ To run the integration tests you will need a Windows box with the WinRM service 
 2. Copy the config-example.yml to config.yml - edit this file with your WinRM connection details.
 3. Run `bundle exec rake integration`
 
-## My Info
+## WinRM Author
 * Twitter: [@zentourist](https://twitter.com/zentourist)
 * BLOG:  [http://distributed-frostbite.blogspot.com/](http://distributed-frostbite.blogspot.com/)
 * Add me in LinkedIn:  [http://www.linkedin.com/in/danwanek](http://www.linkedin.com/in/danwanek)
 * Find me on irc.freenode.net in #ruby-lang (zenChild)
 
-## Contributors
-Many thanks to the following for their many patches....
-* Seth Chisamore (https://github.com/schisamo)
+## Maintainers
 * Paul Morton (https://github.com/pmorton)
+* Shawn Neal (https://github.com/sneal)
 
-## Disclaimer
-If you see something that could be done better or would like to help out in the development of this code please feel free to clone the repository and send me patches.
-
-`git clone git://github.com/WinRb/WinRM.git` or add an [issue](https://github.com/WinRb/WinRM/issues) on GitHub
+[Contributors](https://github.com/WinRb/WinRM/graphs/contributors)
