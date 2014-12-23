@@ -6,7 +6,7 @@ describe 'WinRM options', :unit => true do
     describe '#receive_timeout' do
       it 'is set to 70s' do
         transportclass = subject.instance_variable_get(:@xfer)
-        expect(transportclass.recieve_timeout).to eql(70)
+        expect(transportclass.receive_timeout).to eql(70)
       end
     end
     describe '#op_timeout' do
@@ -21,7 +21,7 @@ describe 'WinRM options', :unit => true do
     describe '#receive_timeout' do
       it 'is set to 120s' do
         transportclass = subject.instance_variable_get(:@xfer)
-        expect(transportclass.recieve_timeout).to eql(120)
+        expect(transportclass.receive_timeout).to eql(120)
       end
     end
     describe '#op_timeout' do
@@ -53,7 +53,7 @@ describe 'WinRM options', :unit => true do
     describe '#receive_timeout' do
       it 'should be 3600ms' do
         transportclass = subject.instance_variable_get(:@xfer)
-        expect(transportclass.recieve_timeout).to eql(3600)
+        expect(transportclass.receive_timeout).to eql(3600)
       end
     end
     describe '#timeout' do
