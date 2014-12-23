@@ -23,7 +23,6 @@ module WinRM
     class HttpTransport
 
       # Set this to an unreasonable amount because WinRM has its own timeouts
-      # The default for WinRM is 60 seconds
       DEFAULT_RECEIVE_TIMEOUT = 3600 
 
       attr_reader :endpoint
