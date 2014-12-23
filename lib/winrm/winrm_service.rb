@@ -52,11 +52,20 @@ module WinRM
       end
     end
 
-    # Operation timeout
+    # Operation timeout.
+    # 
+    # Unless specified the client receive timeout will be 10s + the operation
+    # timeout.
+    #
     # @see http://msdn.microsoft.com/en-us/library/ee916629(v=PROT.13).aspx
-    # @param [Fixnum] sec the number of seconds to set the timeout to. It will be converted to an ISO8601 format.
-    def set_timeout(sec)
-      @timeout = Iso8601Duration.sec_to_dur(sec)
+    #
+    # @param [Fixnum] The number of seconds to set the WinRM operation timeout
+    # @param [Fixnum] The number of seconds to set the Ruby receive timeout
+    # @return [String] The ISO 8601 formatted operation timeout
+    def set_timeout(op_timeout_sec, receive_timeout_sec=nil)
+      @timeout = Iso8601Duration.sec_to_dur(op_timeout_sec)
+      @xfer.receive_timeout = receive_timeout_sec || op_timeout_sec + 10
+      @timeout
     end
     alias :op_timeout :set_timeout
 

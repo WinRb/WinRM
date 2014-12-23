@@ -22,12 +22,15 @@ module WinRM
     # is possible to use GSSAPI with Keep-Alive.
     class HttpTransport
 
+      # Set this to an unreasonable amount because WinRM has its own timeouts
+      DEFAULT_RECEIVE_TIMEOUT = 3600 
+
       attr_reader :endpoint
 
       def initialize(endpoint)
         @endpoint = endpoint.is_a?(String) ? URI.parse(endpoint) : endpoint
         @httpcli = HTTPClient.new(:agent_name => 'Ruby WinRM Client')
-        @httpcli.receive_timeout = 3600 # Set this to an unreasonable amount for now because WinRM has timeouts
+        @httpcli.receive_timeout = DEFAULT_RECEIVE_TIMEOUT
         @logger = Logging.logger[self]
       end
 
@@ -60,6 +63,16 @@ module WinRM
       # Disable SSL Peer Verification
       def no_ssl_peer_verification!
         @httpcli.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      end
+
+      # HTTP Client receive timeout. How long should a remote call wait for a
+      # for a response from WinRM?
+      def receive_timeout=(sec)
+        @httpcli.receive_timeout = sec
+      end
+
+      def receive_timeout()
+        @httpcli.receive_timeout
       end
 
       protected
