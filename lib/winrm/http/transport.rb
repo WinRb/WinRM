@@ -23,14 +23,15 @@ module WinRM
     class HttpTransport
 
       # Set this to an unreasonable amount because WinRM has its own timeouts
+      # The default for WinRM is 60 seconds
       DEFAULT_RECEIVE_TIMEOUT = 3600 
-     
+
       attr_reader :endpoint
-			
-      def initialize(endpoint, opts)
+
+      def initialize(endpoint)
         @endpoint = endpoint.is_a?(String) ? URI.parse(endpoint) : endpoint
         @httpcli = HTTPClient.new(:agent_name => 'Ruby WinRM Client')
-        @httpcli.receive_timeout = opts[:receive_timeout] || DEFAULT_RECEIVE_TIMEOUT
+        @httpcli.receive_timeout = DEFAULT_RECEIVE_TIMEOUT
         @logger = Logging.logger[self]
       end
 
@@ -65,6 +66,16 @@ module WinRM
         @httpcli.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
       end
 
+      # HTTP Client receive timeout. How long should a remote call wait for a
+      # for a response from WinRM?
+      def receive_timeout=(sec)
+        @httpcli.receive_timeout = sec
+      end
+
+      def receive_timeout()
+        @httpcli.receive_timeout
+      end
+
       protected
 
       def log_soap_message(message)
@@ -83,7 +94,7 @@ module WinRM
 
     class HttpPlaintext < HttpTransport
       def initialize(endpoint, user, pass, opts)
-        super(endpoint, opts)
+        super(endpoint)
         @httpcli.set_auth(nil, user, pass)
         no_sspi_auth! if opts[:disable_sspi]
         basic_auth_only! if opts[:basic_auth_only]
@@ -94,7 +105,7 @@ module WinRM
     # Uses SSL to secure the transport
     class HttpSSL < HttpTransport
       def initialize(endpoint, user, pass, ca_trust_path = nil, opts)
-        super(endpoint, opts)
+        super(endpoint)
         @httpcli.set_auth(endpoint, user, pass)
         @httpcli.ssl_config.set_trust_ca(ca_trust_path) unless ca_trust_path.nil?
         no_sspi_auth! if opts[:disable_sspi]
@@ -110,7 +121,7 @@ module WinRM
       # @param [String<optional>] service the service name, default is HTTP
       # @param [String<optional>] keytab the path to a keytab file if you are using one
       def initialize(endpoint, realm, service = nil, keytab = nil, opts)
-        super(endpoint, opts)
+        super(endpoint)
         # Remove the GSSAPI auth from HTTPClient because we are doing our own thing
         no_sspi_auth!
         service ||= 'HTTP'
