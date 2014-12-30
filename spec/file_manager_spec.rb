@@ -106,6 +106,10 @@ describe WinRM::FileManager, :integration => true do
   end
 
   context 'upload directory' do
+    before(:each) do
+      expect(subject.delete(dest_dir)).to be true
+    end
+
     it 'copies the entire directory' do
       bytes_uploaded = subject.upload(src_dir, dest_dir)
       expect(bytes_uploaded).to be > 0
@@ -114,6 +118,19 @@ describe WinRM::FileManager, :integration => true do
         remote_file = File.join(dest_dir, host_file_rel)
         expect(subject).to have_created(remote_file).with_content(host_file)
       end
+    end
+
+    it 'does not copy the directory when content is the same' do
+      subject.upload(src_dir, dest_dir)
+      bytes_uploaded = subject.upload(src_dir, dest_dir)
+      expect(bytes_uploaded).to eq 0
+    end
+
+    it 'copies the directory when content differs' do
+      subject.upload(src_dir, dest_dir)
+      another_dir = File.dirname(src_dir)
+      bytes_uploaded = subject.upload(another_dir, dest_dir)
+      expect(bytes_uploaded).to be > 0
     end
   end
 end
