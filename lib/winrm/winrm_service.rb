@@ -42,6 +42,7 @@ module WinRM
       case transport
       when :kerberos
         require 'gssapi'
+        require 'gssapi/extensions'
         @xfer = HTTP::HttpGSSAPI.new(endpoint, opts[:realm], opts[:service], opts[:keytab], opts)
       when :plaintext
         @xfer = HTTP::HttpPlaintext.new(endpoint, opts[:user], opts[:pass], opts)
