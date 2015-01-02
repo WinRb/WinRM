@@ -14,7 +14,7 @@
 
 require 'nori'
 require 'rexml/document'
-
+require_relative 'helpers/powershell_script'
 
 module WinRM
   # This is the main class that does the SOAP request/response logic. There are a few helper classes, but pretty
