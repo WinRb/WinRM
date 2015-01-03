@@ -1,7 +1,7 @@
-describe "Exceptions", :unit => true do
+# encoding: UTF-8
+describe 'Exceptions', unit: true do
   describe WinRM::WinRMAuthorizationError do
-
-    let (:error) { WinRM::WinRMHTTPTransportError.new("Foo happened", 500) }
+    let(:error) { WinRM::WinRMHTTPTransportError.new('Foo happened', 500) }
 
     it 'adds the response code to the message' do
       expect(error.message).to eq('Foo happened (500).')
@@ -17,8 +17,7 @@ describe "Exceptions", :unit => true do
   end
 
   describe WinRM::WinRMWSManFault do
-
-    let (:error) { WinRM::WinRMWSManFault.new("fault text", 42) }
+    let(:error) { WinRM::WinRMWSManFault.new('fault text', 42) }
 
     it 'exposes the fault text as an attribute' do
       expect(error.fault_description).to eq('fault text')
@@ -34,15 +33,14 @@ describe "Exceptions", :unit => true do
   end
 
   describe WinRM::WinRMWMIError do
-
-    let (:error) { WinRM::WinRMWMIError.new("message text", 77777) }
+    let(:error) { WinRM::WinRMWMIError.new('message text', 77_777) }
 
     it 'exposes the error text as an attribute' do
       expect(error.error).to eq('message text')
     end
 
     it 'exposes the error code as an attribute' do
-      expect(error.error_code).to eq 77777
+      expect(error.error_code).to eq 77_777
     end
 
     it 'is a winrm error' do

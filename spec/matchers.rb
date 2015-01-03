@@ -1,5 +1,7 @@
+# encoding: UTF-8
 require 'rspec/expectations'
 
+# rspec matchers
 module WinRMSpecs
   def self.stdout(output)
     output[:data].collect do |i|
@@ -16,7 +18,7 @@ end
 
 RSpec::Matchers.define :have_stdout_match do |expected_stdout|
   match do |actual_output|
-    expected_stdout.match(WinRMSpecs.stdout(actual_output)) != nil
+    !expected_stdout.match(WinRMSpecs.stdout(actual_output)).nil?
   end
   failure_message do |actual_output|
     "expected that '#{WinRMSpecs.stdout(actual_output)}' would match #{expected_stdout}"
@@ -25,7 +27,7 @@ end
 
 RSpec::Matchers.define :have_stderr_match do |expected_stderr|
   match do |actual_output|
-    expected_stderr.match(WinRMSpecs.stderr(actual_output)) != nil
+    !expected_stderr.match(WinRMSpecs.stderr(actual_output)).nil?
   end
   failure_message do |actual_output|
     "expected that '#{WinRMSpecs.stderr(actual_output)}' would match #{expected_stderr}"
@@ -64,7 +66,7 @@ end
 RSpec::Matchers.define :be_a_uid do
   match do |actual|
     # WinRM1.1 returns uuid's prefixed with 'uuid:' where as later versions do not
-    actual != nil && actual.match(/^(uuid:)*\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/)
+    !actual.nil? && actual.match(/^(uuid:)*\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/)
   end
   failure_message do |actual|
     "expected a uid, but got '#{actual}'"

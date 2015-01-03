@@ -1,8 +1,9 @@
+# encoding: UTF-8
 # This test may only be meaningful with kerberos auth
 # Against server 2012, a kerberos connection will require reauth (get a 401)
 # if there are no requests for >= 15 seconds
 
-describe "Verify kerberos will reauth when necessary", :kerberos => true do
+describe 'Verify kerberos will reauth when necessary', kerberos: true do
   before(:all) do
     @winrm = winrm_connection
   end

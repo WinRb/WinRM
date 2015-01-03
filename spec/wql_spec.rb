@@ -1,4 +1,5 @@
-describe "winrm client wql", :integration => true do
+# encoding: UTF-8
+describe 'winrm client wql', integration: true do
   before(:all) do
     @winrm = winrm_connection
   end

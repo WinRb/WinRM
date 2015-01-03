@@ -1,4 +1,5 @@
-describe 'WinRM options', :unit => true do
+# encoding: UTF-8
+describe 'WinRM options', unit: true do
   let(:subject) { WinRM::WinRMWebService.new('http://localhost:55985/wsman', :plaintext) }
 
   context 'when operations timeout is set to 60' do
@@ -32,10 +33,10 @@ describe 'WinRM options', :unit => true do
   end
 
   context 'when max_env_size is set to 614400' do
-    before(:each) { subject.max_env_size(614400) }
+    before(:each) { subject.max_env_size(614_400) }
     describe '@max_env_sz' do
       it 'is set to 614400' do
-        expect(subject.instance_variable_get('@max_env_sz')).to eq(614400)
+        expect(subject.instance_variable_get('@max_env_sz')).to eq(614_400)
       end
     end
   end
@@ -68,8 +69,8 @@ describe 'WinRM options', :unit => true do
     end
     describe '@max_env_sz' do
       it 'should be 153600' do
-        expect(subject.instance_variable_get('@max_env_sz')).to eq(153600)
+        expect(subject.instance_variable_get('@max_env_sz')).to eq(153_600)
       end
     end
-  end  
+  end
 end
