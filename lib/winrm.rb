@@ -15,7 +15,6 @@
 # limitations under the License.
 
 require 'date'
-require 'kconv' # rubyntlm .0.1.1 doesn't require kconv, workaround issue #65
 require 'logging'
 
 # Main WinRM module entry point
