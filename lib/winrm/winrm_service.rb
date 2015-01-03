@@ -1,11 +1,13 @@
+# encoding: UTF-8
+#
 # Copyright 2010 Dan Wanek <dan.wanek@gmail.com>
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,10 +19,9 @@ require 'rexml/document'
 require_relative 'helpers/powershell_script'
 
 module WinRM
-  # This is the main class that does the SOAP request/response logic. There are a few helper classes, but pretty
-  #   much everything comes through here first.
+  # This is the main class that does the SOAP request/response logic. There are a few helper
+  # classes, but pretty much everything comes through here first.
   class WinRMWebService
-
     DEFAULT_TIMEOUT = 'PT60S'
     DEFAULT_MAX_ENV_SIZE = 153600
     DEFAULT_LOCALE = 'en-US'

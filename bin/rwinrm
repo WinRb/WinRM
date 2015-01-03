@@ -1,41 +1,44 @@
 #!/usr/bin/env ruby
+# encoding: UTF-8
 
 # Copyright 2014 Shawn Neal <sneal@sneal.net>
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-$:.push File.expand_path('../../lib', __FILE__)
+# rubocop:disable all
+
+$LOAD_PATH.push File.expand_path('../../lib', __FILE__)
 
 require 'readline'
 require 'io/console'
 require 'winrm'
 
 def help_msg
-  puts "Usage: rwinrm user@host"
-  puts ""
+  puts 'Usage: rwinrm user@host'
+  puts ''
 end
 
 def parse_options
   options = {}
-  raise "Missing required options" unless ARGV.length == 1
-  
+  fail 'Missing required options' unless ARGV.length == 1
+
   m = /^(?<user>\w+)@{1}(?<host>[a-zA-Z0-9\.]+)(?<port>:[0-9]+)?/.match(ARGV[0])
-  raise "#{ARGV[0]} is an invalid host" unless m
+  fail "#{ARGV[0]} is an invalid host" unless m
   options[:user] = m[:user]
   options[:endpoint] = "http://#{m[:host]}#{m[:port] || ':5985'}/wsman"
 
   # Get the password
-  print "Password: "
+  print 'Password: '
   options[:pass] = STDIN.noecho(&:gets).chomp
   puts
 
@@ -57,7 +60,7 @@ def repl(options)
     options)
 
   client.set_timeout(3600)
-  shell_id = client.open_shell()
+  shell_id = client.open_shell
   command_id = client.run_command(shell_id, 'cmd', "/K prompt [#{ARGV[0]}]$P$G")
 
   read_thread = Thread.new do
@@ -68,9 +71,9 @@ def repl(options)
   end
   read_thread.abort_on_exception = true
 
-  while buf = Readline.readline('', true)
+  while (buf = Readline.readline('', true))
     if buf =~ /^exit/
-      read_thread.exit()
+      read_thread.exit
       client.cleanup_command(shell_id, command_id)
       client.close_shell(shell_id)
       exit 0
@@ -79,13 +82,16 @@ def repl(options)
     end
   end
 rescue Interrupt
+  puts 'exiting'
   # ctrl-c
 rescue WinRM::WinRMAuthorizationError
-  puts "Authentication failed, bad user name or password"
+  puts 'Authentication failed, bad user name or password'
   exit 1
 rescue StandardError => e
   puts e.message
   exit 1
 end
 
-repl(parse_options())
+repl(parse_options)
+
+# rubocop:enable all
