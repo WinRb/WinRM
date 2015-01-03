@@ -72,28 +72,6 @@ iex $cmd
 WinRM::WinRMWebService.new(endpoint, :kerberos, :realm => 'MYREALM.COM')
 ```
 
-### Uploading files
-Files may be copied from the local machine to the winrm endpoint. Individual
-files or directories may be specified:
-```ruby
-service = WinRM::WinRMWebService.new(...
-file_manager = WinRM::FileManager.new(service)
-file_manager.upload('c:/dev/my_dir', '$env:AppData')
-```
-Or an array of several files and/or directories can be included:
-```ruby
-file_manager.upload(['c:/dev/file1.txt','c:/dev/dir1'], '$env:AppData')
-```
-
-#### Handling progress events
-If you want to implemnt your own custom progress handling, you can pass a code
-block and use the proggress data that `upload` yields to this block:
-```ruby
-file_manager.upload('c:/dev/my_dir', '$env:AppData') do |bytes_copied, total_bytes, local_path, remote_path|
-  puts "#{bytes_copied}bytes of #{total_bytes}bytes copied"
-end
-```
-
 ## Troubleshooting
 You may have some errors like ```WinRM::WinRMAuthorizationError```.
 You can run the following commands on the server to try to solve the problem:
