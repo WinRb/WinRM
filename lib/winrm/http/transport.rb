@@ -112,12 +112,12 @@ module WinRM
       end
 
       def send_request(message)
-        init_auth unless @ntlmcli.user_session_key
+        init_auth if @ntlmcli.session.nil?
 
         original_length = message.length
 
-        emessage = @ntlmcli.seal_message message
-        signature = @ntlmcli.sign_message message
+        emessage = @ntlmcli.session.seal_message message
+        signature = @ntlmcli.session.sign_message message
         seal = "\x10\x00\x00\x00#{signature}#{emessage}"
 
         hdr = {
@@ -144,8 +144,8 @@ Content-Type: application/octet-stream\r
         str.sub!(/^.*Content-Type: application\/octet-stream\r\n(.*)--Encrypted.*$/m, '\1')
 
         signature = str[4..19]
-        message = @ntlmcli.unseal_message str[20..-1]
-        if @ntlmcli.verify_signature(signature, message)
+        message = @ntlmcli.session.unseal_message str[20..-1]
+        if @ntlmcli.session.verify_signature(signature, message)
           message
         else
           raise WinRMWebServiceError, "Could not verify SOAP message."
