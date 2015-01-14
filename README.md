@@ -96,11 +96,14 @@ You can read more about that on issue [#29](https://github.com/WinRb/WinRM/issue
    'winrm quickconfig' on your server or enable WinRM via group policy and
    everything should be working.
 
-2. Multi-Instance support:  The SOAP back-end has been completely gutted
-   and is now using some of the Savon core libraries for parsing and
-   building packets. Moving away from Handsoap allows multiple instances
-   to be created because the SOAP backend is no longer a Singleton type
-   class.
+2. Multi-Instance support:  Moving away from Handsoap allows multiple
+   instances to be created because the SOAP backend is no longer a Singleton
+   type class.
+
+3. 100% Ruby: Nokogiri while faster can present additional frustration for
+   users above and beyond what is already required to get WinRM working.
+   The goal of this gem is make using WinRM easy. In V2 we plan on making
+   the parser swappable in case you really do need the performance.
 
 ## Contributing
 
