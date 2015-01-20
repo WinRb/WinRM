@@ -250,6 +250,13 @@ module WinRM
         output[:exitcode] = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:ExitCode").text.to_i
       end
       output
+    rescue WinRMWSManFault => e
+      # If no output is available before the wsman:OperationTimeout expires,
+      # the server MUST return a WSManFault with the Code attribute equal to
+      # 2150858793. When the client receives this fault, it SHOULD issue 
+      # another Receive request.
+      # http://msdn.microsoft.com/en-us/library/cc251676.aspx
+      retry if e.fault_code == '2150858793'
     end
 
     # Clean-up after a command.
