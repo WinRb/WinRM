@@ -96,7 +96,7 @@ module WinRM
     def open_shell(shell_opts = {}, &block)
       i_stream = shell_opts.has_key?(:i_stream) ? shell_opts[:i_stream] : 'stdin'
       o_stream = shell_opts.has_key?(:o_stream) ? shell_opts[:o_stream] : 'stdout stderr'
-      codepage = shell_opts.has_key?(:codepage) ? shell_opts[:codepage] : 437
+      codepage = shell_opts.has_key?(:codepage) ? shell_opts[:codepage] : 65001 # utf8 as default codepage (from https://msdn.microsoft.com/en-us/library/dd317756(VS.85).aspx)
       noprofile = shell_opts.has_key?(:noprofile) ? shell_opts[:noprofile] : 'FALSE'
       h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => { "#{NS_WSMAN_DMTF}:Option" => [noprofile, codepage],
         :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_NOPROFILE','WINRS_CODEPAGE']}}}}
@@ -226,7 +226,7 @@ module WinRM
       output = Output.new
       REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |n|
         next if n.text.nil? || n.text.empty?
-        stream = { n.attributes['Name'].to_sym => Base64.decode64(n.text) }
+        stream = { n.attributes['Name'].to_sym => Base64.decode64(n.text).force_encoding('utf-8') }
         output[:data] << stream
         yield stream[:stdout], stream[:stderr] if block_given?
       end
