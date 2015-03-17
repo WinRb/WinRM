@@ -226,6 +226,8 @@ module WinRM
       output = Output.new
       REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |n|
         next if n.text.nil? || n.text.empty?
+        # force encoding fixes the error:
+        # Encoding::CompatibilityError: incompatible encoding regexp match (UTF-8 regexp with ASCII-8BIT string)
         stream = { n.attributes['Name'].to_sym => Base64.decode64(n.text).force_encoding('utf-8') }
         output[:data] << stream
         yield stream[:stdout], stream[:stderr] if block_given?
