@@ -25,6 +25,16 @@ describe 'winrm client cmd', integration: true do
     it { should have_no_stderr }
   end
 
+  describe 'echo "string with trailing \\" using double quotes' do
+    # This is a regression test for #131.  " is converted to &quot; when serializing
+    # the command to SOAP/XML.  Any naive substitution performed on such a serialized
+    # string can result in any \& sequence being interpreted as a back-substitution.
+    subject(:output) { @winrm.cmd('echo "string with trailing \\"') }
+    it { should have_exit_code 0 }
+    it { should have_stdout_match(/string with trailing \\/) }
+    it { should have_no_stderr }
+  end
+
   describe 'capturing output from stdout and stderr' do
     subject(:output) do
       # Note: Multiple lines doesn't work:
