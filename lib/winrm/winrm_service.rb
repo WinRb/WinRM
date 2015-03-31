@@ -164,7 +164,7 @@ module WinRM
       # Grab the command element and unescape any single quotes - issue 69
       xml = builder.target!
       escaped_cmd = /<#{NS_WIN_SHELL}:Command>(.+)<\/#{NS_WIN_SHELL}:Command>/m.match(xml)[1]
-      xml.sub!(escaped_cmd, escaped_cmd.gsub(/&#39;/, "'"))
+      xml[escaped_cmd] = escaped_cmd.gsub(/&#39;/, "'")
 
       resp_doc = send_message(xml)
       command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
