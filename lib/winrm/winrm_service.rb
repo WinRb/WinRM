@@ -222,41 +222,35 @@ module WinRM
         end
       end
 
-      resp_doc = send_message(builder.target!)
+      resp_doc = nil
+      request_msg = builder.target!
+      done_elems = []
       output = Output.new
-      REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |n|
-        next if n.text.nil? || n.text.empty?
-        stream = { n.attributes['Name'].to_sym => Base64.decode64(n.text) }
-        output[:data] << stream
-        yield stream[:stdout], stream[:stderr] if block_given?
+
+      while done_elems.empty?
+        resp_doc = send_get_output_message(request_msg)
+
+        REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |n|
+          next if n.text.nil? || n.text.empty?
+          stream = { n.attributes['Name'].to_sym => Base64.decode64(n.text) }
+          output[:data] << stream
+          yield stream[:stdout], stream[:stderr] if block_given?
+        end
+
+        # We may need to get additional output if the stream has not finished.
+        # The CommandState will change from Running to Done like so:
+        # @example
+        #   from...
+        #   <rsp:CommandState CommandId="..." State="http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Running"/>
+        #   to...
+        #   <rsp:CommandState CommandId="..." State="http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done">
+        #     <rsp:ExitCode>0</rsp:ExitCode>
+        #   </rsp:CommandState>
+        done_elems = REXML::XPath.match(resp_doc, "//*[@State='http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done']")
       end
 
-      # We may need to get additional output if the stream has not finished.
-      # The CommandState will change from Running to Done like so:
-      # @example
-      #   from...
-      #   <rsp:CommandState CommandId="..." State="http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Running"/>
-      #   to...
-      #   <rsp:CommandState CommandId="..." State="http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done">
-      #     <rsp:ExitCode>0</rsp:ExitCode>
-      #   </rsp:CommandState>
-      #if ((resp/"//*[@State='http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done']").empty?)
-      done_elems = REXML::XPath.match(resp_doc, "//*[@State='http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done']")
-      if done_elems.empty?
-        output.merge!(get_command_output(shell_id, command_id, &block)) do |key, old_data, new_data|
-          old_data += new_data
-        end
-      else
-        output[:exitcode] = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:ExitCode").text.to_i
-      end
+      output[:exitcode] = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:ExitCode").text.to_i
       output
-    rescue WinRMWSManFault => e
-      # If no output is available before the wsman:OperationTimeout expires,
-      # the server MUST return a WSManFault with the Code attribute equal to
-      # 2150858793. When the client receives this fault, it SHOULD issue 
-      # another Receive request.
-      # http://msdn.microsoft.com/en-us/library/cc251676.aspx
-      retry if e.fault_code == '2150858793'
     end
 
     # Clean-up after a command.
@@ -415,6 +409,21 @@ module WinRM
         end
       end
       hdr
+    end
+
+    def send_get_output_message(message)
+      send_message(message)
+    rescue WinRMWSManFault => e
+      # If no output is available before the wsman:OperationTimeout expires,
+      # the server MUST return a WSManFault with the Code attribute equal to
+      # 2150858793. When the client receives this fault, it SHOULD issue 
+      # another Receive request.
+      # http://msdn.microsoft.com/en-us/library/cc251676.aspx
+      if e.fault_code == '2150858793'
+        retry
+      else
+        raise
+      end
     end
 
     def send_message(message)
