@@ -1,5 +1,10 @@
 # WinRM Gem Changelog
 
+# 1.3.1
+- Fixed issue 129, long running commands could cause a stackoverflow exception
+- Fixed use of sub! in run_command results in spurious capture/replacement of \& sequences
+- Fixed issue 124 rwinrm won't take '.' characters in username
+
 # 1.3.0
 - Fixed multiple issues with WinRMHTTPTransportError incorrectly being raised
 - Refactored and added more unit and integration tests
