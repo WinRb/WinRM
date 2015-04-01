@@ -1,5 +1,9 @@
 # WinRM Gem Changelog
 
+# 1.3.2
+- Add spec.license attribute to gemspec
+- Bump RSpec dependency 3.0 to 3.2
+
 # 1.3.1
 - Fixed issue 129, long running commands could cause a stackoverflow exception
 - Fixed use of sub! in run_command results in spurious capture/replacement of \& sequences

@@ -11,12 +11,13 @@ Gem::Specification.new do |s|
 
   s.author = ['Dan Wanek', 'Paul Morton']
   s.email = ['dan.wanek@gmail.com', 'paul@themortonsonline.com']
-  s.homepage = 'http://github.com/WinRb/WinRM'
+  s.homepage = 'https://github.com/WinRb/WinRM'
 
   s.summary = 'Ruby library for Windows Remote Management'
   s.description	= <<-EOF
     Ruby library for Windows Remote Management
   EOF
+  s.license = 'Apache-2.0'
 
   s.files = `git ls-files`.split(/\n/)
   s.require_path = 'lib'
@@ -34,7 +35,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'nori', '~> 2.0'
   s.add_runtime_dependency 'gyoku', '~> 1.0'
   s.add_runtime_dependency 'builder', '>= 2.1.2'
-  s.add_development_dependency 'rspec', '~> 3.0.0'
+  s.add_development_dependency 'rspec', '~> 3.2.0'
   s.add_development_dependency 'rake', '~> 10.3.2'
   s.add_development_dependency 'rubocop', '~> 0.28.0'
 end
