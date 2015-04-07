@@ -40,20 +40,29 @@ module WinRM
       @max_env_sz = DEFAULT_MAX_ENV_SIZE
       @locale = DEFAULT_LOCALE
       @logger = Logging.logger[self]
-      case transport
-      when :negotiate
-        @xfer = HTTP::HttpNegotiate.new(endpoint, opts[:user], opts[:pass], opts)
-      when :kerberos
-        require 'gssapi'
-        require 'gssapi/extensions'
-        @xfer = HTTP::HttpGSSAPI.new(endpoint, opts[:realm], opts[:service], opts[:keytab], opts)
-      when :plaintext
-        @xfer = HTTP::HttpPlaintext.new(endpoint, opts[:user], opts[:pass], opts)
-      when :ssl
-        @xfer = HTTP::HttpSSL.new(endpoint, opts[:user], opts[:pass], opts[:ca_trust_path], opts)
-      else
+      begin
+        @xfer = send "init_#{transport}_transport", opts.merge({endpoint: endpoint})
+      rescue Exception => e
         raise "Invalid transport '#{transport}' specified, expected: kerberos, plaintext, ssl."
       end
+    end
+
+    def init_negotiate_transport(opts)
+      HTTP::HttpNegotiate.new(opts[:endpoint], opts[:user], opts[:pass], opts)
+    end
+
+    def init_kerberos_transport(opts)
+      require 'gssapi'
+      require 'gssapi/extensions'
+      HTTP::HttpGSSAPI.new(opts[:endpoint], opts[:realm], opts[:service], opts[:keytab], opts)
+    end
+
+    def init_plaintext_transport(opts)
+      HTTP::HttpPlaintext.new(opts[:endpoint], opts[:user], opts[:pass], opts)
+    end
+
+    def init_ssl_transport(opts)
+      HTTP::HttpSSL.new(opts[:endpoint], opts[:user], opts[:pass], opts[:ca_trust_path], opts)
     end
 
     # Operation timeout.
