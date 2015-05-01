@@ -312,7 +312,7 @@ module WinRM
     # @return [Hash] :stdout and :stderr
     def run_powershell_script(script_file, &block)
       # if an IO object is passed read it..otherwise assume the contents of the file were passed
-      script_text = script_file.kind_of?(IO) ? script_file.read : script_file
+      script_text = script_file.respond_to?(:read) ? script_file.read : script_file
       script = WinRM::PowershellScript.new(script_text)
       run_cmd("powershell -encodedCommand #{script.encoded()}", &block)
     end
