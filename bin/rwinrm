@@ -32,7 +32,7 @@ def parse_options
   options = {}
   fail 'Missing required options' unless ARGV.length == 1
 
-  m = /^(?<user>[a-z0-9\.\!\$ _-]+)@{1}(?<host>[a-z0-9\.]+)(?<port>:[0-9]+)?/i.match(ARGV[0])
+  m = /^(?<user>[a-z0-9\.\!\$ _-]+)@{1}(?<host>[a-z0-9\.\-]+)(?<port>:[0-9]+)?/i.match(ARGV[0])
   fail "#{ARGV[0]} is an invalid host" unless m
   options[:user] = m[:user]
   options[:endpoint] = "http://#{m[:host]}#{m[:port] || ':5985'}/wsman"
