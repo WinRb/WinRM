@@ -1,5 +1,9 @@
 # WinRM Gem Changelog
 
+# 1.3.3
+- Fixed issue 133, rwinrm allow hostnames with dashes
+- Use duck typing for powershell script read
+
 # 1.3.2
 - Add spec.license attribute to gemspec
 - Bump RSpec dependency 3.0 to 3.2
