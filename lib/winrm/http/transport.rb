@@ -108,6 +108,7 @@ module WinRM
         no_sspi_auth!
         @user, @pass = user, pass
         @ntlmcli = Net::NTLM::Client.new(user, pass)
+        @retryable = true
         no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
       end
 
@@ -135,8 +136,15 @@ module WinRM
         EOF
 
         resp = @httpcli.post(@endpoint, body, hdr)
-        handler = WinRM::ResponseHandler.new(winrm_decrypt(resp.body), resp.status)
-        handler.parse_to_xml()
+        if resp.status == 401 && @retryable
+          @retryable = false
+          init_auth
+          send_request(message)
+        else
+          @retryable = true
+          handler = WinRM::ResponseHandler.new(winrm_decrypt(resp.body), resp.status)
+          handler.parse_to_xml()
+        end
       end
 
       def winrm_decrypt(str)
