@@ -92,6 +92,8 @@ module WinRM
       end
     end
 
+
+    # Plain text, insecure, HTTP transport
     class HttpPlaintext < HttpTransport
       def initialize(endpoint, user, pass, opts)
         super(endpoint)
@@ -102,6 +104,8 @@ module WinRM
       end
     end
 
+
+    # NTLM/Negotiate, secure, HTTP transport
     class HttpNegotiate < HttpTransport
       def initialize(endpoint, user, pass, opts)
         super(endpoint)

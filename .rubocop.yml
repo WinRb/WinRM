@@ -7,3 +7,6 @@ Style/Encoding:
 
 Metrics/LineLength:
   Max: 100
+
+StringLiterals:
+  Enabled: false
