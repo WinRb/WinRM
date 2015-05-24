@@ -125,13 +125,13 @@ module WinRM
           "Content-Type" => "multipart/encrypted;protocol=\"application/HTTP-SPNEGO-session-encrypted\";boundary=\"Encrypted Boundary\""
         }
 
-        body = <<-EOF
---Encrypted Boundary\r
-Content-Type: application/HTTP-SPNEGO-session-encrypted\r
-OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{original_length}\r
---Encrypted Boundary\r
-Content-Type: application/octet-stream\r
-#{seal}--Encrypted Boundary--\r
+        body = <<-EOF.gsub(/^\s{10}/,"")
+          --Encrypted Boundary\r
+          Content-Type: application/HTTP-SPNEGO-session-encrypted\r
+          OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{original_length}\r
+          --Encrypted Boundary\r
+          Content-Type: application/octet-stream\r
+          #{seal}--Encrypted Boundary--\r
         EOF
 
         resp = @httpcli.post(@endpoint, body, hdr)
@@ -241,13 +241,13 @@ Content-Type: application/octet-stream\r
             'boundary="Encrypted Boundary"'
         }
 
-        body = <<-EOF
---Encrypted Boundary\r
-Content-Type: application/HTTP-Kerberos-session-encrypted\r
-OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{original_length + pad_len}\r
---Encrypted Boundary\r
-Content-Type: application/octet-stream\r
-#{emsg}--Encrypted Boundary--\r
+        body = <<-EOF.gsub(/^\s{10}/,"")
+          --Encrypted Boundary\r
+          Content-Type: application/HTTP-Kerberos-session-encrypted\r
+          OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{original_length + pad_len}\r
+          --Encrypted Boundary\r
+          Content-Type: application/octet-stream\r
+          #{emsg}--Encrypted Boundary--\r
         EOF
 
         resp = @httpcli.post(@endpoint, body, hdr)
