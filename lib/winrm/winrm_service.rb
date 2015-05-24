@@ -33,6 +33,7 @@ module WinRM
     # @param [Hash] opts Misc opts for the various transports.
     #   @see WinRM::HTTP::HttpTransport
     #   @see WinRM::HTTP::HttpGSSAPI
+    #   @see WinRM::HTTP::HttpNegotiate
     #   @see WinRM::HTTP::HttpSSL
     def initialize(endpoint, transport = :kerberos, opts = {})
       @endpoint = endpoint
