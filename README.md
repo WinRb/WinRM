@@ -30,6 +30,11 @@ There are various connection types you can specify upon initialization:
 
 It is recommended that you <code>:disable_sspi => true</code> if you are using the plaintext or ssl transport.
 
+#### NTLM/Negotiate
+```ruby
+winrm = WinRM::WinRMWebService.new(endpoint, :negotiate, :user => myuser, :pass mypass)
+```
+
 #### Plaintext
 ```ruby
 WinRM::WinRMWebService.new(endpoint, :plaintext, :user => myuser, :pass => mypass, :disable_sspi => true)
