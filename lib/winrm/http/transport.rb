@@ -166,14 +166,15 @@ module WinRM
           "Content-Type" => "multipart/encrypted;protocol=\"application/HTTP-SPNEGO-session-encrypted\";boundary=\"Encrypted Boundary\""
         }
 
-        body = <<-EOF.gsub(/^\s{10}/,"")
-          --Encrypted Boundary\r
-          Content-Type: application/HTTP-SPNEGO-session-encrypted\r
-          OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{original_length}\r
-          --Encrypted Boundary\r
-          Content-Type: application/octet-stream\r
-          #{seal}--Encrypted Boundary--\r
-        EOF
+        body = [
+          "--Encrypted Boundary",
+          "Content-Type: application/HTTP-SPNEGO-session-encrypted",
+          "OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{original_length}",
+          "--Encrypted Boundary",
+          "Content-Type: application/octet-stream",
+          "#{seal}--Encrypted Boundary--",
+          ""
+        ].join("\r\n")
 
         resp = @httpcli.post(@endpoint, body, hdr)
         if resp.status == 401 && @retryable
@@ -289,15 +290,15 @@ module WinRM
             'protocol="application/HTTP-Kerberos-session-encrypted";' \
             'boundary="Encrypted Boundary"'
         }
-
-        body = <<-EOF.gsub(/^\s{10}/,"")
-          --Encrypted Boundary\r
-          Content-Type: application/HTTP-Kerberos-session-encrypted\r
-          OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{original_length + pad_len}\r
-          --Encrypted Boundary\r
-          Content-Type: application/octet-stream\r
-          #{emsg}--Encrypted Boundary--\r
-        EOF
+        body = [
+          "--Encrypted Boundary",
+          "Content-Type: application/HTTP-Kerberos-session-encrypted",
+          "OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{original_length + pad_len}",
+          "--Encrypted Boundary",
+          "Content-Type: application/octet-stream",
+          "#{emsg}--Encrypted Boundary--",
+          ""
+        ].join("\r\n")
 
         resp = @httpcli.post(@endpoint, body, hdr)
         log_soap_message(resp.http_body.content)
