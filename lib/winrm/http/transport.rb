@@ -188,6 +188,8 @@ module WinRM
         end
       end
 
+      private
+
       def winrm_decrypt(str)
         str.force_encoding('BINARY')
         str.sub!(/^.*Content-Type: application\/octet-stream\r\n(.*)--Encrypted.*$/m, '\1')

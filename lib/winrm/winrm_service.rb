@@ -48,7 +48,7 @@ module WinRM
       configure_retries(opts)
       begin
         @xfer = send "init_#{transport}_transport", opts.merge({endpoint: endpoint})
-      rescue Exception => e
+      rescue NoMethodError => e
         raise "Invalid transport '#{transport}' specified, expected: kerberos, plaintext, ssl."
       end
     end
