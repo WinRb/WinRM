@@ -218,7 +218,7 @@ Content-Type: application/octet-stream\r
 
         iov1 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(
           FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 1)))
-        iov1[:type] =  (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA)
+        iov1[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA)
         iov1[:buffer].value = str
 
         iov2 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(
@@ -258,11 +258,11 @@ Content-Type: application/octet-stream\r
 
         iov1 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(
           FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 1)))
-        iov1[:type] =  (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA)
+        iov1[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA)
 
         iov2 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(
           FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 2)))
-        iov2[:type] =  (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA)
+        iov2[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA)
 
         str.force_encoding('BINARY')
         str.sub!(/^.*Content-Type: application\/octet-stream\r\n(.*)--Encrypted.*$/m, '\1')

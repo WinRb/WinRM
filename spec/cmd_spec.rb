@@ -45,7 +45,8 @@ describe 'winrm client cmd', integration: true do
 
       script = 'echo Hello & echo , world! 1>&2'
 
-      @captured_stdout, @captured_stderr = '', ''
+      @captured_stdout = ''
+      @captured_stderr = ''
       @winrm.cmd(script) do |stdout, stderr|
         @captured_stdout << stdout if stdout
         @captured_stderr << stderr if stderr
@@ -91,7 +92,7 @@ describe 'winrm client cmd', integration: true do
   describe 'ipconfig with a block' do
     subject(:stdout) do
       outvar = ''
-      @winrm.cmd('ipconfig') do |stdout, _stderr |
+      @winrm.cmd('ipconfig') do |stdout, _stderr|
         outvar << stdout
       end
       outvar
