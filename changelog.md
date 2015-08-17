@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 1.3.4
+- Relaxed version pins on dev dependencies
+
 # 1.3.3
 - Fixed issue 133, rwinrm allow hostnames with dashes
 - Use duck typing for powershell script read
