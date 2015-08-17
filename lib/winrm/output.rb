@@ -23,19 +23,19 @@ module WinRM
     end
 
     def output
-      self[:data].flat_map do | line |
+      self[:data].flat_map do |line|
         [line[:stdout], line[:stderr]]
       end.compact.join
     end
 
     def stdout
-      self[:data].map do | line |
+      self[:data].map do |line|
         line[:stdout]
       end.compact.join
     end
 
     def stderr
-      self[:data].map do | line |
+      self[:data].map do |line|
         line[:stderr]
       end.compact.join
     end

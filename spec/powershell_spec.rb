@@ -62,7 +62,8 @@ describe 'winrm client powershell', integration: true do
       $host.ui.WriteErrorLine(', world!')
       eos
 
-      @captured_stdout, @captured_stderr = '', ''
+      @captured_stdout = ''
+      @captured_stderr = ''
       @winrm.powershell(script) do |stdout, stderr|
         @captured_stdout << stdout if stdout
         @captured_stderr << stderr if stderr
