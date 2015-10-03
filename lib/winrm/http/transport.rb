@@ -15,6 +15,8 @@
 # limitations under the License.
 
 require_relative 'response_handler'
+require 'pry'
+require 'pry-byebug'
 
 module WinRM
   module HTTP
@@ -45,6 +47,20 @@ module WinRM
           'Content-Type' => 'application/soap+xml;charset=UTF-8',
           'Content-Length' => message.length }
         resp = @httpcli.post(@endpoint, message, hdr)
+        # We need to do a quick check on each request to ensure cert match
+        # manual way:
+        # fingerprint OpenSSL::Digest::SHA1.new(resp.peer_cert.to_der).to_s.upcase
+        # subject = resp.peer_cert.subject.to_s.split('=').last.upcase
+        # Check to see if certicate is self-signed and do something nice
+        # [22] pry(#<WinRM::HTTP::HttpSSL>)> winrm_subject = resp.peer_cert.subject.to_s.split('=').last.upcase
+        #  => "IP-0A714668"
+        # [23] pry(#<WinRM::HTTP::HttpSSL>)> winrm_fingerprint = OpenSSL::Digest::SHA1.new(resp.peer_cert.to_der).to_s.upcase
+        #  => "8014A7E5F7316F2E8D29866C5CF2CE348F2F5B67"
+        # Maybe we could check our cert chain for a self-signed cert matching here as well
+        # We should probably integrate this into a verify_self_signed_fingerprint!
+        # or something
+
+        binding.pry
         log_soap_message(resp.http_body.content)
         handler = WinRM::ResponseHandler.new(resp.http_body.content, resp.status)
         handler.parse_to_xml
