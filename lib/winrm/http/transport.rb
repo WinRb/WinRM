@@ -15,8 +15,6 @@
 # limitations under the License.
 
 require_relative 'response_handler'
-require 'pry'
-require 'pry-byebug'
 
 module WinRM
   module HTTP
@@ -49,26 +47,12 @@ module WinRM
         resp = @httpcli.post(@endpoint, message, hdr)
         log_soap_message(resp.http_body.content)
         handler = WinRM::ResponseHandler.new(resp.http_body.content, resp.status)
-        # We need to do a quick check on each request to ensure cert match
-        # manual way:
-        #
-        # subject = resp.peer_cert.subject.to_s.split('=').last.upcase
-        # Check to see if certicate is self-signed and do something nice
-        # [22] pry(#<WinRM::HTTP::HttpSSL>)> winrm_subject = resp.peer_cert.subject.to_s.split('=').last.upcase
-        #  => "IP-0A714668"
-        # [23] pry(#<WinRM::HTTP::HttpSSL>)> winrm_fingerprint = OpenSSL::Digest::SHA1.new(resp.peer_cert.to_der).to_s.upcase
-        #  => "8014A7E5F7316F2E8D29866C5CF2CE348F2F5B67"
-        # Maybe we could check our cert chain for a self-signed cert matching here as well
-        # We should probably integrate this into a verify_self_signed_fingerprint!
-        # or something
         if @ssl_peer_fingerprint
-          conn_fingerprint = OpenSSL::Digest::SHA1.new(
-            resp.peer_cert.to_der).to_s.upcase
-          if @ssl_peer_fingerprint != conn_fingerprint
+          conn_fingerprint = OpenSSL::Digest::SHA1.new(resp.peer_cert.to_der).to_s
+          if @ssl_peer_fingerprint.casecmp(conn_fingerprint) != 0
             @logger.fatal("ssl fingerprint mismatch!!!!\n")
           end
         end
-        #binding.pry
         handler.parse_to_xml
       end
 
@@ -91,10 +75,6 @@ module WinRM
 
       # SSL Peer Fingerprint Verification
       def ssl_peer_fingerprint_verification!
-        # Not sure if this is the right place to be making
-        # a probe / tcp connection to grab the cert and compare during
-        # initialize....
-        # We could just analyize the fingerprint after first request
         noverify_peer_context = OpenSSL::SSL::SSLContext.new
         noverify_peer_context.verify_mode = OpenSSL::SSL::VERIFY_NONE
         tcp_connection = TCPSocket.new(@endpoint.host, @endpoint.port)
@@ -104,8 +84,6 @@ module WinRM
         connection_cert = shady_ssl_connection.peer_cert_chain.last
         conn_fingerprint=OpenSSL::Digest::SHA1.new(connection_cert.to_der).to_s.upcase
         if @ssl_peer_fingerprint == conn_fingerprint
-          # we know the host is correct
-          # don't do the normal ssl_peer_verification
           @logger.info("ssl fingerprint #{@ssl_peer_fingerprint} verified\n")
           no_ssl_peer_verification!
         end
