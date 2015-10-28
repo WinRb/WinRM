@@ -11,6 +11,13 @@ describe 'winrm client cmd', integration: true do
     it { should have_no_stderr }
   end
 
+  describe 'exit without stdout' do
+    subject(:output) { @winrm.cmd('exit 100') }
+    it { should have_exit_code 100 }
+    it { should have_no_stdout }
+    it { should have_no_stderr }
+  end
+
   describe 'ipconfig' do
     subject(:output) { @winrm.cmd('ipconfig') }
     it { should have_exit_code 0 }
