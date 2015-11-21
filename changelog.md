@@ -1,5 +1,9 @@
 # WinRM Gem Changelog
 
+# 1.3.5
+- Widen logging version constraints to include 2.0
+- Use codepage 65001 (UTF-8)
+
 # 1.3.4
 - Relaxed version pins on dev dependencies
 
