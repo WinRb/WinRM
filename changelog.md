@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 1.3.6
+- Remove BOM from response (Issue #159) added by Windows 2008R2
+
 # 1.3.5
 - Widen logging version constraints to include 2.0
 - Use codepage 65001 (UTF-8)
