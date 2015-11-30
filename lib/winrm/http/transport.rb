@@ -46,13 +46,8 @@ module WinRM
           'Content-Length' => message.length }
         resp = @httpcli.post(@endpoint, message, hdr)
         log_soap_message(resp.http_body.content)
+        verify_ssl_fingerprint(resp) if @ssl_peer_fingerprint
         handler = WinRM::ResponseHandler.new(resp.http_body.content, resp.status)
-        if @ssl_peer_fingerprint
-          conn_fingerprint = OpenSSL::Digest::SHA1.new(resp.peer_cert.to_der).to_s
-          if @ssl_peer_fingerprint.casecmp(conn_fingerprint) != 0
-            @logger.fatal("ssl fingerprint mismatch!!!!\n")
-          end
-        end
         handler.parse_to_xml
       end
 
@@ -75,18 +70,27 @@ module WinRM
 
       # SSL Peer Fingerprint Verification
       def ssl_peer_fingerprint_verification!
+        connection_cert = shady_ssl_connection.peer_cert_chain.last
+        conn_fingerprint = OpenSSL::Digest::SHA1.new(connection_cert.to_der).to_s.upcase
+        return unless @ssl_peer_fingerprint == conn_fingerprint
+        @logger.info("ssl fingerprint #{@ssl_peer_fingerprint} verified\n")
+        no_ssl_peer_verification!
+      end
+
+      def shady_ssl_connection
         noverify_peer_context = OpenSSL::SSL::SSLContext.new
         noverify_peer_context.verify_mode = OpenSSL::SSL::VERIFY_NONE
         tcp_connection = TCPSocket.new(@endpoint.host, @endpoint.port)
         shady_ssl_connection = OpenSSL::SSL::SSLSocket.new(tcp_connection,
                                                            noverify_peer_context)
         shady_ssl_connection.connect
-        connection_cert = shady_ssl_connection.peer_cert_chain.last
-        conn_fingerprint=OpenSSL::Digest::SHA1.new(connection_cert.to_der).to_s.upcase
-        if @ssl_peer_fingerprint == conn_fingerprint
-          @logger.info("ssl fingerprint #{@ssl_peer_fingerprint} verified\n")
-          no_ssl_peer_verification!
-        end
+        shady_ssl_connection
+      end
+
+      def verify_ssl_fingerprint(resp)
+        conn_fingerprint = OpenSSL::Digest::SHA1.new(resp.peer_cert.to_der).to_s
+        return unless @ssl_peer_fingerprint.casecmp(conn_fingerprint) != 0
+        @logger.fatal("ssl fingerprint mismatch!!!!\n")
       end
 
       # HTTP Client receive timeout. How long should a remote call wait for a
@@ -134,10 +138,9 @@ module WinRM
         no_sspi_auth! if opts[:disable_sspi]
         basic_auth_only! if opts[:basic_auth_only]
         no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
-        if opts[:ssl_peer_fingerprint]
-          @ssl_peer_fingerprint = opts[:ssl_peer_fingerprint]
-          ssl_peer_fingerprint_verification!
-        end
+        return unless opts[:ssl_peer_fingerprint]
+        @ssl_peer_fingerprint = opts[:ssl_peer_fingerprint]
+        ssl_peer_fingerprint_verification!
       end
     end
 
