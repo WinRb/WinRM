@@ -1,12 +1,11 @@
 # encoding: UTF-8
 require 'date'
-
-version = File.read(File.expand_path('../VERSION', __FILE__)).strip
+require File.expand_path('../lib/winrm/version', __FILE__)
 
 Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
   s.name = 'winrm'
-  s.version = version
+  s.version = WinRM::VERSION
   s.date = Date.today.to_s
 
   s.author = ['Dan Wanek', 'Paul Morton']

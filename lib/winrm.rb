@@ -16,6 +16,7 @@
 
 require 'date'
 require 'logging'
+require_relative 'winrm/version'
 
 # Main WinRM module entry point
 module WinRM
