@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 1.4.0
+- Added WinRM::Version so the gem version is available at runtime for consumers.
+
 # 1.3.6
 - Remove BOM from response (Issue #159) added by Windows 2008R2
 
