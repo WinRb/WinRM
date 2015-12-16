@@ -40,12 +40,13 @@ module WinRM
       # @param [String] The XML SOAP message
       # @returns [REXML::Document] The parsed response body
       def send_request(message)
+        ssl_peer_fingerprint_verification!
         log_soap_message(message)
-        hdr = {
-          'Content-Type' => 'application/soap+xml;charset=UTF-8',
-          'Content-Length' => message.length }
+        hdr = { 'Content-Type' => 'application/soap+xml;charset=UTF-8',
+                'Content-Length' => message.length }
         resp = @httpcli.post(@endpoint, message, hdr)
         log_soap_message(resp.http_body.content)
+        verify_ssl_fingerprint(resp.peer_cert)
         handler = WinRM::ResponseHandler.new(resp.http_body.content, resp.status)
         handler.parse_to_xml
       end
@@ -65,6 +66,34 @@ module WinRM
       # Disable SSL Peer Verification
       def no_ssl_peer_verification!
         @httpcli.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      end
+
+      # SSL Peer Fingerprint Verification prior to connecting
+      def ssl_peer_fingerprint_verification!
+        return unless @ssl_peer_fingerprint && ! @ssl_peer_fingerprint_verified
+        connection_cert = shady_ssl_connection.peer_cert_chain.last
+        verify_ssl_fingerprint(connection_cert)
+        @logger.info("initial ssl fingerprint #{@ssl_peer_fingerprint} verified\n")
+        @ssl_peer_fingerprint_verified = true
+        no_ssl_peer_verification!
+      end
+
+      # Connect without verification to retrieve untrusted ssl context
+      def shady_ssl_connection
+        noverify_peer_context = OpenSSL::SSL::SSLContext.new
+        noverify_peer_context.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        tcp_connection = TCPSocket.new(@endpoint.host, @endpoint.port)
+        shady_ssl_connection = OpenSSL::SSL::SSLSocket.new(tcp_connection,
+                                                           noverify_peer_context)
+        shady_ssl_connection.connect
+        shady_ssl_connection
+      end
+
+      # compare @ssl_peer_fingerprint to current ssl context
+      def verify_ssl_fingerprint(cert)
+        conn_fingerprint = OpenSSL::Digest::SHA1.new(cert.to_der).to_s
+        return unless @ssl_peer_fingerprint.casecmp(conn_fingerprint) != 0
+        fail "ssl fingerprint mismatch!!!!\n"
       end
 
       # HTTP Client receive timeout. How long should a remote call wait for a
@@ -112,6 +141,7 @@ module WinRM
         no_sspi_auth! if opts[:disable_sspi]
         basic_auth_only! if opts[:basic_auth_only]
         no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
+        @ssl_peer_fingerprint = opts[:ssl_peer_fingerprint]
       end
     end
 
