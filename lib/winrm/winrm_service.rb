@@ -424,6 +424,12 @@ module WinRM
       @retry_limit = opts[:retry_limit] || 3
     end
 
+    def setup_logger
+      @logger = Logging.logger[self]
+      @logger.level = :warn
+      @logger.add_appenders(Logging.appenders.stdout)
+    end
+
     def namespaces
       {
         'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema',
