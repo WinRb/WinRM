@@ -1,0 +1,5 @@
+auth_type: negotiate
+endpoint: "http://192.168.137.144:5985/wsman"
+options:
+  user: vagrant
+  pass: vagrant

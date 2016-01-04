@@ -41,7 +41,7 @@ module WinRM
     #   @see WinRM::HTTP::HttpNegotiate
     #   @see WinRM::HTTP::HttpSSL
     def initialize(endpoint, transport = :kerberos, opts = {})
-      @endpoint = endpoint
+      @endpoint = endpoint + '?PSVersion=5.0.11082.1000'
       @timeout = DEFAULT_TIMEOUT
       @max_env_sz = DEFAULT_MAX_ENV_SIZE
       @locale = DEFAULT_LOCALE
@@ -118,18 +118,18 @@ module WinRM
     # @return [String] The ShellId from the SOAP response.  This is our open shell instance on the remote machine.
     def open_shell(shell_opts = {}, &block)
       logger.debug("[WinRM] opening remote shell on #{@endpoint}")
-      i_stream = shell_opts.has_key?(:i_stream) ? shell_opts[:i_stream] : 'stdin'
-      o_stream = shell_opts.has_key?(:o_stream) ? shell_opts[:o_stream] : 'stdout stderr'
+      shell_id = UUIDTools::UUID.random_create.to_s.upcase
+      i_stream = shell_opts.has_key?(:i_stream) ? shell_opts[:i_stream] : 'stdin pr'
+      o_stream = shell_opts.has_key?(:o_stream) ? shell_opts[:o_stream] : 'stdout'
       codepage = shell_opts.has_key?(:codepage) ? shell_opts[:codepage] : 65001 # utf8 as default codepage (from https://msdn.microsoft.com/en-us/library/dd317756(VS.85).aspx)
       noprofile = shell_opts.has_key?(:noprofile) ? shell_opts[:noprofile] : 'FALSE'
-      h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => { "#{NS_WSMAN_DMTF}:Option" => [noprofile, codepage],
-        :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_NOPROFILE','WINRS_CODEPAGE']}}}}
+      h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => { "#{NS_WSMAN_DMTF}:Option" => 2.3,
+        :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => 'protocolversion', 'MustComply' => 'true'}}}, :attributes! => {"#{NS_WSMAN_DMTF}:OptionSet" => {'env:mustUnderstand' => 'true'}}}
       shell_body = {
         "#{NS_WIN_SHELL}:InputStreams" => i_stream,
-        "#{NS_WIN_SHELL}:OutputStreams" => o_stream
+        "#{NS_WIN_SHELL}:OutputStreams" => o_stream,
+        "creationXml" => "AAAAAAAAAAQAAAAAAAAAAAMAAALwAgAAAAIAAQCo5RyLC67GS43vdIPDeVm2AAAAAAAAAAAAAAAAAAAAAO+7vzxPYmogUmVmSWQ9IjAiPjxNUz48VmVyc2lvbiBOPSJwcm90b2NvbHZlcnNpb24iPjIuMzwvVmVyc2lvbj48VmVyc2lvbiBOPSJQU1ZlcnNpb24iPjIuMDwvVmVyc2lvbj48VmVyc2lvbiBOPSJTZXJpYWxpemF0aW9uVmVyc2lvbiI+MS4xLjAuMTwvVmVyc2lvbj48QkEgTj0iVGltZVpvbmUiPkFBRUFBQUQvLy8vL0FRQUFBQUFBQUFBRUFRQUFBQnhUZVhOMFpXMHVRM1Z5Y21WdWRGTjVjM1JsYlZScGJXVmFiMjVsQkFBQUFCZHRYME5oWTJobFpFUmhlV3hwWjJoMFEyaGhibWRsY3cxdFgzUnBZMnR6VDJabWMyVjBEbTFmYzNSaGJtUmhjbVJPWVcxbERtMWZaR0Y1YkdsbmFIUk9ZVzFsQXdBQkFSeFRlWE4wWlcwdVEyOXNiR1ZqZEdsdmJuTXVTR0Z6YUhSaFlteGxDUWtDQUFBQUFNRGM4YnovLy84S0NnUUNBQUFBSEZONWMzUmxiUzVEYjJ4c1pXTjBhVzl1Y3k1SVlYTm9kR0ZpYkdVSEFBQUFDa3h2WVdSR1lXTjBiM0lIVm1WeWMybHZiZ2hEYjIxd1lYSmxjaEJJWVhOb1EyOWtaVkJ5YjNacFpHVnlDRWhoYzJoVGFYcGxCRXRsZVhNR1ZtRnNkV1Z6QUFBREF3QUZCUXNJSEZONWMzUmxiUzVEYjJ4c1pXTjBhVzl1Y3k1SlEyOXRjR0Z5WlhJa1UzbHpkR1Z0TGtOdmJHeGxZM1JwYjI1ekxrbElZWE5vUTI5a1pWQnliM1pwWkdWeUNPeFJPRDhBQUFBQUNnb0RBQUFBQ1FNQUFBQUpCQUFBQUJBREFBQUFBQUFBQUJBRUFBQUFBQUFBQUFzPTwvQkE+PC9NUz48L09iaj4AAAAAAAAABQAAAAAAAAAAAwAADjoCAAAABAABAKjlHIsLrsZLje90g8N5WbYAAAAAAAAAAAAAAAAAAAAA77u/PE9iaiBSZWZJZD0iMCI+PE1TPjxJMzIgTj0iTWluUnVuc3BhY2VzIj4xPC9JMzI+PEkzMiBOPSJNYXhSdW5zcGFjZXMiPjE8L0kzMj48T2JqIE49IlBTVGhyZWFkT3B0aW9ucyIgUmVmSWQ9IjEiPjxUTiBSZWZJZD0iMCI+PFQ+U3lzdGVtLk1hbmFnZW1lbnQuQXV0b21hdGlvbi5SdW5zcGFjZXMuUFNUaHJlYWRPcHRpb25zPC9UPjxUPlN5c3RlbS5FbnVtPC9UPjxUPlN5c3RlbS5WYWx1ZVR5cGU8L1Q+PFQ+U3lzdGVtLk9iamVjdDwvVD48L1ROPjxUb1N0cmluZz5EZWZhdWx0PC9Ub1N0cmluZz48STMyPjA8L0kzMj48L09iaj48T2JqIE49IkFwYXJ0bWVudFN0YXRlIiBSZWZJZD0iMiI+PFROIFJlZklkPSIxIj48VD5TeXN0ZW0uVGhyZWFkaW5nLkFwYXJ0bWVudFN0YXRlPC9UPjxUPlN5c3RlbS5FbnVtPC9UPjxUPlN5c3RlbS5WYWx1ZVR5cGU8L1Q+PFQ+U3lzdGVtLk9iamVjdDwvVD48L1ROPjxUb1N0cmluZz5Vbmtub3duPC9Ub1N0cmluZz48STMyPjI8L0kzMj48L09iaj48T2JqIE49IkFwcGxpY2F0aW9uQXJndW1lbnRzIiBSZWZJZD0iMyI+PFROIFJlZklkPSIyIj48VD5TeXN0ZW0uTWFuYWdlbWVudC5BdXRvbWF0aW9uLlBTUHJpbWl0aXZlRGljdGlvbmFyeTwvVD48VD5TeXN0ZW0uQ29sbGVjdGlvbnMuSGFzaHRhYmxlPC9UPjxUPlN5c3RlbS5PYmplY3Q8L1Q+PC9UTj48RENUPjxFbj48UyBOPSJLZXkiPlBTVmVyc2lvblRhYmxlPC9TPjxPYmogTj0iVmFsdWUiIFJlZklkPSI0Ij48VE5SZWYgUmVmSWQ9IjIiIC8+PERDVD48RW4+PFMgTj0iS2V5Ij5QU1ZlcnNpb248L1M+PFZlcnNpb24gTj0iVmFsdWUiPjUuMC4xMTA4Mi4xMDAwPC9WZXJzaW9uPjwvRW4+PEVuPjxTIE49IktleSI+UFNDb21wYXRpYmxlVmVyc2lvbnM8L1M+PE9iaiBOPSJWYWx1ZSIgUmVmSWQ9IjUiPjxUTiBSZWZJZD0iMyI+PFQ+U3lzdGVtLlZlcnNpb25bXTwvVD48VD5TeXN0ZW0uQXJyYXk8L1Q+PFQ+U3lzdGVtLk9iamVjdDwvVD48L1ROPjxMU1Q+PFZlcnNpb24+MS4wPC9WZXJzaW9uPjxWZXJzaW9uPjIuMDwvVmVyc2lvbj48VmVyc2lvbj4zLjA8L1ZlcnNpb24+PFZlcnNpb24+NC4wPC9WZXJzaW9uPjxWZXJzaW9uPjUuMC4xMTA4Mi4xMDAwPC9WZXJzaW9uPjwvTFNUPjwvT2JqPjwvRW4+PEVuPjxTIE49IktleSI+Q0xSVmVyc2lvbjwvUz48VmVyc2lvbiBOPSJWYWx1ZSI+NC4wLjMwMzE5LjQyMDAwPC9WZXJzaW9uPjwvRW4+PEVuPjxTIE49IktleSI+QnVpbGRWZXJzaW9uPC9TPjxWZXJzaW9uIE49IlZhbHVlIj4xMC4wLjExMDgyLjEwMDA8L1ZlcnNpb24+PC9Fbj48RW4+PFMgTj0iS2V5Ij5XU01hblN0YWNrVmVyc2lvbjwvUz48VmVyc2lvbiBOPSJWYWx1ZSI+My4wPC9WZXJzaW9uPjwvRW4+PEVuPjxTIE49IktleSI+UFNSZW1vdGluZ1Byb3RvY29sVmVyc2lvbjwvUz48VmVyc2lvbiBOPSJWYWx1ZSI+Mi4zPC9WZXJzaW9uPjwvRW4+PEVuPjxTIE49IktleSI+U2VyaWFsaXphdGlvblZlcnNpb248L1M+PFZlcnNpb24gTj0iVmFsdWUiPjEuMS4wLjE8L1ZlcnNpb24+PC9Fbj48L0RDVD48L09iaj48L0VuPjwvRENUPjwvT2JqPjxPYmogTj0iSG9zdEluZm8iIFJlZklkPSI2Ij48TVM+PE9iaiBOPSJfaG9zdERlZmF1bHREYXRhIiBSZWZJZD0iNyI+PE1TPjxPYmogTj0iZGF0YSIgUmVmSWQ9IjgiPjxUTiBSZWZJZD0iNCI+PFQ+U3lzdGVtLkNvbGxlY3Rpb25zLkhhc2h0YWJsZTwvVD48VD5TeXN0ZW0uT2JqZWN0PC9UPjwvVE4+PERDVD48RW4+PEkzMiBOPSJLZXkiPjk8L0kzMj48T2JqIE49IlZhbHVlIiBSZWZJZD0iOSI+PE1TPjxTIE49IlQiPlN5c3RlbS5TdHJpbmc8L1M+PFMgTj0iViI+QzpcZGV2XGtpdGNoZW4tdmFncmFudDwvUz48L01TPjwvT2JqPjwvRW4+PEVuPjxJMzIgTj0iS2V5Ij44PC9JMzI+PE9iaiBOPSJWYWx1ZSIgUmVmSWQ9IjEwIj48TVM+PFMgTj0iVCI+U3lzdGVtLk1hbmFnZW1lbnQuQXV0b21hdGlvbi5Ib3N0LlNpemU8L1M+PE9iaiBOPSJWIiBSZWZJZD0iMTEiPjxNUz48STMyIE49IndpZHRoIj4xOTk8L0kzMj48STMyIE49ImhlaWdodCI+NTI8L0kzMj48L01TPjwvT2JqPjwvTVM+PC9PYmo+PC9Fbj48RW4+PEkzMiBOPSJLZXkiPjc8L0kzMj48T2JqIE49IlZhbHVlIiBSZWZJZD0iMTIiPjxNUz48UyBOPSJUIj5TeXN0ZW0uTWFuYWdlbWVudC5BdXRvbWF0aW9uLkhvc3QuU2l6ZTwvUz48T2JqIE49IlYiIFJlZklkPSIxMyI+PE1TPjxJMzIgTj0id2lkdGgiPjgwPC9JMzI+PEkzMiBOPSJoZWlnaHQiPjUyPC9JMzI+PC9NUz48L09iaj48L01TPjwvT2JqPjwvRW4+PEVuPjxJMzIgTj0iS2V5Ij42PC9JMzI+PE9iaiBOPSJWYWx1ZSIgUmVmSWQ9IjE0Ij48TVM+PFMgTj0iVCI+U3lzdGVtLk1hbmFnZW1lbnQuQXV0b21hdGlvbi5Ib3N0LlNpemU8L1M+PE9iaiBOPSJWIiBSZWZJZD0iMTUiPjxNUz48STMyIE49IndpZHRoIj44MDwvSTMyPjxJMzIgTj0iaGVpZ2h0Ij4yNTwvSTMyPjwvTVM+PC9PYmo+PC9NUz48L09iaj48L0VuPjxFbj48STMyIE49IktleSI+NTwvSTMyPjxPYmogTj0iVmFsdWUiIFJlZklkPSIxNiI+PE1TPjxTIE49IlQiPlN5c3RlbS5NYW5hZ2VtZW50LkF1dG9tYXRpb24uSG9zdC5TaXplPC9TPjxPYmogTj0iViIgUmVmSWQ9IjE3Ij48TVM+PEkzMiBOPSJ3aWR0aCI+ODA8L0kzMj48STMyIE49ImhlaWdodCI+OTk5OTwvSTMyPjwvTVM+PC9PYmo+PC9NUz48L09iaj48L0VuPjxFbj48STMyIE49IktleSI+NDwvSTMyPjxPYmogTj0iVmFsdWUiIFJlZklkPSIxOCI+PE1TPjxTIE49IlQiPlN5c3RlbS5JbnQzMjwvUz48STMyIE49IlYiPjI1PC9JMzI+PC9NUz48L09iaj48L0VuPjxFbj48STMyIE49IktleSI+MzwvSTMyPjxPYmogTj0iVmFsdWUiIFJlZklkPSIxOSI+PE1TPjxTIE49IlQiPlN5c3RlbS5NYW5hZ2VtZW50LkF1dG9tYXRpb24uSG9zdC5Db29yZGluYXRlczwvUz48T2JqIE49IlYiIFJlZklkPSIyMCI+PE1TPjxJMzIgTj0ieCI+MDwvSTMyPjxJMzIgTj0ieSI+OTk3NDwvSTMyPjwvTVM+PC9PYmo+PC9NUz48L09iaj48L0VuPjxFbj48STMyIE49IktleSI+MjwvSTMyPjxPYmogTj0iVmFsdWUiIFJlZklkPSIyMSI+PE1TPjxTIE49IlQiPlN5c3RlbS5NYW5hZ2VtZW50LkF1dG9tYXRpb24uSG9zdC5Db29yZGluYXRlczwvUz48T2JqIE49IlYiIFJlZklkPSIyMiI+PE1TPjxJMzIgTj0ieCI+MDwvSTMyPjxJMzIgTj0ieSI+OTk5ODwvSTMyPjwvTVM+PC9PYmo+PC9NUz48L09iaj48L0VuPjxFbj48STMyIE49IktleSI+MTwvSTMyPjxPYmogTj0iVmFsdWUiIFJlZklkPSIyMyI+PE1TPjxTIE49IlQiPlN5c3RlbS5Db25zb2xlQ29sb3I8L1M+PEkzMiBOPSJWIj4wPC9JMzI+PC9NUz48L09iaj48L0VuPjxFbj48STMyIE49IktleSI+MDwvSTMyPjxPYmogTj0iVmFsdWUiIFJlZklkPSIyNCI+PE1TPjxTIE49IlQiPlN5c3RlbS5Db25zb2xlQ29sb3I8L1M+PEkzMiBOPSJWIj43PC9JMzI+PC9NUz48L09iaj48L0VuPjwvRENUPjwvT2JqPjwvTVM+PC9PYmo+PEIgTj0iX2lzSG9zdE51bGwiPmZhbHNlPC9CPjxCIE49Il9pc0hvc3RVSU51bGwiPmZhbHNlPC9CPjxCIE49Il9pc0hvc3RSYXdVSU51bGwiPmZhbHNlPC9CPjxCIE49Il91c2VSdW5zcGFjZUhvc3QiPmZhbHNlPC9CPjwvTVM+PC9PYmo+PC9NUz48L09iaj4="
       }
-      shell_body["#{NS_WIN_SHELL}:WorkingDirectory"] = shell_opts[:working_directory] if shell_opts.has_key?(:working_directory)
-      shell_body["#{NS_WIN_SHELL}:IdleTimeOut"] = shell_opts[:idle_timeout] if(shell_opts.has_key?(:idle_timeout) && shell_opts[:idle_timeout].is_a?(String))
       if(shell_opts.has_key?(:env_vars) && shell_opts[:env_vars].is_a?(Hash))
         keys = shell_opts[:env_vars].keys
         vals = shell_opts[:env_vars].values
@@ -139,16 +139,16 @@ module WinRM
         }
       end
       builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
         env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_create,h_opts)) }
         env.tag! :env, :Body do |body|
-          body.tag!("#{NS_WIN_SHELL}:Shell") { |s| s << Gyoku.xml(shell_body)}
+          body.tag!("#{NS_WIN_SHELL}:Shell", {"ShellId" => shell_id}) { |s| s << Gyoku.xml(shell_body)}
         end
       end
 
       resp_doc = send_message(builder.target!)
       shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
+      puts resp_doc
       logger.debug("[WinRM] remote shell #{shell_id} is open on #{@endpoint}")
 
       if block_given?
@@ -486,6 +486,7 @@ module WinRM
     end
 
     def send_message(message)
+      puts message
       @xfer.send_request(message)
     end
     
@@ -493,7 +494,7 @@ module WinRM
     # Helper methods for SOAP Headers
 
     def resource_uri_cmd
-      {"#{NS_WSMAN_DMTF}:ResourceURI" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd',
+      {"#{NS_WSMAN_DMTF}:ResourceURI" => 'http://schemas.microsoft.com/powershell/Microsoft.PowerShell',
         :attributes! => {"#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => true}}}
     end
 

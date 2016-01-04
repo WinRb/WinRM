@@ -132,7 +132,9 @@ module WinRM
     # Plain text, insecure, HTTP transport
     class HttpPlaintext < HttpTransport
       def initialize(endpoint, user, pass, opts)
+        puts endpoint
         super(endpoint)
+        puts endpoint
         @httpcli.set_auth(nil, user, pass)
         no_sspi_auth! if opts[:disable_sspi]
         basic_auth_only! if opts[:basic_auth_only]

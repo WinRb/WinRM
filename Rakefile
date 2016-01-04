@@ -24,7 +24,7 @@ end
 
 # Run the integration test suite
 RSpec::Core::RakeTask.new(:integration) do |task|
-  task.pattern = 'spec/*_spec.rb'
+  task.pattern = 'spec/powershell_spec.rb'
   task.rspec_opts = ['--color', '-f documentation']
   task.rspec_opts << '-tintegration'
 end
