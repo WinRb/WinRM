@@ -148,7 +148,6 @@ module WinRM
 
       resp_doc = send_message(builder.target!)
       shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
-      puts resp_doc
       logger.debug("[WinRM] remote shell #{shell_id} is open on #{@endpoint}")
 
       if block_given?
@@ -168,6 +167,7 @@ module WinRM
     # @param [Array<String>] arguments An array of arguments for this command
     # @return [String] The CommandId from the SOAP response.  This is the ID we need to query in order to get output.
     def run_command(shell_id, command, arguments = [], cmd_opts = {}, &block)
+      command_id = UUIDTools::UUID.random_create.to_s.upcase
       consolemode = cmd_opts.has_key?(:console_mode_stdin) ? cmd_opts[:console_mode_stdin] : 'TRUE'
       skipcmd     = cmd_opts.has_key?(:skip_cmd_shell) ? cmd_opts[:skip_cmd_shell] : 'FALSE'
 
@@ -175,24 +175,58 @@ module WinRM
         "#{NS_WSMAN_DMTF}:Option" => [consolemode, skipcmd],
         :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_CONSOLEMODE_STDIN','WINRS_SKIP_CMD_SHELL']}}}
       }
-      body = { "#{NS_WIN_SHELL}:Command" => "\"#{command}\"", "#{NS_WIN_SHELL}:Arguments" => arguments}
+
+      command = "Get-Process | fl"
+      argument_xml = %{<Obj RefId="0"><MS><Obj N="PowerShell" RefId="1"><MS><Obj N="Cmds" RefId="2"><TN RefId="0"><T>System.Collections.Generic.List`1[[System.Management.Automation.PSObject, System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]]</T><T>System.Object</T></TN><LST><Obj RefId="3"><MS><S N="Cmd">Invoke-expression</S><B N="IsScript">false</B><Nil N="UseLocalScope" /><Obj N="MergeMyResult" RefId="4"><TN RefId="1"><T>System.Management.Automation.Runspaces.PipelineResultTypes</T><T>System.Enum</T><T>System.ValueType</T><T>System.Object</T></TN><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeToResult" RefId="5"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergePreviousResults" RefId="6"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeError" RefId="7"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeWarning" RefId="8"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeVerbose" RefId="9"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeDebug" RefId="10"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="Args" RefId="11"><TNRef RefId="0" /><LST><Obj RefId="12"><MS><S N="N">-Command</S><Nil N="V" /></MS></Obj><Obj RefId="13"><MS><Nil N="N" /><S N="V">#{command}</S></MS></Obj></LST></Obj></MS></Obj><Obj RefId="14"><MS><S N="Cmd">Out-string</S><B N="IsScript">false</B><Nil N="UseLocalScope" /><Obj N="MergeMyResult" RefId="15"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeToResult" RefId="16"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergePreviousResults" RefId="17"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeError" RefId="18"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeWarning" RefId="19"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeVerbose" RefId="20"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeDebug" RefId="21"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="Args" RefId="22"><TNRef RefId="0" /><LST /></Obj></MS></Obj></LST></Obj><B N="IsNested">false</B><Nil N="History" /><B N="RedirectShellErrorOutputPipe">true</B></MS></Obj><B N="NoInput">true</B><Obj N="ApartmentState" RefId="23"><TN RefId="2"><T>System.Threading.ApartmentState</T><T>System.Enum</T><T>System.ValueType</T><T>System.Object</T></TN><ToString>Unknown</ToString><I32>2</I32></Obj><Obj N="RemoteStreamOptions" RefId="24"><TN RefId="3"><T>System.Management.Automation.RemoteStreamOptions</T><T>System.Enum</T><T>System.ValueType</T><T>System.Object</T></TN><ToString>0</ToString><I32>0</I32></Obj><B N="AddToHistory">true</B><Obj N="HostInfo" RefId="25"><MS><B N="_isHostNull">true</B><B N="_isHostUINull">true</B><B N="_isHostRawUINull">true</B><B N="_useRunspaceHost">true</B></MS></Obj><B N="IsNested">false</B></MS></Obj>}
+      argument_bytes = argument_xml.force_encoding('utf-8').bytes
+
+      # objectId
+      arguments = [0,0,0,0]
+      arguments << rand(255)
+      arguments << rand(255)
+      arguments << rand(255)
+      arguments << rand(255)
+      # fragmentId
+      arguments += [0,0,0,0,0,0,0,0]
+      # end/start fragment
+      arguments << 3
+      # blob length
+      arguments += [argument_bytes.length + 43].pack("N").unpack("cccc")
+      # blob
+      # destination
+      arguments += [2,0,0,0]
+      # type
+      arguments += [6,16,2,0]
+      #shell
+      arguments += uuid_to_bytes(shell_id)
+      #command
+      arguments += uuid_to_bytes(command_id)
+      # BOM
+      arguments += [239,187,191]
+      #variable
+      arguments += argument_bytes
+
+      b64_arguments = Base64.strict_encode64(arguments.pack('C*'))
+
+      body = { "#{NS_WIN_SHELL}:Command" => "Invoke-Expression", "#{NS_WIN_SHELL}:Arguments" => b64_arguments }
 
       builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_command,h_opts,selector_shell_id(shell_id))) }
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_command,selector_shell_id(shell_id))) }
         env.tag!(:env, :Body) do |env_body|
-          env_body.tag!("#{NS_WIN_SHELL}:CommandLine") { |cl| cl << Gyoku.xml(body) }
+          env_body.tag!("#{NS_WIN_SHELL}:CommandLine", {"CommandId" => command_id}) { |cl| cl << Gyoku.xml(body) }
         end
       end
 
       # Grab the command element and unescape any single quotes - issue 69
       xml = builder.target!
-      escaped_cmd = /<#{NS_WIN_SHELL}:Command>(.+)<\/#{NS_WIN_SHELL}:Command>/m.match(xml)[1]
-      xml[escaped_cmd] = escaped_cmd.gsub(/&#39;/, "'")
 
       resp_doc = send_message(xml)
       command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
+
+      puts "**comand response for #{resp_doc}"
+
+      # cleanup_command(shell_id, command_id)
 
       if block_given?
         begin
@@ -235,7 +269,7 @@ module WinRM
     #   is either :stdout or :stderr.  The reason it is in an Array so so we can get the output in the order it ocurrs on
     #   the console.
     def get_command_output(shell_id, command_id, &block)
-      body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout stderr',
+      body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout',
         :attributes! => {"#{NS_WIN_SHELL}:DesiredStream" => {'CommandId' => command_id}}}
 
       builder = Builder::XmlMarkup.new
@@ -253,7 +287,10 @@ module WinRM
       output = Output.new
 
       while done_elems.empty?
+        puts "**sending receive request"
         resp_doc = send_get_output_message(request_msg)
+        puts "***receive response"
+        puts resp_doc
 
         REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |n|
           next if n.text.nil? || n.text.empty?
@@ -470,7 +507,9 @@ module WinRM
     end
 
     def send_get_output_message(message)
+      puts "sending get output"
       send_message(message)
+      puts "get output sent"
     rescue WinRMWSManFault => e
       # If no output is available before the wsman:OperationTimeout expires,
       # the server MUST return a WSManFault with the Code attribute equal to
@@ -481,11 +520,13 @@ module WinRM
         logger.debug("[WinRM] retrying receive request after timeout")
         retry
       else
+        puts "yoyoyo"
         raise
       end
     end
 
     def send_message(message)
+      puts "sending"
       puts message
       @xfer.send_request(message)
     end
@@ -544,5 +585,26 @@ module WinRM
       }
     end
 
+    def uuid_to_bytes(uuid)
+      b=[]
+      frag_num = 0
+      uuid.split("-").each do |frag|
+        if frag_num < 3
+          len = frag.length-1
+          while len > 0 do
+            b << frag[len-1..len].to_i(16)
+            len = len - 2
+          end
+        else
+          len = 0
+          while len < frag.length do
+            b << frag[len..len+1].to_i(16)
+            len = len + 2
+          end
+        end
+        frag_num += 1
+      end
+      b
+    end
   end # WinRMWebService
 end # WinRM
