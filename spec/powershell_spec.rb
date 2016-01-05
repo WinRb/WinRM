@@ -6,8 +6,8 @@ describe 'winrm client powershell', integration: true do
 
   describe 'init runspace' do
     it 'starts runspace pool' do
-      id = @winrm.open_shell
-      puts id
+      o = @winrm.run_cmd('blay')
+      puts o
     end
   end
 
