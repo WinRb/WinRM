@@ -71,26 +71,33 @@ module WinRM
       # SSL Peer Fingerprint Verification prior to connecting
       def ssl_peer_fingerprint_verification!
         return unless @ssl_peer_fingerprint && ! @ssl_peer_fingerprint_verified
-        connection_cert = shady_ssl_connection.peer_cert_chain.last
-        verify_ssl_fingerprint(connection_cert)
+
+        with_untrusted_ssl_connection do |connection|
+          connection_cert = connection.peer_cert_chain.last
+          verify_ssl_fingerprint(connection_cert)
+        end
         @logger.info("initial ssl fingerprint #{@ssl_peer_fingerprint} verified\n")
         @ssl_peer_fingerprint_verified = true
         no_ssl_peer_verification!
       end
 
       # Connect without verification to retrieve untrusted ssl context
-      def shady_ssl_connection
+      def with_untrusted_ssl_connection
         noverify_peer_context = OpenSSL::SSL::SSLContext.new
         noverify_peer_context.verify_mode = OpenSSL::SSL::VERIFY_NONE
         tcp_connection = TCPSocket.new(@endpoint.host, @endpoint.port)
-        shady_ssl_connection = OpenSSL::SSL::SSLSocket.new(tcp_connection,
-                                                           noverify_peer_context)
-        shady_ssl_connection.connect
-        shady_ssl_connection
+        begin
+          ssl_connection = OpenSSL::SSL::SSLSocket.new(tcp_connection, noverify_peer_context)
+          ssl_connection.connect
+          yield ssl_connection
+        ensure
+          tcp_connection.close
+        end
       end
 
       # compare @ssl_peer_fingerprint to current ssl context
       def verify_ssl_fingerprint(cert)
+        return unless @ssl_peer_fingerprint
         conn_fingerprint = OpenSSL::Digest::SHA1.new(cert.to_der).to_s
         return unless @ssl_peer_fingerprint.casecmp(conn_fingerprint) != 0
         fail "ssl fingerprint mismatch!!!!\n"

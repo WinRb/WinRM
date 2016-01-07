@@ -3,7 +3,6 @@ require 'rubygems'
 require 'bundler/setup'
 require 'winrm'
 require 'json'
-require 'openssl'
 require_relative 'matchers'
 
 # Creates a WinRM connection for integration tests
@@ -54,42 +53,6 @@ module ConnectionHelper
     end
   end
   # rubocop:enable Metrics/MethodLength
-
-  # create a simple cert for a public_key
-  def test_cert(public_key)
-    subject = OpenSSL::X509::Name.parse('/C=BE/O=Test/OU=Test/CN=Test')
-    cert = OpenSSL::X509::Certificate.new
-    cert.subject = cert.issuer = subject
-    cert.not_before = Time.now
-    cert.not_after = Time.now + 365 * 24 * 3600
-    cert.public_key = public_key
-    cert.serial = 0x0
-    cert.version = 2
-    cert
-  end
-
-  # add CA and subject extensions to cert
-  def add_cert_extensions(cert)
-    ef = OpenSSL::X509::ExtensionFactory.new
-    ef.subject_certificate = cert
-    ef.issuer_certificate = cert
-    cert.extensions = [
-      ef.create_extension('basicConstraints', 'CA:TRUE', true),
-      ef.create_extension('subjectKeyIdentifier', 'hash'),
-      # ef.create_extension('keyUsage', 'cRLSign,keyCertSign', true),
-    ]
-    cert.add_extension ef.create_extension('authorityKeyIdentifier',
-                                           'keyid:always,issuer:always')
-    cert
-  end
-
-  # create a self-signed-cert from private key
-  def gen_self_signed_cert(key)
-    plain_cert = test_cert(key.public_key)
-    cert = add_cert_extensions(plain_cert)
-    cert.sign key, OpenSSL::Digest::SHA1.new
-    cert
-  end
 end
 
 RSpec.configure do |config|
