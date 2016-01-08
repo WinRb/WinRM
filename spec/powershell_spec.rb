@@ -5,9 +5,21 @@ describe 'winrm client powershell', integration: true do
   end
 
   describe 'init runspace' do
+    require 'benchmark'
     it 'starts runspace pool' do
       o = @winrm.run_cmd('blay')
       puts o
+      Benchmark.bm do | benchmark |
+        benchmark.report do
+          @winrm.create_executor do |executor|
+            executor.run_cmd('Get-Process')
+            executor.run_cmd('Get-Process')
+            executor.run_cmd('Get-Process')
+            executor.run_cmd('Get-Process')
+            executor.run_cmd('Get-Process')
+          end
+        end
+      end
     end
   end
 
