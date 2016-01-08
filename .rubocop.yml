@@ -1,5 +1,6 @@
 AllCops:
   Exclude:
+    - 'appveyor.yml'
     - 'lib/winrm/winrm_service.rb'
 
 Style/Encoding:

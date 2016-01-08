@@ -1,0 +1,39 @@
+version: "master-{build}"
+
+os: Windows Server 2012 R2
+platform:
+  - x64
+
+environment:
+  winrm_user: test_user
+  winrm_password: Pass@word1
+  winrm_endpoint: http://localhost:5985/wsman
+
+  matrix:
+    - ruby_version: "21"
+
+clone_folder: c:\projects\winrm
+clone_depth: 1
+branches:
+  only:
+    - master
+
+install:
+  - ps: net user /add $env:winrm_user $env:winrm_password
+  - ps: net localgroup administrators $env:winrm_user /add
+  - ps: winrm set winrm/config/client/auth '@{Basic="true"}'
+  - ps: winrm set winrm/config/service/auth '@{Basic="true"}'
+  - ps: winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+  - ps: $env:PATH="C:\Ruby$env:ruby_version\bin;$env:PATH"
+  - ps: Write-Host $env:PATH
+  - ps: ruby --version
+  - ps: gem --version
+  - ps: gem install bundler --quiet --no-ri --no-rdoc
+  - ps: bundler --version
+
+build_script:
+  - bundle install || bundle install || bundle install
+
+test_script:
+  - SET SPEC_OPTS=--format progress
+  - bundle exec rake integration
