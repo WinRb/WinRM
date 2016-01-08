@@ -1,7 +1,7 @@
 # Windows Remote Management (WinRM) for Ruby
 [![Build Status](https://travis-ci.org/WinRb/WinRM.svg?branch=master)](https://travis-ci.org/WinRb/WinRM)
 [![Gem Version](https://badge.fury.io/rb/winrm.svg)](http://badge.fury.io/rb/winrm)
-[![Build status](https://ci.appveyor.com/api/projects/status/ods9tvos78k5c15h?svg=true)](https://ci.appveyor.com/project/mwrock/winrm)
+[![Build status](https://ci.appveyor.com/api/projects/status/ods9tvos78k5c15h?svg=true)](https://ci.appveyor.com/project/winrb/winrm)
 
 This is a SOAP library that uses the functionality in Windows Remote
 Management(WinRM) to call native object in Windows.  This includes, but is
