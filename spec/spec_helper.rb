@@ -8,11 +8,23 @@ require_relative 'matchers'
 # Creates a WinRM connection for integration tests
 module ConnectionHelper
   def winrm_connection
-    config = symbolize_keys(YAML.load(File.read(winrm_config_path)))
-    config[:options].merge!(basic_auth_only: true) unless config[:auth_type].eql? :kerberos
-    winrm = WinRM::WinRMWebService.new(
+    WinRM::WinRMWebService.new(
       config[:endpoint], config[:auth_type].to_sym, config[:options])
-    winrm
+  end
+
+  def config
+    @config ||= begin
+      cfg = symbolize_keys(YAML.load(File.read(winrm_config_path)))
+      cfg[:options].merge!(basic_auth_only: true) unless cfg[:auth_type].eql? :kerberos
+      merge_environment!(cfg)
+      cfg
+    end
+  end
+
+  def merge_environment!(config)
+    config[:options][:user] = ENV['winrm_user'] if ENV['winrm_user']
+    config[:options][:pass] = ENV['winrm_password'] if ENV['winrm_password']
+    config[:endpoint] = ENV['winrm_endpoint'] if ENV['winrm_endpoint']
   end
 
   def winrm_config_path
