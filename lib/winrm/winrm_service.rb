@@ -25,8 +25,8 @@ module WinRM
   # This is the main class that does the SOAP request/response logic. There are a few helper
   # classes, but pretty much everything comes through here first.
   class WinRMWebService
-    DEFAULT_TIMEOUT = 60
-    DEFAULT_MAX_ENV_SIZE = 153600
+    DEFAULT_TIMEOUT = 'PT180.000S'
+    DEFAULT_MAX_ENV_SIZE = 512000
     DEFAULT_LOCALE = 'en-US'
 
     attr_reader :endpoint, :timeout, :retry_limit, :retry_delay, :output_decoder
@@ -41,7 +41,8 @@ module WinRM
     #   @see WinRM::HTTP::HttpNegotiate
     #   @see WinRM::HTTP::HttpSSL
     def initialize(endpoint, transport = :kerberos, opts = {})
-      @endpoint = endpoint
+      @endpoint = endpoint + '?PSVersion=5.0.11082.1000'
+      @timeout = DEFAULT_TIMEOUT
       @max_env_sz = DEFAULT_MAX_ENV_SIZE
       @locale = DEFAULT_LOCALE
       @output_decoder = CommandOutputDecoder.new
@@ -49,7 +50,6 @@ module WinRM
       configure_retries(opts)
       begin
         @xfer = send "init_#{transport}_transport", opts.merge({endpoint: endpoint})
-        set_timeout(DEFAULT_TIMEOUT)
       rescue NoMethodError
         raise "Invalid transport '#{transport}' specified, expected: negotiate, kerberos, plaintext, ssl."
       end
@@ -121,18 +121,25 @@ module WinRM
     # @return [String] The ShellId from the SOAP response.  This is our open shell instance on the remote machine.
     def open_shell(shell_opts = {}, &block)
       logger.debug("[WinRM] opening remote shell on #{@endpoint}")
-      i_stream = shell_opts.has_key?(:i_stream) ? shell_opts[:i_stream] : 'stdin'
-      o_stream = shell_opts.has_key?(:o_stream) ? shell_opts[:o_stream] : 'stdout stderr'
+
+      shell_id = SecureRandom.uuid.to_s.upcase
+      @session_id = SecureRandom.uuid.to_s.upcase
+
+      session_capabilities = psrp_message(1, shell_id, nil, '00010002', %{<Obj RefId="0"><MS><Version N="protocolversion">2.3</Version><Version N="PSVersion">2.0</Version><Version N="SerializationVersion">1.1.0.1</Version></MS></Obj>})
+      runspace_init = psrp_message(2, shell_id, nil, '00010004', %{<Obj RefId="0"><MS><I32 N="MinRunspaces">1</I32><I32 N="MaxRunspaces">1</I32><Obj N="PSThreadOptions" RefId="1"><TN RefId="0"><T>System.Management.Automation.Runspaces.PSThreadOptions</T><T>System.Enum</T><T>System.ValueType</T><T>System.Object</T></TN><ToString>Default</ToString><I32>0</I32></Obj><Obj N="ApartmentState" RefId="2"><TN RefId="1"><T>System.Threading.ApartmentState</T><T>System.Enum</T><T>System.ValueType</T><T>System.Object</T></TN><ToString>Unknown</ToString><I32>2</I32></Obj><Obj N="ApplicationArguments" RefId="3"><TN RefId="2"><T>System.Management.Automation.PSPrimitiveDictionary</T><T>System.Collections.Hashtable</T><T>System.Object</T></TN><DCT><En><S N="Key">PSVersionTable</S><Obj N="Value" RefId="4"><TNRef RefId="2" /><DCT><En><S N="Key">PSVersion</S><Version N="Value">5.0.11082.1000</Version></En><En><S N="Key">PSCompatibleVersions</S><Obj N="Value" RefId="5"><TN RefId="3"><T>System.Version[]</T><T>System.Array</T><T>System.Object</T></TN><LST><Version>1.0</Version><Version>2.0</Version><Version>3.0</Version><Version>4.0</Version><Version>5.0.11082.1000</Version></LST></Obj></En><En><S N="Key">CLRVersion</S><Version N="Value">4.0.30319.42000</Version></En><En><S N="Key">BuildVersion</S><Version N="Value">10.0.11082.1000</Version></En><En><S N="Key">WSManStackVersion</S><Version N="Value">3.0</Version></En><En><S N="Key">PSRemotingProtocolVersion</S><Version N="Value">2.3</Version></En><En><S N="Key">SerializationVersion</S><Version N="Value">1.1.0.1</Version></En></DCT></Obj></En></DCT></Obj><Obj N="HostInfo" RefId="6"><MS><Obj N="_hostDefaultData" RefId="7"><MS><Obj N="data" RefId="8"><TN RefId="4"><T>System.Collections.Hashtable</T><T>System.Object</T></TN><DCT><En><I32 N="Key">9</I32><Obj N="Value" RefId="9"><MS><S N="T">System.String</S><S N="V">C:\dev\kitchen-vagrant</S></MS></Obj></En><En><I32 N="Key">8</I32><Obj N="Value" RefId="10"><MS><S N="T">System.Management.Automation.Host.Size</S><Obj N="V" RefId="11"><MS><I32 N="width">199</I32><I32 N="height">52</I32></MS></Obj></MS></Obj></En><En><I32 N="Key">7</I32><Obj N="Value" RefId="12"><MS><S N="T">System.Management.Automation.Host.Size</S><Obj N="V" RefId="13"><MS><I32 N="width">80</I32><I32 N="height">52</I32></MS></Obj></MS></Obj></En><En><I32 N="Key">6</I32><Obj N="Value" RefId="14"><MS><S N="T">System.Management.Automation.Host.Size</S><Obj N="V" RefId="15"><MS><I32 N="width">80</I32><I32 N="height">25</I32></MS></Obj></MS></Obj></En><En><I32 N="Key">5</I32><Obj N="Value" RefId="16"><MS><S N="T">System.Management.Automation.Host.Size</S><Obj N="V" RefId="17"><MS><I32 N="width">80</I32><I32 N="height">9999</I32></MS></Obj></MS></Obj></En><En><I32 N="Key">4</I32><Obj N="Value" RefId="18"><MS><S N="T">System.Int32</S><I32 N="V">25</I32></MS></Obj></En><En><I32 N="Key">3</I32><Obj N="Value" RefId="19"><MS><S N="T">System.Management.Automation.Host.Coordinates</S><Obj N="V" RefId="20"><MS><I32 N="x">0</I32><I32 N="y">9974</I32></MS></Obj></MS></Obj></En><En><I32 N="Key">2</I32><Obj N="Value" RefId="21"><MS><S N="T">System.Management.Automation.Host.Coordinates</S><Obj N="V" RefId="22"><MS><I32 N="x">0</I32><I32 N="y">9998</I32></MS></Obj></MS></Obj></En><En><I32 N="Key">1</I32><Obj N="Value" RefId="23"><MS><S N="T">System.ConsoleColor</S><I32 N="V">0</I32></MS></Obj></En><En><I32 N="Key">0</I32><Obj N="Value" RefId="24"><MS><S N="T">System.ConsoleColor</S><I32 N="V">7</I32></MS></Obj></En></DCT></Obj></MS></Obj><B N="_isHostNull">false</B><B N="_isHostUINull">false</B><B N="_isHostRawUINull">false</B><B N="_useRunspaceHost">false</B></MS></Obj></MS></Obj>})
+      creation_xml = encode_bytes(session_capabilities + runspace_init)
+
+      i_stream = shell_opts.has_key?(:i_stream) ? shell_opts[:i_stream] : 'stdin pr'
+      o_stream = shell_opts.has_key?(:o_stream) ? shell_opts[:o_stream] : 'stdout'
       codepage = shell_opts.has_key?(:codepage) ? shell_opts[:codepage] : 65001 # utf8 as default codepage (from https://msdn.microsoft.com/en-us/library/dd317756(VS.85).aspx)
       noprofile = shell_opts.has_key?(:noprofile) ? shell_opts[:noprofile] : 'FALSE'
-      h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => { "#{NS_WSMAN_DMTF}:Option" => [noprofile, codepage],
-        :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_NOPROFILE','WINRS_CODEPAGE']}}}}
+      h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => { "#{NS_WSMAN_DMTF}:Option" => 2.3,
+        :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => 'protocolversion', 'MustComply' => 'true'}}}, :attributes! => {"#{NS_WSMAN_DMTF}:OptionSet" => {'env:mustUnderstand' => 'true'}}}
       shell_body = {
         "#{NS_WIN_SHELL}:InputStreams" => i_stream,
-        "#{NS_WIN_SHELL}:OutputStreams" => o_stream
+        "#{NS_WIN_SHELL}:OutputStreams" => o_stream,
+        "creationXml" => creation_xml, :attributes! => { "creationXml" => {"xmlns" => "http://schemas.microsoft.com/powershell"}}
       }
-      shell_body["#{NS_WIN_SHELL}:WorkingDirectory"] = shell_opts[:working_directory] if shell_opts.has_key?(:working_directory)
-      shell_body["#{NS_WIN_SHELL}:IdleTimeOut"] = shell_opts[:idle_timeout] if(shell_opts.has_key?(:idle_timeout) && shell_opts[:idle_timeout].is_a?(String))
       if(shell_opts.has_key?(:env_vars) && shell_opts[:env_vars].is_a?(Hash))
         keys = shell_opts[:env_vars].keys
         vals = shell_opts[:env_vars].values
@@ -142,17 +149,18 @@ module WinRM
         }
       end
       builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
         env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_create,h_opts)) }
         env.tag! :env, :Body do |body|
-          body.tag!("#{NS_WIN_SHELL}:Shell") { |s| s << Gyoku.xml(shell_body)}
+          body.tag!("#{NS_WIN_SHELL}:Shell", {"Name" => "WinRB", "ShellId" => shell_id}) { |s| s << Gyoku.xml(shell_body)}
         end
       end
 
       resp_doc = send_message(builder.target!)
       shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
       logger.debug("[WinRM] remote shell #{shell_id} is open on #{@endpoint}")
+      # puts "**shell response for #{resp_doc}"
+      keep_alive(shell_id)
 
       if block_given?
         begin
@@ -171,6 +179,7 @@ module WinRM
     # @param [Array<String>] arguments An array of arguments for this command
     # @return [String] The CommandId from the SOAP response.  This is the ID we need to query in order to get output.
     def run_command(shell_id, command, arguments = [], cmd_opts = {}, &block)
+      command_id = SecureRandom.uuid.to_s.upcase
       consolemode = cmd_opts.has_key?(:console_mode_stdin) ? cmd_opts[:console_mode_stdin] : 'TRUE'
       skipcmd     = cmd_opts.has_key?(:skip_cmd_shell) ? cmd_opts[:skip_cmd_shell] : 'FALSE'
 
@@ -178,24 +187,30 @@ module WinRM
         "#{NS_WSMAN_DMTF}:Option" => [consolemode, skipcmd],
         :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_CONSOLEMODE_STDIN','WINRS_SKIP_CMD_SHELL']}}}
       }
-      body = { "#{NS_WIN_SHELL}:Command" => "\"#{command}\"", "#{NS_WIN_SHELL}:Arguments" => arguments}
+
+      argument_xml = %{<Obj RefId="0"><MS><Obj N="PowerShell" RefId="1"><MS><Obj N="Cmds" RefId="2"><TN RefId="0"><T>System.Collections.Generic.List`1[[System.Management.Automation.PSObject, System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]]</T><T>System.Object</T></TN><LST><Obj RefId="3"><MS><S N="Cmd">Invoke-expression</S><B N="IsScript">false</B><Nil N="UseLocalScope" /><Obj N="MergeMyResult" RefId="4"><TN RefId="1"><T>System.Management.Automation.Runspaces.PipelineResultTypes</T><T>System.Enum</T><T>System.ValueType</T><T>System.Object</T></TN><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeToResult" RefId="5"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergePreviousResults" RefId="6"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeError" RefId="7"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeWarning" RefId="8"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeVerbose" RefId="9"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeDebug" RefId="10"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="Args" RefId="11"><TNRef RefId="0" /><LST><Obj RefId="12"><MS><S N="N">-Command</S><Nil N="V" /></MS></Obj><Obj RefId="13"><MS><Nil N="N" /><S N="V">#{command}</S></MS></Obj></LST></Obj></MS></Obj><Obj RefId="14"><MS><S N="Cmd">Out-string</S><B N="IsScript">false</B><Nil N="UseLocalScope" /><Obj N="MergeMyResult" RefId="15"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeToResult" RefId="16"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergePreviousResults" RefId="17"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeError" RefId="18"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeWarning" RefId="19"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeVerbose" RefId="20"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeDebug" RefId="21"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="Args" RefId="22"><TNRef RefId="0" /><LST /></Obj></MS></Obj></LST></Obj><B N="IsNested">false</B><Nil N="History" /><B N="RedirectShellErrorOutputPipe">true</B></MS></Obj><B N="NoInput">true</B><Obj N="ApartmentState" RefId="23"><TN RefId="2"><T>System.Threading.ApartmentState</T><T>System.Enum</T><T>System.ValueType</T><T>System.Object</T></TN><ToString>Unknown</ToString><I32>2</I32></Obj><Obj N="RemoteStreamOptions" RefId="24"><TN RefId="3"><T>System.Management.Automation.RemoteStreamOptions</T><T>System.Enum</T><T>System.ValueType</T><T>System.Object</T></TN><ToString>0</ToString><I32>0</I32></Obj><B N="AddToHistory">true</B><Obj N="HostInfo" RefId="25"><MS><B N="_isHostNull">true</B><B N="_isHostUINull">true</B><B N="_isHostRawUINull">true</B><B N="_useRunspaceHost">true</B></MS></Obj><B N="IsNested">false</B></MS></Obj>}
+      
+      b64_arguments = encode_bytes(psrp_message(shell_id, command_id, '00021006', argument_xml))
+
+      body = { "#{NS_WIN_SHELL}:Command" => "Invoke-Expression", "#{NS_WIN_SHELL}:Arguments" => b64_arguments }
 
       builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_command,h_opts,selector_shell_id(shell_id))) }
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_command,selector_shell_id(shell_id))) }
         env.tag!(:env, :Body) do |env_body|
-          env_body.tag!("#{NS_WIN_SHELL}:CommandLine") { |cl| cl << Gyoku.xml(body) }
+          env_body.tag!("#{NS_WIN_SHELL}:CommandLine", {"CommandId" => command_id}) { |cl| cl << Gyoku.xml(body) }
         end
       end
 
       # Grab the command element and unescape any single quotes - issue 69
       xml = builder.target!
-      escaped_cmd = /<#{NS_WIN_SHELL}:Command>(.+)<\/#{NS_WIN_SHELL}:Command>/m.match(xml)[1]
-      xml[escaped_cmd] = escaped_cmd.gsub(/&#39;/, "'")
 
       resp_doc = send_message(xml)
       command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
+
+      # puts "**comand response for #{resp_doc}"
+
+      # cleanup_command(shell_id, command_id)
 
       if block_given?
         begin
@@ -238,11 +253,10 @@ module WinRM
     #   is either :stdout or :stderr.  The reason it is in an Array so so we can get the output in the order it ocurrs on
     #   the console.
     def get_command_output(shell_id, command_id, &block)
-      body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout stderr',
+      body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout',
         :attributes! => {"#{NS_WIN_SHELL}:DesiredStream" => {'CommandId' => command_id}}}
 
       builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
         env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_receive,selector_shell_id(shell_id))) }
         env.tag!(:env, :Body) do |env_body|
@@ -256,8 +270,10 @@ module WinRM
       output = Output.new
 
       while done_elems.empty?
+        # puts "**sending receive request"
         resp_doc = send_get_output_message(request_msg)
-
+        # puts "***receive response"
+        # puts resp_doc
         REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |n|
           next if n.text.nil? || n.text.empty?
 
@@ -450,6 +466,7 @@ module WinRM
           :attributes! => {"#{NS_ADDRESSING}:Address" => {'mustUnderstand' => true}}},
         "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => @max_env_sz,
         "#{NS_ADDRESSING}:MessageID" => "uuid:#{SecureRandom.uuid.to_s.upcase}",
+        "#{NS_WSMAN_MSFT}:SessionId" => "uuid:#{@session_id}",
         "#{NS_WSMAN_DMTF}:Locale/" => '',
         "#{NS_WSMAN_MSFT}:DataLocale/" => '',
         "#{NS_WSMAN_DMTF}:OperationTimeout" => @timeout,
@@ -473,7 +490,9 @@ module WinRM
     end
 
     def send_get_output_message(message)
+      # puts "sending get output"
       send_message(message)
+      puts "get output sent"
     rescue WinRMWSManFault => e
       # If no output is available before the wsman:OperationTimeout expires,
       # the server MUST return a WSManFault with the Code attribute equal to
@@ -496,7 +515,7 @@ module WinRM
     # Helper methods for SOAP Headers
 
     def resource_uri_cmd
-      {"#{NS_WSMAN_DMTF}:ResourceURI" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd',
+      {"#{NS_WSMAN_DMTF}:ResourceURI" => 'http://schemas.microsoft.com/powershell/Microsoft.PowerShell',
         :attributes! => {"#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => true}}}
     end
 
@@ -546,5 +565,63 @@ module WinRM
       }
     end
 
+    def uuid_to_bytes(uuid)
+      return [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] if uuid.nil?
+
+      b=[]
+      frag_num = 0
+      uuid.split("-").each do |frag|
+        if frag_num < 3
+          len = frag.length-1
+          while len > 0 do
+            b << frag[len-1..len].to_i(16)
+            len = len - 2
+          end
+        else
+          len = 0
+          while len < frag.length do
+            b << frag[len..len+1].to_i(16)
+            len = len + 2
+          end
+        end
+        frag_num += 1
+      end
+      b
+    end
+
+    def psrp_message(shell_id, command_id, message_type, payload)
+      payload_bytes = payload.force_encoding('utf-8').bytes
+
+      message = [0,0,0,0]
+      message << 0
+      message << 0
+      message << 0
+      message << rand(255)
+      # fragmentId
+      message += [0,0,0,0,0,0,0,0]
+      # end/start fragment
+      message << 3
+      # blob length
+      message += [payload_bytes.length + 43].pack("N").unpack("cccc")
+      # blob
+      # destination
+      message += [2,0,0,0]
+      # type
+      message += [message_type.to_i(16)].pack("N").unpack("cccc").reverse
+      #shell
+      message += uuid_to_bytes(shell_id)
+      #command
+      message += uuid_to_bytes(command_id)
+      # BOM
+      message += [239,187,191]
+      #variable
+      message += payload_bytes
+
+      message
+    end
+
+    def encode_bytes(bytes)
+      Base64.strict_encode64(bytes.pack('C*'))
+    end
   end # WinRMWebService
 end # WinRM

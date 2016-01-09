@@ -7,8 +7,7 @@ describe 'winrm client powershell', integration: true do
   describe 'init runspace' do
     require 'benchmark'
     it 'starts runspace pool' do
-      o = @winrm.run_cmd('blay')
-      puts o
+      SecureRandom.uuid
       Benchmark.bm do | benchmark |
         benchmark.report do
           @winrm.create_executor do |executor|
@@ -16,7 +15,9 @@ describe 'winrm client powershell', integration: true do
             executor.run_cmd('Get-Process')
             executor.run_cmd('Get-Process')
             executor.run_cmd('Get-Process')
-            executor.run_cmd('Get-Process')
+            # long_string="N"*300000
+            # puts executor.run_cmd("Write-Output '#{long_string}'").stdout.unpack("C*").pack("U*").gsub('_x000D__x000A_',"\r\n")
+            puts executor.run_cmd('Get-Process').stdout.unpack("C*").pack("U*").gsub('_x000D__x000A_',"\r\n")
           end
         end
       end
