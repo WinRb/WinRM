@@ -184,9 +184,9 @@ module WinRM
     #
     # @api private
     def determine_max_commands
-      os_version = run_powershell_script(PS1_OS_VERSION).stdout.chomp
-      @max_commands = os_version < '6.2' ? LEGACY_LIMIT : MODERN_LIMIT
-      @max_commands -= 2 # to be safe
+      # os_version = run_powershell_script(PS1_OS_VERSION).stdout.chomp
+      # @max_commands = os_version < '6.2' ? LEGACY_LIMIT : MODERN_LIMIT
+      @max_commands = 2000 # to be safe
     end
 
     # Removes any finalizers for this connection.
