@@ -16,6 +16,7 @@
 
 require 'nori'
 require 'rexml/document'
+require 'winrm/command_executor'
 require_relative 'helpers/powershell_script'
 
 module WinRM
@@ -26,7 +27,9 @@ module WinRM
     DEFAULT_MAX_ENV_SIZE = 153600
     DEFAULT_LOCALE = 'en-US'
 
-    attr_reader :endpoint, :timeout
+    attr_reader :endpoint, :timeout, :retry_limit, :retry_delay
+
+    attr_accessor :logger
 
     # @param [String,URI] endpoint the WinRM webservice endpoint
     # @param [Symbol] transport either :kerberos(default)/:ssl/:plaintext
@@ -39,7 +42,8 @@ module WinRM
       @timeout = DEFAULT_TIMEOUT
       @max_env_sz = DEFAULT_MAX_ENV_SIZE
       @locale = DEFAULT_LOCALE
-      @logger = Logging.logger[self]
+      setup_logger
+      configure_retries(opts)
       case transport
       when :kerberos
         require 'gssapi'
@@ -94,6 +98,7 @@ module WinRM
     #   :env_vars => {:myvar1 => 'val1', :myvar2 => 'var2'}
     # @return [String] The ShellId from the SOAP response.  This is our open shell instance on the remote machine.
     def open_shell(shell_opts = {}, &block)
+      logger.debug("[WinRM] opening remote shell on #{@endpoint}")
       i_stream = shell_opts.has_key?(:i_stream) ? shell_opts[:i_stream] : 'stdin'
       o_stream = shell_opts.has_key?(:o_stream) ? shell_opts[:o_stream] : 'stdout stderr'
       codepage = shell_opts.has_key?(:codepage) ? shell_opts[:codepage] : 65001 # utf8 as default codepage (from https://msdn.microsoft.com/en-us/library/dd317756(VS.85).aspx)
@@ -125,6 +130,7 @@ module WinRM
 
       resp_doc = send_message(builder.target!)
       shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
+      logger.debug("[WinRM] remote shell #{shell_id} is open on #{@endpoint}")
 
       if block_given?
         begin
@@ -279,6 +285,7 @@ module WinRM
     # @param [String] shell_id The shell id on the remote machine.  See #open_shell
     # @return [true] This should have more error checking but it just returns true for now.
     def close_shell(shell_id)
+      logger.debug("[WinRM] closing remote shell #{shell_id} on #{@endpoint}")
       builder = Builder::XmlMarkup.new
       builder.instruct!(:xml, :encoding => 'UTF-8')
 
@@ -288,38 +295,57 @@ module WinRM
       end
 
       resp = send_message(builder.target!)
+      logger.debug("[WinRM] remote shell #{shell_id} closed")
       true
     end
 
+    # DEPRECATED: Use WinRM::CommandExecutor#run_cmd instead
     # Run a CMD command
     # @param [String] command The command to run on the remote system
     # @param [Array <String>] arguments arguments to the command
     # @param [String] an existing and open shell id to reuse
     # @return [Hash] :stdout and :stderr
     def run_cmd(command, arguments = [], &block)
-      command_output = nil
-      open_shell do |shell_id|
-        run_command(shell_id, command, arguments) do |command_id|
-          command_output = get_command_output(shell_id, command_id, &block)
-        end
+      logger.warn("WinRM::WinRMWebService#run_cmd is deprecated. Use WinRM::CommandExecutor#run_cmd instead")
+      create_executor do |executor|
+        executor.run_cmd(command, arguments, &block)
       end
-      command_output
     end
     alias :cmd :run_cmd
 
-
+    # DEPRECATED: Use WinRM::CommandExecutor#run_powershell_script instead
     # Run a Powershell script that resides on the local box.
     # @param [IO,String] script_file an IO reference for reading the Powershell script or the actual file contents
     # @param [String] an existing and open shell id to reuse
     # @return [Hash] :stdout and :stderr
     def run_powershell_script(script_file, &block)
-      # if an IO object is passed read it..otherwise assume the contents of the file were passed
-      script_text = script_file.respond_to?(:read) ? script_file.read : script_file
-      script = WinRM::PowershellScript.new(script_text)
-      run_cmd("powershell -encodedCommand #{script.encoded()}", &block)
+      logger.warn("WinRM::WinRMWebService#run_powershell_script is deprecated. Use WinRM::CommandExecutor#run_cmd instead")
+      create_executor do |executor|
+        executor.run_powershell_script(script_file, &block)
+      end
     end
     alias :powershell :run_powershell_script
 
+    # Creates a CommandExecutor initialized with this WinRMWebService
+    # If called with a block, create_executor yields an executor and
+    # ensures that the executor is closed after the block completes.
+    # The CommandExecutor is simply returned if no block is given.
+    # @yieldparam [CommandExecutor] a CommandExecutor instance
+    # @return [CommandExecutor] a CommandExecutor instance
+    def create_executor(&block)
+      executor = CommandExecutor.new(self)
+      executor.open
+
+      if block_given?
+        begin
+          yield executor
+        ensure
+          executor.close
+        end
+      else
+        executor
+      end
+    end
 
     # Run a WQL Query
     # @see http://msdn.microsoft.com/en-us/library/aa394606(VS.85).aspx
@@ -362,11 +388,22 @@ module WinRM
     alias :wql :run_wql
 
     def toggle_nori_type_casting(to)
-      @logger.warn('toggle_nori_type_casting is deprecated and has no effect, ' +
+      logger.warn('toggle_nori_type_casting is deprecated and has no effect, ' +
         'please remove calls to it')
     end
 
     private
+
+    def setup_logger
+      @logger = Logging.logger[self]
+      @logger.level = :warn
+      @logger.add_appenders(Logging.appenders.stdout)
+    end
+
+    def configure_retries(opts)
+      @retry_delay = opts[:retry_delay] || 10
+      @retry_limit = opts[:retry_limit] || 3
+    end
 
     def namespaces
       {
