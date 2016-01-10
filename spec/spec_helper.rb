@@ -7,10 +7,14 @@ require_relative 'matchers'
 
 # Creates a WinRM connection for integration tests
 module ConnectionHelper
+  # rubocop:disable AbcSize
   def winrm_connection
-    WinRM::WinRMWebService.new(
+    winrm = WinRM::WinRMWebService.new(
       config[:endpoint], config[:auth_type].to_sym, config[:options])
+    winrm.logger.level = :error
+    winrm
   end
+  # rubocop:enable AbcSize
 
   def config
     @config ||= begin

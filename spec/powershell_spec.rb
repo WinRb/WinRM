@@ -4,12 +4,6 @@ describe 'winrm client powershell', integration: true do
     @winrm = winrm_connection
   end
 
-  describe 'empty string' do
-    subject(:output) { @winrm.powershell('') }
-    it { should have_exit_code 4_294_770_688 }
-    it { should have_stderr_match(/Cannot process the command because of a missing parameter/) }
-  end
-
   describe 'ipconfig' do
     subject(:output) { @winrm.powershell('ipconfig') }
     it { should have_exit_code 0 }
