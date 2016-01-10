@@ -22,9 +22,19 @@ module ConnectionHelper
   end
 
   def merge_environment!(config)
-    config[:options][:user] = ENV['winrm_user'] if ENV['winrm_user']
-    config[:options][:pass] = ENV['winrm_password'] if ENV['winrm_password']
+    merge_config_option_from_environment(config, 'user')
+    merge_config_option_from_environment(config, 'pass')
+    merge_config_option_from_environment(config, 'no_ssl_peer_verification')
+    if ENV['use_ssl_peer_fingerprint']
+      config[:options][:ssl_peer_fingerprint] = ENV['winrm_cert']
+    end
     config[:endpoint] = ENV['winrm_endpoint'] if ENV['winrm_endpoint']
+    config[:auth_type] = ENV['winrm_auth_type'] if ENV['winrm_auth_type']
+  end
+
+  def merge_config_option_from_environment(config, key)
+    env_key = 'winrm_' + key
+    config[:options][key.to_sym] = ENV[env_key] if ENV[env_key]
   end
 
   def winrm_config_path
