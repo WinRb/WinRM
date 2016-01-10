@@ -21,15 +21,22 @@ require 'winrm'
 endpoint = 'http://mywinrmhost:5985/wsman'
 krb5_realm = 'EXAMPLE.COM'
 winrm = WinRM::WinRMWebService.new(endpoint, :kerberos, :realm => krb5_realm)
-winrm.cmd('ipconfig /all') do |stdout, stderr|
-  STDOUT.print stdout
-  STDERR.print stderr
+winrm.create_executor do |executor|
+  executor.run_cmd('ipconfig /all') do |stdout, stderr|
+    STDOUT.print stdout
+    STDERR.print stderr
+  end
 end
 ```
 
 There are various connection types you can specify upon initialization:
 
 It is recommended that you <code>:disable_sspi => true</code> if you are using the plaintext or ssl transport.
+
+### Deprecated methods
+As of version 1.5.0 `WinRM::WinRMWebService` methods `cmd`, `run_cmd`, `powershell`, and `run_powershell_script` have been deprecated and will be removed from the next major version of the WinRM gem.
+
+Use the `run_cmd` and `run_powershell_script` of the `WinRM::CommandExecutor` class instead. The `CommandExecutor` allows multiple commands to be run from the same WinRM shell providing a significant performance improvement when issuing multiple calls.
 
 #### Plaintext
 ```ruby
@@ -53,10 +60,13 @@ WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :ba
 # Enabling no_ssl_peer_verification is not recommended. HTTPS connections are still encrypted,
 # but the WinRM gem is not able to detect forged replies or man in the middle attacks.
 WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :basic_auth_only => true, :no_ssl_peer_verification => true)
+
+# Verify against a known fingerprint
+WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :basic_auth_only => true, :ssl_peer_fingerprint => '6C04B1A997BA19454B0CD31C65D7020A6FC2669D')
 ```
 
 ##### Create a self signed cert for WinRM
-You may want to create a self signed certificate for servicing https WinRM connections. First you must install makecert.exe from the Windows SDK, then you can use the following PowerShell script to create a cert and enable the WinRM HTTPS listener.
+You may want to create a self signed certificate for servicing https WinRM connections. You can use the following PowerShell script to create a cert and enable the WinRM HTTPS listener. Unless you are running windows server 2012 R2 or later, you must install makecert.exe from the Windows SDK, otherwise use `New-SelfSignedCertificate`.
 
 ```powershell
 $hostname = $Env:ComputerName
@@ -64,6 +74,10 @@ $hostname = $Env:ComputerName
 C:\"Program Files"\"Microsoft SDKs"\Windows\v7.1\Bin\makecert.exe -r -pe -n "CN=$hostname,O=vagrant" -eku 1.3.6.1.5.5.7.3.1 -ss my -sr localMachine -sky exchange -sp "Microsoft RSA SChannel Cryptographic Provider" -sy 12 "$hostname.cer"
  
 $thumbprint = (& ls cert:LocalMachine/my).Thumbprint
+
+# Windows 2012R2 and above can use New-SelfSignedCertificate
+$thumbprint = (New-SelfSignedCertificate -DnsName $hostname -CertStoreLocation cert:\LocalMachine\my).Thumbprint
+
 $cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$hostname`";CertificateThumbprint=`"$thumbprint`"}'"
 iex $cmd
 ```
@@ -71,6 +85,29 @@ iex $cmd
 #### Kerberos
 ```ruby
 WinRM::WinRMWebService.new(endpoint, :kerberos, :realm => 'MYREALM.COM')
+```
+
+## Retries and opening a shell
+Especially if provisioning a new machine, it's possible the winrm service is not yet running when first attempting to connect. The `WinRMWebService` accepts the options `:retry_limit` and `:retry_delay` to specify the maximum number of attempts to make and how long to wait in between. These default to 3 attempts and a 10 second delay.
+```ruby
+WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :retry_limit => 30, :retry_delay => 10)
+```
+
+## Logging
+The `WinRMWebService` exposes a `logger` attribute and uses the [logging](https://rubygems.org/gems/logging) gem to manage logging behavior. By default this appends to `STDOUT` and has a level of `:warn`, but one can adjust the level or add additional appenders.
+```ruby
+winrm = WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass)
+
+# suppress warnings
+winrm.logger.warn = :error
+
+# Log to a file
+winrm.logger.add_appenders(Logging.appenders.file('error.log'))
+```
+
+If a consuming application uses its own logger that complies to the logging API, you can simply swap it in:
+```ruby
+winrm.logger = my_logger
 ```
 
 ## Troubleshooting
@@ -82,6 +119,8 @@ winrm set winrm/config/service/auth @{Basic="true"}
 winrm set winrm/config/service @{AllowUnencrypted="true"}
 ```
 You can read more about that on issue [#29](https://github.com/WinRb/WinRM/issues/29)
+
+Also see [this post](http://www.hurryupandwait.io/blog/understanding-and-troubleshooting-winrm-connection-and-authentication-a-thrill-seekers-guide-to-adventure) for more general tips related to winrm connection and authentication issues.
 
 
 ## Current features
@@ -129,10 +168,10 @@ Once you have the dependencies, you can run the unit tests with `rake`:
 $ bundle exec rake spec
 ```
 
-To run the integration tests you will need a Windows box with the WinRM service properly configured. Its easiest to use a Vagrant Windows box.
+To run the integration tests you will need a Windows box with the WinRM service properly configured. Its easiest to use a Vagrant Windows box (mwrock/Windows2012R2 is public on [atlas](https://atlas.hashicorp.com/mwrock/boxes/Windows2012R2) with an evaluation version of Windows 2012 R2).
 
 1. Create a Windows VM with WinRM configured (see above).
-2. Copy the config-example.yml to config.yml - edit this file with your WinRM connection details.
+2. Edit the config-example.yml with your WinRM connection details.
 3. Ensure that the box you are running the test against has a default shell profile (check ~\Documents\WindowsPowerShell).  If any of your shell profiles generate stdout or stderr output, the test validators may get thrown off.
 4. Run `bundle exec rake integration`
 
