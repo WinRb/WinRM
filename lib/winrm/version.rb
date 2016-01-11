@@ -3,5 +3,5 @@
 # WinRM module
 module WinRM
   # The version of the WinRM library
-  VERSION = '1.4.0'
+  VERSION = '1.5.0'
 end
