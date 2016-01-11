@@ -171,7 +171,7 @@ $ bundle exec rake spec
 To run the integration tests you will need a Windows box with the WinRM service properly configured. Its easiest to use a Vagrant Windows box (mwrock/Windows2012R2 is public on [atlas](https://atlas.hashicorp.com/mwrock/boxes/Windows2012R2) with an evaluation version of Windows 2012 R2).
 
 1. Create a Windows VM with WinRM configured (see above).
-2. Edit the config-example.yml with your WinRM connection details.
+2. Copy the config-example.yml to config.yml - edit this file with your WinRM connection details.
 3. Ensure that the box you are running the test against has a default shell profile (check ~\Documents\WindowsPowerShell).  If any of your shell profiles generate stdout or stderr output, the test validators may get thrown off.
 4. Run `bundle exec rake integration`
 

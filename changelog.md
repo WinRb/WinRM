@@ -2,7 +2,7 @@
 
 # 1.5.0
 - Deprecating `WinRM::WinRMWebService` methods `cmd`, `run_cmd`, `powershell`, and `run_powershell_script` in favor of the `run_cmd` and `run_powershell_script` methods of the `WinRM::CommandExecutor` class. The `CommandExecutor` allows multiple commands to be run from the same WinRM shell providing a significant performance improvement when issuing multiple calls.
-- Added an `:ssl_peer_fingerprint` option to be used instead of `:no_ssl_peer_verification` and alows a specific certificate to be verified.
+- Added an `:ssl_peer_fingerprint` option to be used instead of `:no_ssl_peer_verification` and allows a specific certificate to be verified.
 - Opening a winrm shell is retriable with configurable delay and retry limit.
 - Logging apends to `stdout` by default and can be replaced with a logger from a consuming application.
 
