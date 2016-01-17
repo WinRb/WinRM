@@ -24,8 +24,8 @@ module WinRM
   # This is the main class that does the SOAP request/response logic. There are a few helper
   # classes, but pretty much everything comes through here first.
   class WinRMWebService
-    DEFAULT_TIMEOUT = 'PT180.000S'
-    DEFAULT_MAX_ENV_SIZE = 512000
+    DEFAULT_TIMEOUT = 'PT60S'
+    DEFAULT_MAX_ENV_SIZE = 153600
     DEFAULT_LOCALE = 'en-US'
 
     attr_reader :endpoint, :timeout, :retry_limit, :retry_delay
@@ -128,17 +128,18 @@ module WinRM
         }
       end
       builder = Builder::XmlMarkup.new
+      builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
         env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_create,h_opts)) }
         env.tag! :env, :Body do |body|
-          body.tag!("#{NS_WIN_SHELL}:Shell", {"Name" => "WinRB", "ShellId" => shell_id}) { |s| s << Gyoku.xml(shell_body)}
+          body.tag!("#{NS_WIN_SHELL}:Shell", { "ShellId" => shell_id}) { |s| s << Gyoku.xml(shell_body) }
         end
       end
 
       resp_doc = send_message(builder.target!)
       shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
       logger.debug("[WinRM] remote shell #{shell_id} is open on #{@endpoint}")
-      # puts "**shell response for #{resp_doc}"
+
       keep_alive(shell_id)
 
       if block_given?
@@ -157,6 +158,7 @@ module WinRM
         :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => 'WSMAN_CMDSHELL_OPTION_KEEPALIVE'}}}}
       body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout' }
       builder = Builder::XmlMarkup.new
+      builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
         env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_receive,h_opts,selector_shell_id(shell_id))) }
         env.tag! :env, :Body do |env_body|
@@ -189,6 +191,7 @@ module WinRM
       body = { "#{NS_WIN_SHELL}:Command" => "Invoke-Expression", "#{NS_WIN_SHELL}:Arguments" => b64_arguments }
 
       builder = Builder::XmlMarkup.new
+      builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
         env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_command,selector_shell_id(shell_id))) }
         env.tag!(:env, :Body) do |env_body|
@@ -201,8 +204,6 @@ module WinRM
 
       resp_doc = send_message(xml)
       command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
-
-      # puts "**comand response for #{resp_doc}"
 
       if block_given?
         begin
@@ -249,6 +250,7 @@ module WinRM
         :attributes! => {"#{NS_WIN_SHELL}:DesiredStream" => {'CommandId' => command_id}}}
 
       builder = Builder::XmlMarkup.new
+      builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
         env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_receive,selector_shell_id(shell_id))) }
         env.tag!(:env, :Body) do |env_body|
@@ -262,10 +264,8 @@ module WinRM
       output = Output.new
 
       while done_elems.empty?
-        # puts "**sending receive request"
         resp_doc = send_get_output_message(request_msg)
-        # puts "***receive response"
-        # puts resp_doc
+
         REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |n|
           next if n.text.nil? || n.text.empty?
 
@@ -455,7 +455,7 @@ module WinRM
       { "#{NS_ADDRESSING}:To" => "#{@xfer.endpoint.to_s}",
         "#{NS_ADDRESSING}:ReplyTo" => {
         "#{NS_ADDRESSING}:Address" => 'http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous',
-          :attributes! => {"#{NS_ADDRESSING}:Address" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}},
+          :attributes! => {"#{NS_ADDRESSING}:Address" => {'mustUnderstand' => true}}},
         "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => @max_env_sz,
         "#{NS_ADDRESSING}:MessageID" => "uuid:#{SecureRandom.uuid.to_s.upcase}",
         "#{NS_WSMAN_MSFT}:SessionId" => "uuid:#{@session_id}",
@@ -463,10 +463,10 @@ module WinRM
         "#{NS_WSMAN_MSFT}:DataLocale/" => '',
         "#{NS_WSMAN_DMTF}:OperationTimeout" => @timeout,
         :attributes! => {
-          "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => {"#{NS_SOAP_ENV}:mustUnderstand" => true},
-          "#{NS_WSMAN_DMTF}:Locale/" => {'xml:lang' => @locale, "#{NS_SOAP_ENV}:mustUnderstand" => false},
-          "#{NS_WSMAN_MSFT}:DataLocale/" => {'xml:lang' => @locale, "#{NS_SOAP_ENV}:mustUnderstand" => false},
-          "#{NS_WSMAN_MSFT}:SessionId" => {"#{NS_SOAP_ENV}:mustUnderstand" => false}
+          "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => {'mustUnderstand' => true},
+          "#{NS_WSMAN_DMTF}:Locale/" => {'xml:lang' => @locale, 'mustUnderstand' => false},
+          "#{NS_WSMAN_MSFT}:DataLocale/" => {'xml:lang' => @locale, 'mustUnderstand' => false},
+          "#{NS_WSMAN_MSFT}:SessionId" => {'mustUnderstand' => false}
         }}
     end
 
@@ -483,7 +483,6 @@ module WinRM
     end
 
     def send_get_output_message(message)
-      # puts "sending get output"
       send_message(message)
     rescue WinRMWSManFault => e
       # If no output is available before the wsman:OperationTimeout expires,
@@ -492,7 +491,6 @@ module WinRM
       # another Receive request.
       # http://msdn.microsoft.com/en-us/library/cc251676.aspx
       if e.fault_code == '2150858793'
-        # puts e
         retry
       else
         raise
@@ -508,47 +506,47 @@ module WinRM
 
     def resource_uri_cmd
       {"#{NS_WSMAN_DMTF}:ResourceURI" => 'http://schemas.microsoft.com/powershell/Microsoft.PowerShell',
-        :attributes! => {"#{NS_WSMAN_DMTF}:ResourceURI" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}}
+        :attributes! => {"#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => true}}}
     end
 
     def resource_uri_wmi(namespace = 'root/cimv2/*')
       {"#{NS_WSMAN_DMTF}:ResourceURI" => "http://schemas.microsoft.com/wbem/wsman/1/wmi/#{namespace}",
-        :attributes! => {"#{NS_WSMAN_DMTF}:ResourceURI" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}}
+        :attributes! => {"#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => true}}}
     end
 
     def action_create
       {"#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Create',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}}
+        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
     end
 
     def action_delete
       {"#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Delete',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}}
+        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
     end
 
     def action_command
       {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Command',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}}
+        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
     end
 
     def action_receive
       {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Receive',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}}
+        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
     end
 
     def action_signal
       {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Signal',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}}
+        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
     end
 
     def action_send
       {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Send',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}}
+        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
     end
 
     def action_enumerate
       {"#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/enumeration/Enumerate',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {"#{NS_SOAP_ENV}:mustUnderstand" => true}}}
+        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
     end
 
     def selector_shell_id(shell_id)
