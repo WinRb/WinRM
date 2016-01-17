@@ -41,7 +41,7 @@ module WinRM
     #   @see WinRM::HTTP::HttpNegotiate
     #   @see WinRM::HTTP::HttpSSL
     def initialize(endpoint, transport = :kerberos, opts = {})
-      @endpoint = endpoint + '?PSVersion=5.0.11082.1000'
+      @endpoint = endpoint
       @timeout = DEFAULT_TIMEOUT
       @max_env_sz = DEFAULT_MAX_ENV_SIZE
       @locale = DEFAULT_LOCALE
