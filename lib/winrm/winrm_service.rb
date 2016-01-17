@@ -39,7 +39,7 @@ module WinRM
     #   @see WinRM::HTTP::HttpGSSAPI
     #   @see WinRM::HTTP::HttpSSL
     def initialize(endpoint, transport = :kerberos, opts = {})
-      @endpoint = endpoint + '?PSVersion=5.0.11082.1000'
+      @endpoint = endpoint
       @timeout = DEFAULT_TIMEOUT
       @max_env_sz = DEFAULT_MAX_ENV_SIZE
       @locale = DEFAULT_LOCALE
@@ -49,11 +49,11 @@ module WinRM
       when :kerberos
         require 'gssapi'
         require 'gssapi/extensions'
-        @xfer = HTTP::HttpGSSAPI.new(@endpoint, opts[:realm], opts[:service], opts[:keytab], opts)
+        @xfer = HTTP::HttpGSSAPI.new(endpoint, opts[:realm], opts[:service], opts[:keytab], opts)
       when :plaintext
-        @xfer = HTTP::HttpPlaintext.new(@endpoint, opts[:user], opts[:pass], opts)
+        @xfer = HTTP::HttpPlaintext.new(endpoint, opts[:user], opts[:pass], opts)
       when :ssl
-        @xfer = HTTP::HttpSSL.new(@endpoint, opts[:user], opts[:pass], opts[:ca_trust_path], opts)
+        @xfer = HTTP::HttpSSL.new(endpoint, opts[:user], opts[:pass], opts[:ca_trust_path], opts)
       else
         raise "Invalid transport '#{transport}' specified, expected: kerberos, plaintext, ssl."
       end
