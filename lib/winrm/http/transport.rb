@@ -128,6 +128,81 @@ module WinRM
       end
     end
 
+    # NTLM/Negotiate, secure, HTTP transport
+    class HttpNegotiate < HttpTransport
+      def initialize(endpoint, user, pass, opts)
+        super(endpoint)
+        no_sspi_auth!
+        @user, @pass = user, pass
+        @ntlmcli = Net::NTLM::Client.new(user, pass)
+        @retryable = true
+        no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
+      end
+
+      def send_request(message, auth_header = nil)
+        auth_header = init_auth if @ntlmcli.session.nil?
+
+        original_length = message.length
+
+        emessage = @ntlmcli.session.seal_message message
+        signature = @ntlmcli.session.sign_message message
+        seal = "\x10\x00\x00\x00#{signature}#{emessage}"
+
+        hdr = {
+          "Content-Type" => "multipart/encrypted;protocol=\"application/HTTP-SPNEGO-session-encrypted\";boundary=\"Encrypted Boundary\""
+        }
+        hdr.merge!(auth_header) if auth_header
+
+        body = [
+          "--Encrypted Boundary",
+          "Content-Type: application/HTTP-SPNEGO-session-encrypted",
+          "OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{original_length}",
+          "--Encrypted Boundary",
+          "Content-Type: application/octet-stream",
+          "#{seal}--Encrypted Boundary--",
+          ""
+        ].join("\r\n")
+
+        resp = @httpcli.post(@endpoint, body, hdr)
+        if resp.status == 401 && @retryable
+         @retryable = false
+          send_request(message, init_auth)
+        else
+          @retryable = true
+          handler = WinRM::ResponseHandler.new(winrm_decrypt(resp.body), resp.status)
+          handler.parse_to_xml()
+        end
+      end
+
+      private
+
+      def winrm_decrypt(str)
+        str.force_encoding('BINARY')
+        str.sub!(/^.*Content-Type: application\/octet-stream\r\n(.*)--Encrypted.*$/m, '\1')
+
+        signature = str[4..19]
+        message = @ntlmcli.session.unseal_message str[20..-1]
+        if @ntlmcli.session.verify_signature(signature, message)
+          message
+        else
+          raise WinRMWebServiceError, "Could not verify SOAP message."
+        end
+      end
+
+      def init_auth
+        @logger.debug "Initializing Negotiate for #{@service}"
+        auth1 = @ntlmcli.init_context
+        hdr = {"Authorization" => "Negotiate #{auth1.encode64}",
+               "Content-Type" => "application/soap+xml;charset=UTF-8"
+        }
+        @logger.debug "Sending HTTP POST for Negotiate Authentication"
+        r = @httpcli.post(@endpoint, "", hdr)
+        itok = r.header["WWW-Authenticate"].pop.split.last
+        auth3 = @ntlmcli.init_context itok
+        { "Authorization" => "Negotiate #{auth3.encode64}" }
+      end
+    end
+
     # Plain text, insecure, HTTP transport
     class HttpPlaintext < HttpTransport
       def initialize(endpoint, user, pass, opts)
