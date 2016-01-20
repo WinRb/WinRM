@@ -99,7 +99,7 @@ The `WinRMWebService` exposes a `logger` attribute and uses the [logging](https:
 winrm = WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass)
 
 # suppress warnings
-winrm.logger.warn = :error
+winrm.logger.level = :error
 
 # Log to a file
 winrm.logger.add_appenders(Logging.appenders.file('error.log'))
