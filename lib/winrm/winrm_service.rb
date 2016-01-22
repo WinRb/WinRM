@@ -460,6 +460,7 @@ module WinRM
       # another Receive request.
       # http://msdn.microsoft.com/en-us/library/cc251676.aspx
       if e.fault_code == '2150858793'
+        logger.debug("[WinRM] retrying receive request after timeout")
         retry
       else
         raise
