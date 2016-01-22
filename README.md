@@ -44,6 +44,7 @@ winrm = WinRM::WinRMWebService.new(endpoint, :negotiate, :user => myuser, :pass 
 ```
 
 #### Plaintext
+Note: It is strongly recommended that you use `:negotiate` instead of `:plaintext`. As the name infers, the `:plaintext` transport includes authentication credentials in plain text.
 ```ruby
 WinRM::WinRMWebService.new(endpoint, :plaintext, :user => myuser, :pass => mypass, :disable_sspi => true)
 
