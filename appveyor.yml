@@ -27,6 +27,9 @@ clone_depth: 1
 branches:
   only:
     - master
+    
+cache:
+  - C:/Ruby21/bin/gem
 
 install:
   - ps: net user /add $env:winrm_user $env:winrm_pass
