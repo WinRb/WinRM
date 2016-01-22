@@ -319,7 +319,7 @@ module WinRM
     # @param [String] an existing and open shell id to reuse
     # @return [Hash] :stdout and :stderr
     def run_powershell_script(script_file, &block)
-      logger.warn("WinRM::WinRMWebService#run_powershell_script is deprecated. Use WinRM::CommandExecutor#run_cmd instead")
+      logger.warn("WinRM::WinRMWebService#run_powershell_script is deprecated. Use WinRM::CommandExecutor#run_powershell_script instead")
       create_executor do |executor|
         executor.run_powershell_script(script_file, &block)
       end
