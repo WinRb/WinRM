@@ -16,6 +16,7 @@
 
 require 'nori'
 require 'rexml/document'
+require 'securerandom'
 require 'winrm/command_executor'
 require_relative 'helpers/powershell_script'
 
@@ -427,7 +428,7 @@ module WinRM
         "#{NS_ADDRESSING}:Address" => 'http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous',
           :attributes! => {"#{NS_ADDRESSING}:Address" => {'mustUnderstand' => true}}},
         "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => @max_env_sz,
-        "#{NS_ADDRESSING}:MessageID" => "uuid:#{UUIDTools::UUID.random_create.to_s.upcase}",
+        "#{NS_ADDRESSING}:MessageID" => "uuid:#{SecureRandom.uuid.to_s.upcase}",
         "#{NS_WSMAN_DMTF}:Locale/" => '',
         "#{NS_WSMAN_MSFT}:DataLocale/" => '',
         "#{NS_WSMAN_DMTF}:OperationTimeout" => @timeout,
