@@ -5,3 +5,8 @@ rvm:
   - 2.1.0
 before_install:
   - gem update bundler
+
+# This prevents testing branches that are created just for PRs
+branches:
+  only:
+  - master
