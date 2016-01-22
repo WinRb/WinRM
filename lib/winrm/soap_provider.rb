@@ -17,7 +17,6 @@
 require 'httpclient'
 require 'builder'
 require 'gyoku'
-require 'uuidtools'
 require 'base64'
 
 # SOAP constants for WinRM
