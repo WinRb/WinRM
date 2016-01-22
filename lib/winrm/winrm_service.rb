@@ -49,11 +49,12 @@ module WinRM
       begin
         @xfer = send "init_#{transport}_transport", opts.merge({endpoint: endpoint})
       rescue NoMethodError => e
-        raise "Invalid transport '#{transport}' specified, expected: kerberos, plaintext, ssl."
+        raise "Invalid transport '#{transport}' specified, expected: negotiate, kerberos, plaintext, ssl."
       end
     end
 
     def init_negotiate_transport(opts)
+      require 'rubyntlm'
       HTTP::HttpNegotiate.new(opts[:endpoint], opts[:user], opts[:pass], opts)
     end
 

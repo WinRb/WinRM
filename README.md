@@ -40,7 +40,7 @@ Use the `run_cmd` and `run_powershell_script` of the `WinRM::CommandExecutor` cl
 
 #### NTLM/Negotiate
 ```ruby
-winrm = WinRM::WinRMWebService.new(endpoint, :negotiate, :user => myuser, :pass mypass)
+winrm = WinRM::WinRMWebService.new(endpoint, :negotiate, :user => myuser, :pass => mypass)
 ```
 
 #### Plaintext

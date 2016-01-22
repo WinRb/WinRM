@@ -28,7 +28,7 @@ Gem::Specification.new do |s|
   s.required_ruby_version = '>= 1.9.0'
   s.add_runtime_dependency 'gssapi', '~> 1.2'
   s.add_runtime_dependency 'httpclient', '~> 2.2', '>= 2.2.0.2'
-  s.add_runtime_dependency 'rubyntlm', '~> 0.5.0'
+  s.add_runtime_dependency 'rubyntlm', '~> 0.5.0', '>= 0.5.3'
   s.add_runtime_dependency 'logging', ['>= 1.6.1', '< 3.0']
   s.add_runtime_dependency 'nori', '~> 2.0'
   s.add_runtime_dependency 'gyoku', '~> 1.0'
