@@ -35,21 +35,11 @@ describe WinRM::CommandExecutor, unit: true do
     )
   end
 
-  let(:version_output) do
-    o = ::WinRM::Output.new
-    o[:exitcode] = 0
-    o[:data].concat([{ stdout: '6.3.9600.0\r\n' }])
-    o
-  end
+  let(:version_output) { { xml_fragment: [{ version: '6.3.9600' }] } }
 
   before do
     allow(service).to receive(:open_shell).and_return(shell_id)
-
-    stub_powershell_script(
-      shell_id,
-      "$ProgressPreference='SilentlyContinue';[environment]::OSVersion.Version.tostring()",
-      version_output
-    )
+    allow(service).to receive(:run_wql).and_return(version_output)
   end
 
   describe '#close' do
@@ -124,34 +114,49 @@ describe WinRM::CommandExecutor, unit: true do
     end
 
     describe 'for modern windows distributions' do
-      let(:version_output) do
-        o = ::WinRM::Output.new
-        o[:exitcode] = 0
-        o[:data].concat([{ stdout: '6.3.9600.0\r\n' }])
-        o
-      end
+      let(:version_output) { { xml_fragment: [{ version: '6.3.9600' }] } }
 
       it 'sets #max_commands to 1500 - 2' do
-        expect(executor.max_commands).to eq nil
-        executor.open
-
         expect(executor.max_commands).to eq(1500 - 2)
+      end
+
+      it 'sets code_page to UTF-8' do
+        expect(executor.code_page).to eq 65_001
       end
     end
 
     describe 'for older/legacy windows distributions' do
-      let(:version_output) do
-        o = ::WinRM::Output.new
-        o[:exitcode] = 0
-        o[:data].concat([{ stdout: '6.1.8500.0\r\n' }])
-        o
-      end
+      let(:version_output) { { xml_fragment: [{ version: '6.1.8500' }] } }
 
       it 'sets #max_commands to 15 - 2' do
-        expect(executor.max_commands).to eq nil
-        executor.open
-
         expect(executor.max_commands).to eq(15 - 2)
+      end
+
+      it 'sets code_page to UTF-8' do
+        expect(executor.code_page).to eq 65_001
+      end
+    end
+
+    describe 'for super duper older/legacy windows distributions' do
+      let(:version_output) { { xml_fragment: [{ version: '6.0.8500' }] } }
+
+      it 'sets #max_commands to 15 - 2' do
+        expect(executor.max_commands).to eq(15 - 2)
+      end
+
+      it 'sets code_page to MS-DOS' do
+        expect(executor.code_page).to eq 437
+      end
+    end
+
+    describe 'when unable to find os version' do
+      let(:version_output) { { xml_fragment: [{ funny_clowns: 'haha' }] } }
+
+      it 'raises WinRMError' do
+        expect { executor.code_page }.to raise_error(
+          ::WinRM::WinRMError,
+          'Unable to determine endpoint os version'
+        )
       end
     end
   end
@@ -232,12 +237,7 @@ describe WinRM::CommandExecutor, unit: true do
     describe 'when called many times over time' do
       # use a 'old' version of windows with lower max_commands threshold
       # to trigger quicker shell recyles
-      let(:version_output) do
-        o = ::WinRM::Output.new
-        o[:exitcode] = 0
-        o[:data].concat([{ stdout: '6.1.8500.0\r\n' }])
-        o
-      end
+      let(:version_output) { { xml_fragment: [{ version: '6.1.8500' }] } }
 
       let(:echo_output) do
         o = ::WinRM::Output.new
@@ -251,11 +251,8 @@ describe WinRM::CommandExecutor, unit: true do
         allow(service).to receive(:close_shell)
         allow(service).to receive(:run_command).and_yield('command-xxx')
         allow(service).to receive(:get_command_output).and_return(echo_output)
-        stub_powershell_script(
-          's1',
-          "$ProgressPreference='SilentlyContinue';[environment]::OSVersion.Version.tostring()",
-          version_output
-        )
+        allow(service).to receive(:run_wql).with('select version from Win32_OperatingSystem')
+          .and_return(version_output)
       end
 
       it 'resets the shell when #max_commands threshold is tripped' do
@@ -295,7 +292,7 @@ describe WinRM::CommandExecutor, unit: true do
       before do
         stub_powershell_script(
           shell_id,
-          "$ProgressPreference='SilentlyContinue';echo Hello",
+          'echo Hello',
           echo_output,
           command_id
         )
@@ -309,7 +306,7 @@ describe WinRM::CommandExecutor, unit: true do
           'powershell',
           [
             '-encodedCommand',
-            ::WinRM::PowershellScript.new("$ProgressPreference='SilentlyContinue';echo Hello")
+            ::WinRM::PowershellScript.new('echo Hello')
               .encoded
           ]
         )
@@ -353,12 +350,7 @@ describe WinRM::CommandExecutor, unit: true do
     describe 'when called many times over time' do
       # use a 'old' version of windows with lower max_commands threshold
       # to trigger quicker shell recyles
-      let(:version_output) do
-        o = ::WinRM::Output.new
-        o[:exitcode] = 0
-        o[:data].concat([{ stdout: '6.1.8500.0\r\n' }])
-        o
-      end
+      let(:version_output) { { xml_fragment: [{ version: '6.1.8500' }] } }
 
       let(:echo_output) do
         o = ::WinRM::Output.new
@@ -372,11 +364,8 @@ describe WinRM::CommandExecutor, unit: true do
         allow(service).to receive(:close_shell)
         allow(service).to receive(:run_command).and_yield('command-xxx')
         allow(service).to receive(:get_command_output).and_return(echo_output)
-        stub_powershell_script(
-          's1',
-          "$ProgressPreference='SilentlyContinue';[environment]::OSVersion.Version.tostring()",
-          version_output
-        )
+        allow(service).to receive(:wsman_identify).with('select version from Win32_OperatingSystem')
+          .and_return(version_output)
       end
 
       it 'resets the shell when #max_commands threshold is tripped' do

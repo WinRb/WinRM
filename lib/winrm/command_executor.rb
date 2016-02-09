@@ -35,11 +35,6 @@ module WinRM
       proc { service.close_shell(shell_id) }
     end
 
-    # @return [Integer,nil] the safe maximum number of commands that can
-    #   be executed in one remote shell session, or `nil` if the
-    #   threshold has not yet been determined
-    attr_reader :max_commands
-
     # @return [WinRM::WinRMWebService] a WinRM web service object
     attr_reader :service
 
@@ -53,7 +48,6 @@ module WinRM
     #   responds to `#debug` and `#info` (default: `nil`)
     def initialize(service)
       @service = service
-      @logger = service.logger
       @command_count = 0
     end
 
@@ -74,10 +68,11 @@ module WinRM
     # @return [String] the remote shell session indentifier
     def open
       close
-      retryable(service.retry_limit, service.retry_delay) { @shell = service.open_shell }
+      retryable(service.retry_limit, service.retry_delay) do
+        @shell = service.open_shell(codepage: code_page)
+      end
       add_finalizer(shell)
       @command_count = 0
-      determine_max_commands unless max_commands
       shell
     end
 
@@ -91,7 +86,7 @@ module WinRM
     # @return [WinRM::Output] output object with stdout, stderr, and
     #   exit code
     def run_cmd(command, arguments = [], &block)
-      reset if command_count_exceeded?
+      reset if command_count > max_commands
       ensure_open_shell!
 
       @command_count += 1
@@ -120,38 +115,33 @@ module WinRM
         [
           '-encodedCommand',
           ::WinRM::PowershellScript.new(
-            safe_script(script_file.is_a?(IO) ? script_file.read : script_file)
+            script_file.is_a?(IO) ? script_file.read : script_file
           ).encoded
         ],
         &block
       )
     end
 
+    # Code page appropriate to os version. utf-8 (65001) is buggy pre win7/2k8r2
+    # So send MS-DOS (437) for earlier versions
+    #
+    # @return [Integer] code page in use
+    def code_page
+      @code_page ||= os_version < '6.1' ? 437 : 65_001
+    end
+
+    # @return [Integer] the safe maximum number of commands that can
+    #   be executed in one remote shell session
+    def max_commands
+      @max_commands ||= (os_version < '6.2' ? 15 : 1500) - 2
+    end
+
     private
-
-    # @return [Integer] the default maximum number of commands which can be
-    #   executed in one remote shell session on "older" versions of Windows
-    # @api private
-    LEGACY_LIMIT = 15
-
-    # @return [Integer] the default maximum number of commands which can be
-    #   executed in one remote shell session on "modern" versions of Windows
-    # @api private
-    MODERN_LIMIT = 1500
-
-    # @return [String] the PowerShell command used to determine the version
-    #   of Windows
-    # @api private
-    PS1_OS_VERSION = '[environment]::OSVersion.Version.tostring()'.freeze
 
     # @return [Integer] the number of executed commands on the remote
     #   shell session
     # @api private
     attr_accessor :command_count
-
-    # @return [#debug,#info] the logger
-    # @api private
-    attr_reader :logger
 
     # Creates a finalizer for this connection which will close the open
     # remote shell session when the object is garabage collected or on
@@ -163,13 +153,6 @@ module WinRM
       ObjectSpace.define_finalizer(self, self.class.finalize(shell_id, service))
     end
 
-    # @return [true,false] whether or not the number of exeecuted commands
-    #   have exceeded the maxiumum threshold
-    # @api private
-    def command_count_exceeded?
-      command_count > max_commands.to_i
-    end
-
     # Ensures that there is an open remote shell session.
     #
     # @raise [WinRM::WinRMError] if there is no open shell
@@ -179,14 +162,19 @@ module WinRM
         'before any run methods are invoked' if shell.nil?
     end
 
-    # Determines the safe maximum number of commands that can be executed
-    # on a remote shell session by interrogating the remote host.
+    # Fetches the OS build bersion of the remote endpoint
     #
     # @api private
-    def determine_max_commands
-      os_version = run_powershell_script(PS1_OS_VERSION).stdout.chomp
-      @max_commands = os_version < '6.2' ? LEGACY_LIMIT : MODERN_LIMIT
-      @max_commands -= 2 # to be safe
+    def os_version
+      @os_version ||= begin
+        version = nil
+        wql = service.run_wql('select version from Win32_OperatingSystem')
+        if wql[:xml_fragment]
+          version = wql[:xml_fragment].first[:version] if wql[:xml_fragment].first[:version]
+        end
+        fail ::WinRM::WinRMError, 'Unable to determine endpoint os version' if version.nil?
+        version
+      end
     end
 
     # Removes any finalizers for this connection.
@@ -200,7 +188,7 @@ module WinRM
     #
     # @api private
     def reset
-      logger.debug("Resetting WinRM shell (Max command limit is #{max_commands})")
+      service.logger.debug("Resetting WinRM shell (Max command limit is #{max_commands})")
       open
     end
 
@@ -215,11 +203,11 @@ module WinRM
       yield
     rescue *RESCUE_EXCEPTIONS_ON_ESTABLISH.call => e
       if (retries -= 1) > 0
-        logger.info("[WinRM] connection failed. retrying in #{delay} seconds (#{e.inspect})")
+        service.logger.info("[WinRM] connection failed. retrying in #{delay} seconds: #{e.inspect}")
         sleep(delay)
         retry
       else
-        logger.warn("[WinRM] connection failed, terminating (#{e.inspect})")
+        service.logger.warn("[WinRM] connection failed, terminating (#{e.inspect})")
         raise
       end
     end
@@ -229,14 +217,8 @@ module WinRM
         Errno::EACCES, Errno::EADDRINUSE, Errno::ECONNREFUSED, Errno::ETIMEDOUT,
         Errno::ECONNRESET, Errno::ENETUNREACH, Errno::EHOSTUNREACH,
         ::WinRM::WinRMHTTPTransportError, ::WinRM::WinRMAuthorizationError,
-        HTTPClient::KeepAliveDisconnected,
-        HTTPClient::ConnectTimeoutError
+        HTTPClient::KeepAliveDisconnected, HTTPClient::ConnectTimeoutError
       ].freeze
-    end
-
-    # suppress the progress stream from leaking to stderr
-    def safe_script(script)
-      "$ProgressPreference='SilentlyContinue';" + script
     end
   end
 end
