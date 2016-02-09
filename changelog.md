@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 1.6.1
+- Use codepage 437 by default on os versions older than Windows 7 and Windows Server 2008 R2
+
 # 1.6.0
 - Adding `:negotiate` transport providing NTLM/Negotiate encryption of WinRM requests and responses
 - Removed dependency on UUIDTools gem
