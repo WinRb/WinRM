@@ -38,7 +38,13 @@ As of version 1.5.0 `WinRM::WinRMWebService` methods `cmd`, `run_cmd`, `powershe
 
 Use the `run_cmd` and `run_powershell_script` of the `WinRM::CommandExecutor` class instead. The `CommandExecutor` allows multiple commands to be run from the same WinRM shell providing a significant performance improvement when issuing multiple calls.
 
+#### NTLM/Negotiate
+```ruby
+winrm = WinRM::WinRMWebService.new(endpoint, :negotiate, :user => myuser, :pass => mypass)
+```
+
 #### Plaintext
+Note: It is strongly recommended that you use `:negotiate` instead of `:plaintext`. As the name infers, the `:plaintext` transport includes authentication credentials in plain text.
 ```ruby
 WinRM::WinRMWebService.new(endpoint, :plaintext, :user => myuser, :pass => mypass, :disable_sspi => true)
 
@@ -99,7 +105,7 @@ The `WinRMWebService` exposes a `logger` attribute and uses the [logging](https:
 winrm = WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass)
 
 # suppress warnings
-winrm.logger.warn = :error
+winrm.logger.level = :error
 
 # Log to a file
 winrm.logger.add_appenders(Logging.appenders.file('error.log'))

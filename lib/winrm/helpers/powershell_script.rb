@@ -30,8 +30,13 @@ module WinRM
     # --EncodedCommand argument.
     # @return [String] The UTF-16LE base64 encoded script
     def encoded
-      encoded_script = text.encode('UTF-16LE', 'UTF-8')
+      encoded_script = safe_script(text).encode('UTF-16LE', 'UTF-8')
       Base64.strict_encode64(encoded_script)
+    end
+
+    # suppress the progress stream from leaking to stderr
+    def safe_script(script)
+      "$ProgressPreference='SilentlyContinue';" + script
     end
   end
 end

@@ -1,5 +1,14 @@
 # WinRM Gem Changelog
 
+# 1.6.1
+- Use codepage 437 by default on os versions older than Windows 7 and Windows Server 2008 R2
+
+# 1.6.0
+- Adding `:negotiate` transport providing NTLM/Negotiate encryption of WinRM requests and responses
+- Removed dependency on UUIDTools gem
+- Extending accepted error codes for retry behavior to include `Errno::ETIMEDOUT`
+- Correct deprecation warning for WinRMWebService.run_powershell_script
+
 # 1.5.0
 - Deprecating `WinRM::WinRMWebService` methods `cmd`, `run_cmd`, `powershell`, and `run_powershell_script` in favor of the `run_cmd` and `run_powershell_script` methods of the `WinRM::CommandExecutor` class. The `CommandExecutor` allows multiple commands to be run from the same WinRM shell providing a significant performance improvement when issuing multiple calls.
 - Added an `:ssl_peer_fingerprint` option to be used instead of `:no_ssl_peer_verification` and allows a specific certificate to be verified.

@@ -1,7 +1,9 @@
 AllCops:
   Exclude:
     - 'appveyor.yml'
+    - 'scripts/**/*'
     - 'lib/winrm/winrm_service.rb'
+    - 'lib/winrm/http/transport.rb'
 
 Style/Encoding:
   Enabled: true

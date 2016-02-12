@@ -37,6 +37,7 @@ module WinRM
     # @param [Hash] opts Misc opts for the various transports.
     #   @see WinRM::HTTP::HttpTransport
     #   @see WinRM::HTTP::HttpGSSAPI
+    #   @see WinRM::HTTP::HttpNegotiate
     #   @see WinRM::HTTP::HttpSSL
     def initialize(endpoint, transport = :kerberos, opts = {})
       @endpoint = endpoint
@@ -45,22 +46,34 @@ module WinRM
       @locale = DEFAULT_LOCALE
       setup_logger
       configure_retries(opts)
-      case transport
-      when :kerberos
-        require 'gssapi'
-        require 'gssapi/extensions'
-        @xfer = HTTP::HttpGSSAPI.new(endpoint, opts[:realm], opts[:service], opts[:keytab], opts)
-      when :plaintext
-        @xfer = HTTP::HttpPlaintext.new(endpoint, opts[:user], opts[:pass], opts)
-      when :ssl
-        @xfer = HTTP::HttpSSL.new(endpoint, opts[:user], opts[:pass], opts[:ca_trust_path], opts)
-      else
-        raise "Invalid transport '#{transport}' specified, expected: kerberos, plaintext, ssl."
+      begin
+        @xfer = send "init_#{transport}_transport", opts.merge({endpoint: endpoint})
+      rescue NoMethodError => e
+        raise "Invalid transport '#{transport}' specified, expected: negotiate, kerberos, plaintext, ssl."
       end
     end
 
+    def init_negotiate_transport(opts)
+      require 'rubyntlm'
+      HTTP::HttpNegotiate.new(opts[:endpoint], opts[:user], opts[:pass], opts)
+    end
+
+    def init_kerberos_transport(opts)
+      require 'gssapi'
+      require 'gssapi/extensions'
+      HTTP::HttpGSSAPI.new(opts[:endpoint], opts[:realm], opts[:service], opts[:keytab], opts)
+    end
+
+    def init_plaintext_transport(opts)
+      HTTP::HttpPlaintext.new(opts[:endpoint], opts[:user], opts[:pass], opts)
+    end
+
+    def init_ssl_transport(opts)
+      HTTP::HttpSSL.new(opts[:endpoint], opts[:user], opts[:pass], opts[:ca_trust_path], opts)
+    end
+
     # Operation timeout.
-    # 
+    #
     # Unless specified the client receive timeout will be 10s + the operation
     # timeout.
     #
@@ -185,7 +198,7 @@ module WinRM
       }
 
       argument_xml = %{<Obj RefId="0"><MS><Obj N="PowerShell" RefId="1"><MS><Obj N="Cmds" RefId="2"><TN RefId="0"><T>System.Collections.Generic.List`1[[System.Management.Automation.PSObject, System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]]</T><T>System.Object</T></TN><LST><Obj RefId="3"><MS><S N="Cmd">Invoke-expression</S><B N="IsScript">false</B><Nil N="UseLocalScope" /><Obj N="MergeMyResult" RefId="4"><TN RefId="1"><T>System.Management.Automation.Runspaces.PipelineResultTypes</T><T>System.Enum</T><T>System.ValueType</T><T>System.Object</T></TN><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeToResult" RefId="5"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergePreviousResults" RefId="6"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeError" RefId="7"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeWarning" RefId="8"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeVerbose" RefId="9"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeDebug" RefId="10"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="Args" RefId="11"><TNRef RefId="0" /><LST><Obj RefId="12"><MS><S N="N">-Command</S><Nil N="V" /></MS></Obj><Obj RefId="13"><MS><Nil N="N" /><S N="V">#{command}</S></MS></Obj></LST></Obj></MS></Obj><Obj RefId="14"><MS><S N="Cmd">Out-string</S><B N="IsScript">false</B><Nil N="UseLocalScope" /><Obj N="MergeMyResult" RefId="15"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeToResult" RefId="16"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergePreviousResults" RefId="17"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeError" RefId="18"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeWarning" RefId="19"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeVerbose" RefId="20"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeDebug" RefId="21"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="Args" RefId="22"><TNRef RefId="0" /><LST /></Obj></MS></Obj></LST></Obj><B N="IsNested">false</B><Nil N="History" /><B N="RedirectShellErrorOutputPipe">true</B></MS></Obj><B N="NoInput">true</B><Obj N="ApartmentState" RefId="23"><TN RefId="2"><T>System.Threading.ApartmentState</T><T>System.Enum</T><T>System.ValueType</T><T>System.Object</T></TN><ToString>Unknown</ToString><I32>2</I32></Obj><Obj N="RemoteStreamOptions" RefId="24"><TN RefId="3"><T>System.Management.Automation.RemoteStreamOptions</T><T>System.Enum</T><T>System.ValueType</T><T>System.Object</T></TN><ToString>0</ToString><I32>0</I32></Obj><B N="AddToHistory">true</B><Obj N="HostInfo" RefId="25"><MS><B N="_isHostNull">true</B><B N="_isHostUINull">true</B><B N="_isHostRawUINull">true</B><B N="_useRunspaceHost">true</B></MS></Obj><B N="IsNested">false</B></MS></Obj>}
-      
+
       b64_arguments = encode_bytes(psrp_message(3, shell_id, command_id, '00021006', argument_xml))
 
       body = { "#{NS_WIN_SHELL}:Command" => "Invoke-Expression", "#{NS_WIN_SHELL}:Arguments" => b64_arguments }
@@ -349,7 +362,7 @@ module WinRM
     # @param [String] an existing and open shell id to reuse
     # @return [Hash] :stdout and :stderr
     def run_powershell_script(script_file, &block)
-      logger.warn("WinRM::WinRMWebService#run_powershell_script is deprecated. Use WinRM::CommandExecutor#run_cmd instead")
+      logger.warn("WinRM::WinRMWebService#run_powershell_script is deprecated. Use WinRM::CommandExecutor#run_powershell_script instead")
       create_executor do |executor|
         executor.run_powershell_script(script_file, &block)
       end
@@ -401,7 +414,7 @@ module WinRM
       resp = send_message(builder.target!)
       parser = Nori.new(:parser => :rexml, :advanced_typecasting => false, :convert_tags_to => lambda { |tag| tag.snakecase.to_sym }, :strip_namespaces => true)
       hresp = parser.parse(resp.to_s)[:envelope][:body]
-      
+
       # Normalize items so the type always has an array even if it's just a single item.
       items = {}
       if hresp[:enumerate_response][:items]
@@ -487,10 +500,11 @@ module WinRM
     rescue WinRMWSManFault => e
       # If no output is available before the wsman:OperationTimeout expires,
       # the server MUST return a WSManFault with the Code attribute equal to
-      # 2150858793. When the client receives this fault, it SHOULD issue 
+      # 2150858793. When the client receives this fault, it SHOULD issue
       # another Receive request.
       # http://msdn.microsoft.com/en-us/library/cc251676.aspx
       if e.fault_code == '2150858793'
+        logger.debug("[WinRM] retrying receive request after timeout")
         retry
       else
         raise
@@ -500,7 +514,7 @@ module WinRM
     def send_message(message)
       @xfer.send_request(message)
     end
-    
+
 
     # Helper methods for SOAP Headers
 
