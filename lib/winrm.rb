@@ -39,4 +39,5 @@ end
 
 require 'winrm/output'
 require 'winrm/helpers/iso8601_duration'
+require 'winrm/helpers/uuid'
 require 'winrm/soap_provider'
