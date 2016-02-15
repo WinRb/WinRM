@@ -254,7 +254,13 @@ module WinRM
           next if n.text.nil? || n.text.empty?
 
           # decode and strip off BOM which win 2008R2 applies
-          stream = { n.attributes['Name'].to_sym => Base64.decode64(n.text).force_encoding('utf-8').encode('utf-8', invalid: :replace, undef: :replace).sub("\xEF\xBB\xBF", "") }
+          stream = {
+             n.attributes['Name'].to_sym => Base64.decode64(n.text)
+              .force_encoding('utf-8')
+              .encode('utf-16', invalid: :replace, undef: :replace)
+              .encode('utf-8')
+              .sub('\xEF\xBB\xBF', '')
+          }
           output[:data] << stream
           yield stream[:stdout], stream[:stderr] if block_given?
         end

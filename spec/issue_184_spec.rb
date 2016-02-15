@@ -18,7 +18,7 @@ describe 'issue 184', unit: true do
   end
 
   describe 'response doc stdout with invalid UTF-8 characters' do
-    let(:test_data_stdout) { 'fff' } # Base64-decodes to '}\xF7', an invalid sequence
+    let(:test_data_stdout) { 'ffff' } # Base64-decodes to '}\xF7\xDF', an invalid sequence
     let(:test_data_stderr) { '' }
     let(:test_data_xml) do
       test_data_xml_template.result(binding)
