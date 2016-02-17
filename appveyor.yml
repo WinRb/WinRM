@@ -35,6 +35,7 @@ install:
   - ps: winrm create winrm/config/Listener?Address=*+Transport=HTTPS "@{Hostname=`"localhost`";CertificateThumbprint=`"$($env:winrm_cert)`"}"
   - ps: winrm set winrm/config/client/auth '@{Basic="true"}'
   - ps: winrm set winrm/config/service/auth '@{Basic="true"}'
+  - ps: winrm set winrm/config/service/auth '@{CbtHardeningLevel="Strict"}'
   - ps: winrm set winrm/config/service '@{AllowUnencrypted="true"}'
   - ps: $env:PATH="C:\Ruby$env:ruby_version\bin;$env:PATH"
   - ps: Write-Host $env:PATH

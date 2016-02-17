@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 1.7.0
+- Bump rubyntlm gem to 0.6.0 to get channel binding support for HTTPS fixing connections to endoints with `CbtHardeningLevel` set to `Strict`
+
 # 1.6.1
 - Use codepage 437 by default on os versions older than Windows 7 and Windows Server 2008 R2
 

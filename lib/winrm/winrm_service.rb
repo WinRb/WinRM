@@ -54,7 +54,6 @@ module WinRM
     end
 
     def init_negotiate_transport(opts)
-      require 'rubyntlm'
       HTTP::HttpNegotiate.new(opts[:endpoint], opts[:user], opts[:pass], opts)
     end
 
@@ -69,7 +68,11 @@ module WinRM
     end
 
     def init_ssl_transport(opts)
-      HTTP::HttpSSL.new(opts[:endpoint], opts[:user], opts[:pass], opts[:ca_trust_path], opts)
+      if opts[:basic_auth_only]
+        HTTP::BasicAuthSSL.new(opts[:endpoint], opts[:user], opts[:pass], opts)
+      else
+        HTTP::HttpNegotiate.new(opts[:endpoint], opts[:user], opts[:pass], opts)
+      end
     end
 
     # Operation timeout.
