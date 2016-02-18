@@ -29,7 +29,7 @@ module WinRM
     #
     # @param uuid [String] Canonical hex format with hypens.
     # @return [Array<byte>] UUID in a Windows GUID compatible byte array layout.
-    def self.uuid_to_windows_guid_bytes(uuid)
+    def uuid_to_windows_guid_bytes(uuid)
       return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] unless uuid
       b = uuid.scan(/[0-9a-f]{2}/).map { |x| x.to_i(16) }
       b[0..3].reverse + b[4..5].reverse + b[6..7].reverse + b[8..15]
