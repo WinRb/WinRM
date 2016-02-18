@@ -51,7 +51,7 @@ module WinRM
     # @return [Array<Byte>] Unencoded raw byte array of the PSRP message.
     def bytes
       raise "payload cannot be greater than #{BLOB_MAX_LEN} bytes" if blob_bytes.length > BLOB_MAX_LEN
-      message = object_id
+      message = message_id
       message += fragment_id
       message += end_start_fragment
       message += blob_length
@@ -65,7 +65,7 @@ module WinRM
 
     private
 
-    def object_id
+    def message_id
       int64be(@id)
     end
 
