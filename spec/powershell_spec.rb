@@ -19,13 +19,14 @@ describe 'winrm client powershell', integration: true do
             # puts executor.run_cmd("Write-Output '#{long_string}'").stdout.unpack("C*")
             # .pack("U*").gsub('_x000D__x000A_',"\r\n")
             puts executor.run_cmd('Get-Process').stdout.unpack('C*').pack('U*')
-              .gsub('_x000D__x000A_', '\r\n')
+              .gsub('_x000D__x000A_', "\r\n")
           end
         end
       end
     end
   end
 
+=begin
   describe 'ipconfig' do
     subject(:output) { @winrm.powershell('ipconfig') }
     it { should have_exit_code 0 }
@@ -116,4 +117,5 @@ describe 'winrm client powershell', integration: true do
     it { should have_exit_code 0 }
     it { should have_stdout_match(/✓1234-äöü/) }
   end
+=end
 end
