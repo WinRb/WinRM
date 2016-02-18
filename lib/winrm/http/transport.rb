@@ -145,6 +145,7 @@ module WinRM
     class HttpNegotiate < HttpTransport
       def initialize(endpoint, user, pass, opts)
         super(endpoint)
+        require 'rubyntlm'
         no_sspi_auth!
 
         user_parts = user.split('\\')
@@ -156,9 +157,12 @@ module WinRM
         @ntlmcli = Net::NTLM::Client.new(user, pass, opts)
         @retryable = true
         no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
+        @ssl_peer_fingerprint = opts[:ssl_peer_fingerprint]
+        @httpcli.ssl_config.set_trust_ca(opts[:ca_trust_path]) if opts[:ca_trust_path]
       end
 
       def send_request(message, auth_header = nil)
+        ssl_peer_fingerprint_verification!
         auth_header = init_auth if @ntlmcli.session.nil?
 
         original_length = message.length
@@ -183,6 +187,7 @@ module WinRM
         ].join("\r\n")
 
         resp = @httpcli.post(@endpoint, body, hdr)
+        verify_ssl_fingerprint(resp.peer_cert)
         if resp.status == 401 && @retryable
           @retryable = false
           send_request(message, init_auth)
@@ -217,22 +222,23 @@ module WinRM
         }
         @logger.debug "Sending HTTP POST for Negotiate Authentication"
         r = @httpcli.post(@endpoint, "", hdr)
+        verify_ssl_fingerprint(r.peer_cert)
         itok = r.header["WWW-Authenticate"].pop.split.last
-        auth3 = @ntlmcli.init_context itok
+        binding = r.peer_cert.nil? ? nil : Net::NTLM::ChannelBinding.create(r.peer_cert)
+        auth3 = @ntlmcli.init_context(itok, binding)
         { "Authorization" => "Negotiate #{auth3.encode64}" }
       end
     end
 
     # Uses SSL to secure the transport
-    class HttpSSL < HttpTransport
-      def initialize(endpoint, user, pass, ca_trust_path = nil, opts)
+    class BasicAuthSSL < HttpTransport
+      def initialize(endpoint, user, pass, opts)
         super(endpoint)
         @httpcli.set_auth(endpoint, user, pass)
-        @httpcli.ssl_config.set_trust_ca(ca_trust_path) unless ca_trust_path.nil?
-        no_sspi_auth! if opts[:disable_sspi]
-        basic_auth_only! if opts[:basic_auth_only]
+        basic_auth_only!
         no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
         @ssl_peer_fingerprint = opts[:ssl_peer_fingerprint]
+        @httpcli.ssl_config.set_trust_ca(opts[:ca_trust_path]) if opts[:ca_trust_path]
       end
     end
 

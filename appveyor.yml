@@ -12,16 +12,6 @@ environment:
     - ruby_version: "21"
       winrm_endpoint: http://localhost:5985/wsman
 
-    - ruby_version: "21"
-      winrm_auth_type: ssl
-      winrm_endpoint: https://localhost:5986/wsman
-      winrm_no_ssl_peer_verification: true
-
-    - ruby_version: "21"
-      winrm_auth_type: ssl
-      winrm_endpoint: https://localhost:5986/wsman
-      use_ssl_peer_fingerprint: true
-
 clone_folder: c:\projects\winrm
 clone_depth: 1
 branches:
@@ -35,6 +25,7 @@ install:
   - ps: winrm create winrm/config/Listener?Address=*+Transport=HTTPS "@{Hostname=`"localhost`";CertificateThumbprint=`"$($env:winrm_cert)`"}"
   - ps: winrm set winrm/config/client/auth '@{Basic="true"}'
   - ps: winrm set winrm/config/service/auth '@{Basic="true"}'
+  - ps: winrm set winrm/config/service/auth '@{CbtHardeningLevel="Strict"}'
   - ps: winrm set winrm/config/service '@{AllowUnencrypted="true"}'
   - ps: $env:PATH="C:\Ruby$env:ruby_version\bin;$env:PATH"
   - ps: Write-Host $env:PATH
