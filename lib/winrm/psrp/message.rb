@@ -30,6 +30,41 @@ module WinRM
       # Maximum allowed length of the blob
       BLOB_MAX_LEN = 32768 - BLOB_HEADER_LEN
 
+      # All known PSRP message types
+      MESSAGE_TYPES = [
+        0x00010002,
+        0x00010004,
+        0x00010005,
+        0x00010006,
+        0x00010007,
+        0x00010008,
+        0x0002100B,
+        0x0002100C,
+        0x00021002,
+        0x00021003,
+        0x00021004,
+        0x00021005,
+        0x00021006,
+        0x00021007,
+        0x00021008,
+        0x00021009,
+        0x0002100A,
+        0x00021100,
+        0x00021101,
+        0x00041002,
+        0x00041003,
+        0x00041004,
+        0x00041005,
+        0x00041006,
+        0x00041007,
+        0x00041008,
+        0x00041009,
+        0x00041010,
+        0x00041011,
+        0x00041100,
+        0x00041101
+      ]
+
       # Creates a new PSRP message instance
       # @param id [Fixnum] The incrementing fragment id.
       # @param shell_id [String] The UUID of the remote shell/runspace pool.
@@ -39,6 +74,9 @@ module WinRM
       # specified in hex, e.g. 0x00010002.
       # @param payload [String] The PSRP payload as serialized XML
       def initialize(id, shell_id, command_id, message_type, payload)
+        raise 'shell_id cannot be nil' if shell_id.nil?
+        raise 'invalid message type' unless MESSAGE_TYPES.include?(message_type)
+        raise 'payload cannot be nil' if payload.nil?
         @id = id
         @shell_id = shell_id
         @command_id = command_id
