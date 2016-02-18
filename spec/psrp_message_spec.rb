@@ -1,7 +1,7 @@
 # encoding: UTF-8
 describe 'PsrpMessage', unit: true do
   subject(:bytes) do
-    msg = WinRM::PsrpMessage.new(
+    msg = WinRM::PSRP::Message.new(
       1,
       'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
       '4218a578-0f18-4b19-82c3-46b433319126',
