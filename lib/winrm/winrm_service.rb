@@ -253,8 +253,19 @@ module WinRM
         REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |n|
           next if n.text.nil? || n.text.empty?
 
-          # decode and strip off BOM which win 2008R2 applies
-          stream = { n.attributes['Name'].to_sym => Base64.decode64(n.text).force_encoding('utf-8').sub("\xEF\xBB\xBF", "") }
+          # decode and replace invalid unicode characters
+          decoded_text = Base64.decode64(n.text).force_encoding('utf-8')
+          if ! decoded_text.valid_encoding?
+            if decoded_text.respond_to?(:scrub!)        
+              decoded_text.scrub!
+            else
+              decoded_text = decoded_text.encode('utf-16', invalid: :replace, undef: :replace)
+                .encode('utf-8')
+            end
+          end
+
+          # remove BOM which 2008R2 applies
+          stream = { n.attributes['Name'].to_sym => decoded_text.sub('\xEF\xBB\xBF', '') }
           output[:data] << stream
           yield stream[:stdout], stream[:stderr] if block_given?
         end
