@@ -37,6 +37,7 @@ module WinRM
   end
 end
 
+require 'winrm/psrp_message'
 require 'winrm/output'
 require 'winrm/helpers/iso8601_duration'
 require 'winrm/helpers/uuid'
