@@ -33,7 +33,6 @@ module ConnectionHelper
       config[:options][:ssl_peer_fingerprint] = ENV['winrm_cert']
     end
     config[:endpoint] = ENV['winrm_endpoint'] if ENV['winrm_endpoint']
-    config[:auth_type] = ENV['winrm_auth_type'] if ENV['winrm_auth_type']
   end
 
   def merge_config_option_from_environment(config, key)
