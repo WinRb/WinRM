@@ -50,7 +50,7 @@ module WinRM
           "#{NS_WSMAN_DMTF}:Locale/" => '',
           "#{NS_WSMAN_MSFT}:DataLocale/" => '',
           "#{NS_WSMAN_DMTF}:OperationTimeout" =>
-            Iso8601Duration.sec_to_dur(session_opts[:timeout]),
+            Iso8601Duration.sec_to_dur(session_opts[:operation_timeout]),
           :attributes! => {
             "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => { 'mustUnderstand' => true },
             "#{NS_WSMAN_DMTF}:Locale/" => {
