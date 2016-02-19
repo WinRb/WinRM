@@ -74,9 +74,9 @@ module WinRM
       # specified in hex, e.g. 0x00010002.
       # @param payload [String] The PSRP payload as serialized XML
       def initialize(id, shell_id, command_id, message_type, payload)
-        raise 'shell_id cannot be nil' if shell_id.nil?
-        raise 'invalid message type' unless MESSAGE_TYPES.include?(message_type)
-        raise 'payload cannot be nil' if payload.nil?
+        fail 'shell_id cannot be nil' if shell_id.nil?
+        fail 'invalid message type' unless MESSAGE_TYPES.include?(message_type)
+        fail 'payload cannot be nil' if payload.nil?
         @id = id
         @shell_id = shell_id
         @command_id = command_id
@@ -87,19 +87,20 @@ module WinRM
       # Returns the raw PSRP message bytes ready for transfer to Windows inside a
       # WinRM message.
       # @return [Array<Byte>] Unencoded raw byte array of the PSRP message.
+      # rubocop:disable Metrics/AbcSize
       def bytes
-        raise "payload cannot be greater than #{BLOB_MAX_LEN} bytes" if blob_bytes.length > BLOB_MAX_LEN
+        fail "payload must be less than #{BLOB_MAX_LEN} bytes" if blob_bytes.length > BLOB_MAX_LEN
         message = message_id
         message += fragment_id
         message += end_start_fragment
-        message += blob_length
-        message += blob_destination
+        message += blob_length + blob_destination
         message += message_type
         message += runspace_pool_id
         message += pipeline_id
-        message += byte_order_mark
-        message += blob_bytes
+        message += byte_order_mark + blob_bytes
+        message
       end
+      # rubocop:enable Metrics/AbcSize
 
       private
 
@@ -145,15 +146,15 @@ module WinRM
       end
 
       def int64be(int64)
-        [int64 >> 32, int64 & 0x00000000ffffffff].pack("N2").unpack("C8")
+        [int64 >> 32, int64 & 0x00000000ffffffff].pack('N2').unpack('C8')
       end
 
       def int16be(int16)
-        [int16].pack("N").unpack("C4")
+        [int16].pack('N').unpack('C4')
       end
 
       def int16le(int16)
-        [int16].pack("N").unpack("C4").reverse
+        [int16].pack('N').unpack('C4').reverse
       end
     end
   end
