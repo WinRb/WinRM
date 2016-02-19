@@ -149,8 +149,6 @@ module WinRM
       shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
       logger.debug("[WinRM] remote shell #{shell_id} is open on #{@session_opts[:endpoint]}")
 
-      #keep_alive(shell_id)
-
       if block_given?
         begin
           yield shell_id
@@ -160,22 +158,6 @@ module WinRM
       else
         shell_id
       end
-    end
-
-    def keep_alive(shell_id)
-      h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => { "#{NS_WSMAN_DMTF}:Option" => "TRUE",
-        :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => 'WSMAN_CMDSHELL_OPTION_KEEPALIVE'}}}}
-      body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout' }
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-      builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_receive,h_opts,selector_shell_id(shell_id))) }
-        env.tag! :env, :Body do |env_body|
-          env_body.tag!("#{NS_WIN_SHELL}:Receive") { |cl| cl << Gyoku.xml(body) }
-        end
-      end
-
-      resp_doc = send_message(builder.target!)
     end
 
     # Run a command on a machine with an open shell
@@ -193,16 +175,16 @@ module WinRM
         :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_CONSOLEMODE_STDIN','WINRS_SKIP_CMD_SHELL']}}}
       }
 
-      argument_xml = %{<Obj RefId="0"><MS><Obj N="PowerShell" RefId="1"><MS><Obj N="Cmds" RefId="2"><TN RefId="0"><T>System.Collections.Generic.List`1[[System.Management.Automation.PSObject, System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]]</T><T>System.Object</T></TN><LST><Obj RefId="3"><MS><S N="Cmd">Invoke-expression</S><B N="IsScript">false</B><Nil N="UseLocalScope" /><Obj N="MergeMyResult" RefId="4"><TN RefId="1"><T>System.Management.Automation.Runspaces.PipelineResultTypes</T><T>System.Enum</T><T>System.ValueType</T><T>System.Object</T></TN><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeToResult" RefId="5"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergePreviousResults" RefId="6"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeError" RefId="7"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeWarning" RefId="8"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeVerbose" RefId="9"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeDebug" RefId="10"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="Args" RefId="11"><TNRef RefId="0" /><LST><Obj RefId="12"><MS><S N="N">-Command</S><Nil N="V" /></MS></Obj><Obj RefId="13"><MS><Nil N="N" /><S N="V">#{command}</S></MS></Obj></LST></Obj></MS></Obj><Obj RefId="14"><MS><S N="Cmd">Out-string</S><B N="IsScript">false</B><Nil N="UseLocalScope" /><Obj N="MergeMyResult" RefId="15"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeToResult" RefId="16"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergePreviousResults" RefId="17"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeError" RefId="18"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeWarning" RefId="19"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeVerbose" RefId="20"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="MergeDebug" RefId="21"><TNRef RefId="1" /><ToString>None</ToString><I32>0</I32></Obj><Obj N="Args" RefId="22"><TNRef RefId="0" /><LST /></Obj></MS></Obj></LST></Obj><B N="IsNested">false</B><Nil N="History" /><B N="RedirectShellErrorOutputPipe">true</B></MS></Obj><B N="NoInput">true</B><Obj N="ApartmentState" RefId="23"><TN RefId="2"><T>System.Threading.ApartmentState</T><T>System.Enum</T><T>System.ValueType</T><T>System.Object</T></TN><ToString>Unknown</ToString><I32>2</I32></Obj><Obj N="RemoteStreamOptions" RefId="24"><TN RefId="3"><T>System.Management.Automation.RemoteStreamOptions</T><T>System.Enum</T><T>System.ValueType</T><T>System.Object</T></TN><ToString>0</ToString><I32>0</I32></Obj><B N="AddToHistory">true</B><Obj N="HostInfo" RefId="25"><MS><B N="_isHostNull">true</B><B N="_isHostUINull">true</B><B N="_isHostRawUINull">true</B><B N="_useRunspaceHost">true</B></MS></Obj><B N="IsNested">false</B></MS></Obj>}
-      
-      b64_arguments = encode_bytes(psrp_message(shell_id, command_id, '00021006', argument_xml))
-
-      body = { "#{NS_WIN_SHELL}:Command" => "Invoke-Expression", "#{NS_WIN_SHELL}:Arguments" => b64_arguments }
+      #create_pipline = PSRP::MessageFactory.create_pipeline_message(3, shell_id, command_id, command)
+      #b64_arguments = encode_bytes(create_pipline.bytes)
+      #body = { "#{NS_WIN_SHELL}:Command" => "Invoke-Expression", "#{NS_WIN_SHELL}:Arguments" => b64_arguments }
+      body = { "#{NS_WIN_SHELL}:Command" => "\"#{command}\"", "#{NS_WIN_SHELL}:Arguments" => arguments}
 
       builder = Builder::XmlMarkup.new
       builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_command,selector_shell_id(shell_id))) }
+        #env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_command,selector_shell_id(shell_id))) }
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd, action_command, h_opts, selector_shell_id(shell_id))) }
         env.tag!(:env, :Body) do |env_body|
           env_body.tag!("#{NS_WIN_SHELL}:CommandLine", {"CommandId" => command_id}) { |cl| cl << Gyoku.xml(body) }
         end
@@ -210,6 +192,8 @@ module WinRM
 
       # Grab the command element and unescape any single quotes - issue 69
       xml = builder.target!
+      escaped_cmd = /<#{NS_WIN_SHELL}:Command>(.+)<\/#{NS_WIN_SHELL}:Command>/m.match(xml)[1]
+      xml[escaped_cmd] = escaped_cmd.gsub(/&#39;/, "'")
 
       resp_doc = send_message(xml)
       command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
@@ -255,13 +239,23 @@ module WinRM
     #   is either :stdout or :stderr.  The reason it is in an Array so so we can get the output in the order it ocurrs on
     #   the console.
     def get_command_output(shell_id, command_id, &block)
+      h_opts = {
+        "#{NS_WSMAN_DMTF}:OptionSet" => {
+          "#{NS_WSMAN_DMTF}:Option" => "TRUE", :attributes! => {
+            "#{NS_WSMAN_DMTF}:Option" => {
+              'Name' => 'WSMAN_CMDSHELL_OPTION_KEEPALIVE'
+            }
+          }
+        }
+      }
+
       body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout',
         :attributes! => {"#{NS_WIN_SHELL}:DesiredStream" => {'CommandId' => command_id}}}
 
       builder = Builder::XmlMarkup.new
       builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_receive,selector_shell_id(shell_id))) }
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd, action_receive, h_opts, selector_shell_id(shell_id))) }
         env.tag!(:env, :Body) do |env_body|
           env_body.tag!("#{NS_WIN_SHELL}:Receive") { |cl| cl << Gyoku.xml(body) }
         end
@@ -464,110 +458,6 @@ module WinRM
 
     def send_message(message)
       @xfer.send_request(message)
-    end
-    
-
-    # Helper methods for SOAP Headers
-
-    def resource_uri_cmd
-      {"#{NS_WSMAN_DMTF}:ResourceURI" => 'http://schemas.microsoft.com/powershell/Microsoft.PowerShell',
-        :attributes! => {"#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => true}}}
-    end
-
-    def resource_uri_wmi(namespace = 'root/cimv2/*')
-      {"#{NS_WSMAN_DMTF}:ResourceURI" => "http://schemas.microsoft.com/wbem/wsman/1/wmi/#{namespace}",
-        :attributes! => {"#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => true}}}
-    end
-
-    def action_delete
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Delete',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def action_command
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Command',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def action_receive
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Receive',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def action_signal
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Signal',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def action_send
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Send',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def action_enumerate
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/enumeration/Enumerate',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def selector_shell_id(shell_id)
-      {"#{NS_WSMAN_DMTF}:SelectorSet" =>
-        {"#{NS_WSMAN_DMTF}:Selector" => shell_id, :attributes! => {"#{NS_WSMAN_DMTF}:Selector" => {'Name' => 'ShellId'}}}
-      }
-    end
-
-    def uuid_to_bytes(uuid)
-      return [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] if uuid.nil?
-
-      b=[]
-      frag_num = 0
-      uuid.split("-").each do |frag|
-        if frag_num < 3
-          len = frag.length-1
-          while len > 0 do
-            b << frag[len-1..len].to_i(16)
-            len = len - 2
-          end
-        else
-          len = 0
-          while len < frag.length do
-            b << frag[len..len+1].to_i(16)
-            len = len + 2
-          end
-        end
-        frag_num += 1
-      end
-      b
-    end
-
-    def psrp_message(shell_id, command_id, message_type, payload)
-      payload_bytes = payload.force_encoding('utf-8').bytes
-
-      message = [0,0,0,0]
-      message << 0
-      message << 0
-      message << 0
-      message << rand(255)
-      # fragmentId
-      message += [0,0,0,0,0,0,0,0]
-      # end/start fragment
-      message << 3
-      # blob length
-      message += [payload_bytes.length + 43].pack("N").unpack("cccc")
-      # blob
-      # destination
-      message += [2,0,0,0]
-      # type
-      message += [message_type.to_i(16)].pack("N").unpack("cccc").reverse
-      #shell
-      message += uuid_to_bytes(shell_id)
-      #command
-      message += uuid_to_bytes(command_id)
-      # BOM
-      message += [239,187,191]
-      #variable
-      message += payload_bytes
-
-      message
     end
 
     def encode_bytes(bytes)

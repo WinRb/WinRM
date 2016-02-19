@@ -33,8 +33,7 @@ module WinRM
 
       def initialize(session_opts, shell_opts = {})
         @session_opts = session_opts
-        @shell_uri = opt_or_default(shell_opts, :shell_uri,
-                                    'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd')
+        @shell_uri = opt_or_default(shell_opts, :shell_uri, RESOURCE_URI_CMD)
         @i_stream = opt_or_default(shell_opts, :i_stream, 'stdin')
         @o_stream = opt_or_default(shell_opts, :o_stream, 'stdout stderr')
         @codepage = opt_or_default(shell_opts, :codepage, UTF8_CODE_PAGE)
