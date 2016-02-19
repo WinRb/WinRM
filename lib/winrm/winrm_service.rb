@@ -19,7 +19,7 @@ require 'rexml/document'
 require 'securerandom'
 require 'winrm/command_executor'
 require_relative 'helpers/powershell_script'
-require_relative 'WSMV/create_shell_message'
+require_relative 'WSMV/create_shell'
 
 module WinRM
   # This is the main class that does the SOAP request/response logic. There are a few helper
@@ -127,7 +127,7 @@ module WinRM
     def open_shell(shell_opts = {}, &block)
       shell_id = SecureRandom.uuid.to_s.upcase
       logger.debug("[WinRM] opening remote shell on #{@endpoint}")
-      msg = WSMV::CreateShellMessage.new(session_opts, shell_opts)
+      msg = WSMV::CreateShell.new(session_opts, shell_opts)
       resp_doc = send_message(msg.build)
       # CMD shell returns a new shell_id
       shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text

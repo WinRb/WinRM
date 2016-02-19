@@ -1,6 +1,6 @@
 # encoding: UTF-8
 
-require_relative '../lib/winrm/wsmv/create_shell_message'
+require_relative '../lib/winrm/wsmv/create_shell'
 
 describe 'CreateShell', unit: true do
   context 'default session options' do
@@ -8,11 +8,11 @@ describe 'CreateShell', unit: true do
       endpoint: 'http://localhost:5985/wsman',
       max_envelope_size: 153600,
       session_id: '05A2622B-B842-4EB8-8A78-0225C8A993DF',
-      timeout: 60,
+      operation_timeout: 60,
       locale: 'en-US'
     }
     it 'creates a well formed message' do
-      xml = WinRM::WSMV::CreateShellMessage.new(session_opts).build
+      xml = WinRM::WSMV::CreateShell.new(session_opts).build
       expect(xml).to include('<w:OperationTimeout>PT60S</w:OperationTimeout>')
       expect(xml).to include('<w:Locale xml:lang="en-US" mustUnderstand="false"/>')
       expect(xml).to include('<p:DataLocale xml:lang="en-US" mustUnderstand="false"/>')
@@ -31,7 +31,7 @@ describe 'CreateShell', unit: true do
       let(:shell_opts) { Hash.new }
       it 'includes environemt vars' do
         shell_opts[:env_vars] = { 'FOO' => 'BAR' }
-        xml = WinRM::WSMV::CreateShellMessage.new(session_opts, shell_opts).build
+        xml = WinRM::WSMV::CreateShell.new(session_opts, shell_opts).build
         expect(xml).to include(
           '<rsp:Environment><rsp:Variable Name="FOO">BAR</rsp:Variable></rsp:Environment>')
       end
