@@ -20,12 +20,13 @@ require 'securerandom'
 require_relative 'command_executor'
 require_relative 'command_output_decoder'
 require_relative 'helpers/powershell_script'
+require_relative 'WSMV/create_shell_message'
 
 module WinRM
   # This is the main class that does the SOAP request/response logic. There are a few helper
   # classes, but pretty much everything comes through here first.
   class WinRMWebService
-    DEFAULT_TIMEOUT = 'PT60S'
+    DEFAULT_TIMEOUT = 60
     DEFAULT_MAX_ENV_SIZE = 153600
     DEFAULT_LOCALE = 'en-US'
 
@@ -43,7 +44,7 @@ module WinRM
     def initialize(endpoint, transport = :kerberos, opts = {})
       @session_id = SecureRandom.uuid.to_s.upcase
       @endpoint = endpoint
-      @timeout = DEFAULT_TIMEOUT
+      @operation_timeout = DEFAULT_TIMEOUT
       @max_env_sz = DEFAULT_MAX_ENV_SIZE
       @locale = DEFAULT_LOCALE
       @output_decoder = CommandOutputDecoder.new
@@ -89,11 +90,16 @@ module WinRM
     # @param [Fixnum] The number of seconds to set the Ruby receive timeout
     # @return [String] The ISO 8601 formatted operation timeout
     def set_timeout(op_timeout_sec, receive_timeout_sec=nil)
-      @timeout = Iso8601Duration.sec_to_dur(op_timeout_sec)
+      @operation_timeout = op_timeout_sec
       @xfer.receive_timeout = receive_timeout_sec || op_timeout_sec + 10
-      @timeout
+      Iso8601Duration.sec_to_dur(@operation_timeout)
     end
     alias :op_timeout :set_timeout
+
+    # The operation timeout
+    def timeout
+      @operation_timeout
+    end
 
     # Max envelope size
     # @see http://msdn.microsoft.com/en-us/library/ee916127(v=PROT.13).aspx
@@ -113,52 +119,29 @@ module WinRM
     # @param [Hash<optional>] shell_opts additional shell options you can pass
     # @option shell_opts [String] :i_stream Which input stream to open.  Leave this alone unless you know what you're doing (default: stdin)
     # @option shell_opts [String] :o_stream Which output stream to open.  Leave this alone unless you know what you're doing (default: stdout stderr)
-    # @option shell_opts [String] :working_directory the directory to create the shell in
+    # @option shell_opts [String] :working_directory The directory to create the shell in
+    # @option shell_opts [String] :codepage The shell code page, defaults to 65001 (UTF-8)
+    # @option shell_opts [String] :noprofile The WINRS_NOPROFILE setting, defaults to 'FALSE'
+    # @option shell_opts [Fixnum] :idle_timeout The shell IdleTimeOut in seconds
     # @option shell_opts [Hash] :env_vars environment variables to set for the shell. For instance;
     #   :env_vars => {:myvar1 => 'val1', :myvar2 => 'var2'}
-    # @return [String] The ShellId from the SOAP response.  This is our open shell instance on the remote machine.
+    # @return [String] The ShellId from the SOAP response. This is our open shell instance on the remote machine.
     def open_shell(shell_opts = {}, &block)
-      logger.debug("[WinRM] opening remote shell on #{@endpoint}")
-
       shell_id = SecureRandom.uuid.to_s.upcase
-
-      session_capabilities = PSRP::MessageFactory.session_capability_message(1, shell_id).bytes
-      runspace_init = PSRP::MessageFactory.init_runspace_pool_message(2, shell_id).bytes
-      creation_xml = encode_bytes(session_capabilities + runspace_init)
-
-      i_stream = shell_opts.has_key?(:i_stream) ? shell_opts[:i_stream] : 'stdin pr'
-      o_stream = shell_opts.has_key?(:o_stream) ? shell_opts[:o_stream] : 'stdout'
-      codepage = shell_opts.has_key?(:codepage) ? shell_opts[:codepage] : 65001 # utf8 as default codepage (from https://msdn.microsoft.com/en-us/library/dd317756(VS.85).aspx)
-      noprofile = shell_opts.has_key?(:noprofile) ? shell_opts[:noprofile] : 'FALSE'
-      h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => { "#{NS_WSMAN_DMTF}:Option" => 2.3,
-        :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => 'protocolversion', 'MustComply' => 'true'}}}, :attributes! => {"#{NS_WSMAN_DMTF}:OptionSet" => {'env:mustUnderstand' => 'true'}}}
-      shell_body = {
-        "#{NS_WIN_SHELL}:InputStreams" => i_stream,
-        "#{NS_WIN_SHELL}:OutputStreams" => o_stream,
-        "creationXml" => creation_xml, :attributes! => { "creationXml" => {"xmlns" => "http://schemas.microsoft.com/powershell"}}
+      logger.debug("[WinRM] opening remote shell #{shell_id} on #{@endpoint}")
+      session_opts = {
+        endpoint: @endpoint,
+        max_envelope_size: @max_env_sz,
+        session_id: @session_id,
+        operation_timeout: @operation_timeout,
+        locale: @locale
       }
-      if(shell_opts.has_key?(:env_vars) && shell_opts[:env_vars].is_a?(Hash))
-        keys = shell_opts[:env_vars].keys
-        vals = shell_opts[:env_vars].values
-        shell_body["#{NS_WIN_SHELL}:Environment"] = {
-          "#{NS_WIN_SHELL}:Variable" => vals,
-          :attributes! => {"#{NS_WIN_SHELL}:Variable" => {'Name' => keys}}
-        }
-      end
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-      builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_create,h_opts)) }
-        env.tag! :env, :Body do |body|
-          body.tag!("#{NS_WIN_SHELL}:Shell", { "ShellId" => shell_id}) { |s| s << Gyoku.xml(shell_body) }
-        end
-      end
-
-      resp_doc = send_message(builder.target!)
+      msg = WSMV::CreateShellMessage.new(session_opts, shell_opts)
+      resp_doc = send_message(msg.build)
       shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
       logger.debug("[WinRM] remote shell #{shell_id} is open on #{@endpoint}")
 
-      keep_alive(shell_id)
+      #keep_alive(shell_id)
 
       if block_given?
         begin
@@ -478,7 +461,7 @@ module WinRM
         "#{NS_ADDRESSING}:MessageID" => "uuid:#{SecureRandom.uuid.to_s.upcase}",
         "#{NS_WSMAN_DMTF}:Locale/" => '',
         "#{NS_WSMAN_MSFT}:DataLocale/" => '',
-        "#{NS_WSMAN_DMTF}:OperationTimeout" => @timeout,
+        "#{NS_WSMAN_DMTF}:OperationTimeout" => Iso8601Duration.sec_to_dur(@operation_timeout),
         :attributes! => {
           "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => {'mustUnderstand' => true},
           "#{NS_WSMAN_DMTF}:Locale/" => {'xml:lang' => @locale, 'mustUnderstand' => false},
