@@ -40,7 +40,7 @@ module WinRM
         @codepage = opt_or_default(shell_opts, :codepage, UTF8_CODE_PAGE)
         @noprofile = opt_or_default(shell_opts, :noprofile, 'FALSE')
         @working_directory = opt_or_default(shell_opts, :working_directory)
-        @idle_timeout_sec = opt_or_default(shell_opts, :idle_timeout_sec)
+        @idle_timeout = opt_or_default(shell_opts, :idle_timeout)
         @env_vars = opt_or_default(shell_opts, :env_vars)
       end
 
@@ -69,8 +69,10 @@ module WinRM
           "#{NS_WIN_SHELL}:OutputStreams" => @o_stream
         }
         body["#{NS_WIN_SHELL}:WorkingDirectory"] = @working_directory if @working_directory
-        if @idle_timeout_sec
-          body["#{NS_WIN_SHELL}:IdleTimeOut"] = Iso8601Duration.sec_to_dur(@idle_timeout_sec)
+        if @idle_timeout
+          # backwards compat - idle_timeout as an Iso8601Duration string
+          timeout = @idle_timeout.is_a?(String) ? @idle_timeout : Iso8601Duration.sec_to_dur(@idle_timeout)
+          body["#{NS_WIN_SHELL}:IdleTimeOut"] = timeout
         end
         body["#{NS_WIN_SHELL}:Environment"] = environment_vars_body if @env_vars
         body
