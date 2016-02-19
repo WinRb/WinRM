@@ -131,16 +131,10 @@ module WinRM
     # @return [String] The ShellId from the SOAP response. This is our open shell instance on the remote machine.
     def open_shell(shell_opts = {}, &block)
       shell_id = SecureRandom.uuid.to_s.upcase
-      logger.debug("[WinRM] opening remote shell #{shell_id} on #{@endpoint}")
-      session_opts = {
-        endpoint: @endpoint,
-        max_envelope_size: @max_env_sz,
-        session_id: @session_id,
-        operation_timeout: @operation_timeout,
-        locale: @locale
-      }
+      logger.debug("[WinRM] opening remote shell on #{@endpoint}")
       msg = WSMV::CreateShellMessage.new(session_opts, shell_opts)
       resp_doc = send_message(msg.build)
+      # CMD shell returns a new shell_id
       shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
       logger.debug("[WinRM] remote shell #{shell_id} is open on #{@endpoint}")
 
@@ -428,6 +422,16 @@ module WinRM
     end
 
     private
+
+    def session_opts
+      {
+        endpoint: @endpoint,
+        max_envelope_size: @max_env_sz,
+        session_id: @session_id,
+        operation_timeout: @operation_timeout,
+        locale: @locale
+      }
+    end
 
     def setup_logger
       @logger = Logging.logger[self]
