@@ -20,12 +20,13 @@ require 'securerandom'
 require_relative 'command_executor'
 require_relative 'command_output_decoder'
 require_relative 'helpers/powershell_script'
+require_relative 'WSMV/create_shell_message'
 
 module WinRM
   # This is the main class that does the SOAP request/response logic. There are a few helper
   # classes, but pretty much everything comes through here first.
   class WinRMWebService
-    DEFAULT_TIMEOUT = 'PT60S'
+    DEFAULT_TIMEOUT = 60
     DEFAULT_MAX_ENV_SIZE = 153600
     DEFAULT_LOCALE = 'en-US'
 
@@ -43,7 +44,7 @@ module WinRM
     def initialize(endpoint, transport = :kerberos, opts = {})
       @session_id = SecureRandom.uuid.to_s.upcase
       @endpoint = endpoint
-      @timeout = DEFAULT_TIMEOUT
+      @operation_timeout = DEFAULT_TIMEOUT
       @max_env_sz = DEFAULT_MAX_ENV_SIZE
       @locale = DEFAULT_LOCALE
       @output_decoder = CommandOutputDecoder.new
@@ -92,11 +93,16 @@ module WinRM
     # @param [Fixnum] The number of seconds to set the Ruby receive timeout
     # @return [String] The ISO 8601 formatted operation timeout
     def set_timeout(op_timeout_sec, receive_timeout_sec=nil)
-      @timeout = Iso8601Duration.sec_to_dur(op_timeout_sec)
+      @operation_timeout = op_timeout_sec
       @xfer.receive_timeout = receive_timeout_sec || op_timeout_sec + 10
-      @timeout
+      Iso8601Duration.sec_to_dur(@operation_timeout)
     end
     alias :op_timeout :set_timeout
+
+    # The operation timeout
+    def timeout
+      @operation_timeout
+    end
 
     # Max envelope size
     # @see http://msdn.microsoft.com/en-us/library/ee916127(v=PROT.13).aspx
@@ -116,52 +122,29 @@ module WinRM
     # @param [Hash<optional>] shell_opts additional shell options you can pass
     # @option shell_opts [String] :i_stream Which input stream to open.  Leave this alone unless you know what you're doing (default: stdin)
     # @option shell_opts [String] :o_stream Which output stream to open.  Leave this alone unless you know what you're doing (default: stdout stderr)
-    # @option shell_opts [String] :working_directory the directory to create the shell in
+    # @option shell_opts [String] :working_directory The directory to create the shell in
+    # @option shell_opts [String] :codepage The shell code page, defaults to 65001 (UTF-8)
+    # @option shell_opts [String] :noprofile The WINRS_NOPROFILE setting, defaults to 'FALSE'
+    # @option shell_opts [Fixnum] :idle_timeout The shell IdleTimeOut in seconds
     # @option shell_opts [Hash] :env_vars environment variables to set for the shell. For instance;
     #   :env_vars => {:myvar1 => 'val1', :myvar2 => 'var2'}
-    # @return [String] The ShellId from the SOAP response.  This is our open shell instance on the remote machine.
+    # @return [String] The ShellId from the SOAP response. This is our open shell instance on the remote machine.
     def open_shell(shell_opts = {}, &block)
-      logger.debug("[WinRM] opening remote shell on #{@endpoint}")
-
       shell_id = SecureRandom.uuid.to_s.upcase
-
-      session_capabilities = psrp_message(1, shell_id, nil, '00010002', %{<Obj RefId="0"><MS><Version N="protocolversion">2.3</Version><Version N="PSVersion">2.0</Version><Version N="SerializationVersion">1.1.0.1</Version></MS></Obj>})
-      runspace_init = psrp_message(2, shell_id, nil, '00010004', %{<Obj RefId="0"><MS><I32 N="MinRunspaces">1</I32><I32 N="MaxRunspaces">1</I32><Obj N="PSThreadOptions" RefId="1"><TN RefId="0"><T>System.Management.Automation.Runspaces.PSThreadOptions</T><T>System.Enum</T><T>System.ValueType</T><T>System.Object</T></TN><ToString>Default</ToString><I32>0</I32></Obj><Obj N="ApartmentState" RefId="2"><TN RefId="1"><T>System.Threading.ApartmentState</T><T>System.Enum</T><T>System.ValueType</T><T>System.Object</T></TN><ToString>Unknown</ToString><I32>2</I32></Obj><Obj N="ApplicationArguments" RefId="3"><TN RefId="2"><T>System.Management.Automation.PSPrimitiveDictionary</T><T>System.Collections.Hashtable</T><T>System.Object</T></TN><DCT><En><S N="Key">PSVersionTable</S><Obj N="Value" RefId="4"><TNRef RefId="2" /><DCT><En><S N="Key">PSVersion</S><Version N="Value">5.0.11082.1000</Version></En><En><S N="Key">PSCompatibleVersions</S><Obj N="Value" RefId="5"><TN RefId="3"><T>System.Version[]</T><T>System.Array</T><T>System.Object</T></TN><LST><Version>1.0</Version><Version>2.0</Version><Version>3.0</Version><Version>4.0</Version><Version>5.0.11082.1000</Version></LST></Obj></En><En><S N="Key">CLRVersion</S><Version N="Value">4.0.30319.42000</Version></En><En><S N="Key">BuildVersion</S><Version N="Value">10.0.11082.1000</Version></En><En><S N="Key">WSManStackVersion</S><Version N="Value">3.0</Version></En><En><S N="Key">PSRemotingProtocolVersion</S><Version N="Value">2.3</Version></En><En><S N="Key">SerializationVersion</S><Version N="Value">1.1.0.1</Version></En></DCT></Obj></En></DCT></Obj><Obj N="HostInfo" RefId="6"><MS><Obj N="_hostDefaultData" RefId="7"><MS><Obj N="data" RefId="8"><TN RefId="4"><T>System.Collections.Hashtable</T><T>System.Object</T></TN><DCT><En><I32 N="Key">9</I32><Obj N="Value" RefId="9"><MS><S N="T">System.String</S><S N="V">C:\dev\kitchen-vagrant</S></MS></Obj></En><En><I32 N="Key">8</I32><Obj N="Value" RefId="10"><MS><S N="T">System.Management.Automation.Host.Size</S><Obj N="V" RefId="11"><MS><I32 N="width">199</I32><I32 N="height">52</I32></MS></Obj></MS></Obj></En><En><I32 N="Key">7</I32><Obj N="Value" RefId="12"><MS><S N="T">System.Management.Automation.Host.Size</S><Obj N="V" RefId="13"><MS><I32 N="width">80</I32><I32 N="height">52</I32></MS></Obj></MS></Obj></En><En><I32 N="Key">6</I32><Obj N="Value" RefId="14"><MS><S N="T">System.Management.Automation.Host.Size</S><Obj N="V" RefId="15"><MS><I32 N="width">80</I32><I32 N="height">25</I32></MS></Obj></MS></Obj></En><En><I32 N="Key">5</I32><Obj N="Value" RefId="16"><MS><S N="T">System.Management.Automation.Host.Size</S><Obj N="V" RefId="17"><MS><I32 N="width">80</I32><I32 N="height">9999</I32></MS></Obj></MS></Obj></En><En><I32 N="Key">4</I32><Obj N="Value" RefId="18"><MS><S N="T">System.Int32</S><I32 N="V">25</I32></MS></Obj></En><En><I32 N="Key">3</I32><Obj N="Value" RefId="19"><MS><S N="T">System.Management.Automation.Host.Coordinates</S><Obj N="V" RefId="20"><MS><I32 N="x">0</I32><I32 N="y">9974</I32></MS></Obj></MS></Obj></En><En><I32 N="Key">2</I32><Obj N="Value" RefId="21"><MS><S N="T">System.Management.Automation.Host.Coordinates</S><Obj N="V" RefId="22"><MS><I32 N="x">0</I32><I32 N="y">9998</I32></MS></Obj></MS></Obj></En><En><I32 N="Key">1</I32><Obj N="Value" RefId="23"><MS><S N="T">System.ConsoleColor</S><I32 N="V">0</I32></MS></Obj></En><En><I32 N="Key">0</I32><Obj N="Value" RefId="24"><MS><S N="T">System.ConsoleColor</S><I32 N="V">7</I32></MS></Obj></En></DCT></Obj></MS></Obj><B N="_isHostNull">false</B><B N="_isHostUINull">false</B><B N="_isHostRawUINull">false</B><B N="_useRunspaceHost">false</B></MS></Obj></MS></Obj>})
-      creation_xml = encode_bytes(session_capabilities + runspace_init)
-
-      i_stream = shell_opts.has_key?(:i_stream) ? shell_opts[:i_stream] : 'stdin pr'
-      o_stream = shell_opts.has_key?(:o_stream) ? shell_opts[:o_stream] : 'stdout'
-      codepage = shell_opts.has_key?(:codepage) ? shell_opts[:codepage] : 65001 # utf8 as default codepage (from https://msdn.microsoft.com/en-us/library/dd317756(VS.85).aspx)
-      noprofile = shell_opts.has_key?(:noprofile) ? shell_opts[:noprofile] : 'FALSE'
-      h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => { "#{NS_WSMAN_DMTF}:Option" => 2.3,
-        :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => 'protocolversion', 'MustComply' => 'true'}}}, :attributes! => {"#{NS_WSMAN_DMTF}:OptionSet" => {'env:mustUnderstand' => 'true'}}}
-      shell_body = {
-        "#{NS_WIN_SHELL}:InputStreams" => i_stream,
-        "#{NS_WIN_SHELL}:OutputStreams" => o_stream,
-        "creationXml" => creation_xml, :attributes! => { "creationXml" => {"xmlns" => "http://schemas.microsoft.com/powershell"}}
+      logger.debug("[WinRM] opening remote shell #{shell_id} on #{@endpoint}")
+      session_opts = {
+        endpoint: @endpoint,
+        max_envelope_size: @max_env_sz,
+        session_id: @session_id,
+        operation_timeout: @operation_timeout,
+        locale: @locale
       }
-      if(shell_opts.has_key?(:env_vars) && shell_opts[:env_vars].is_a?(Hash))
-        keys = shell_opts[:env_vars].keys
-        vals = shell_opts[:env_vars].values
-        shell_body["#{NS_WIN_SHELL}:Environment"] = {
-          "#{NS_WIN_SHELL}:Variable" => vals,
-          :attributes! => {"#{NS_WIN_SHELL}:Variable" => {'Name' => keys}}
-        }
-      end
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-      builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_create,h_opts)) }
-        env.tag! :env, :Body do |body|
-          body.tag!("#{NS_WIN_SHELL}:Shell", { "ShellId" => shell_id}) { |s| s << Gyoku.xml(shell_body) }
-        end
-      end
-
-      resp_doc = send_message(builder.target!)
+      msg = WSMV::CreateShellMessage.new(session_opts, shell_opts)
+      resp_doc = send_message(msg.build)
       shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
       logger.debug("[WinRM] remote shell #{shell_id} is open on #{@endpoint}")
 
-      keep_alive(shell_id)
+      #keep_alive(shell_id)
 
       if block_given?
         begin
@@ -483,7 +466,7 @@ module WinRM
         "#{NS_WSMAN_MSFT}:SessionId" => "uuid:#{@session_id}",
         "#{NS_WSMAN_DMTF}:Locale/" => '',
         "#{NS_WSMAN_MSFT}:DataLocale/" => '',
-        "#{NS_WSMAN_DMTF}:OperationTimeout" => @timeout,
+        "#{NS_WSMAN_DMTF}:OperationTimeout" => Iso8601Duration.sec_to_dur(@operation_timeout),
         :attributes! => {
           "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => {'mustUnderstand' => true},
           "#{NS_WSMAN_DMTF}:Locale/" => {'xml:lang' => @locale, 'mustUnderstand' => false},
