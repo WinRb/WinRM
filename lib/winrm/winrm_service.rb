@@ -145,8 +145,6 @@ module WinRM
       shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
       logger.debug("[WinRM] remote shell #{shell_id} is open on #{@session_opts[:endpoint]}")
 
-      #keep_alive(shell_id)
-
       if block_given?
         begin
           yield shell_id
@@ -156,22 +154,6 @@ module WinRM
       else
         shell_id
       end
-    end
-
-    def keep_alive(shell_id)
-      h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => { "#{NS_WSMAN_DMTF}:Option" => "TRUE",
-        :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => 'WSMAN_CMDSHELL_OPTION_KEEPALIVE'}}}}
-      body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout' }
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-      builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_receive,h_opts,selector_shell_id(shell_id))) }
-        env.tag! :env, :Body do |env_body|
-          env_body.tag!("#{NS_WIN_SHELL}:Receive") { |cl| cl << Gyoku.xml(body) }
-        end
-      end
-
-      resp_doc = send_message(builder.target!)
     end
 
     # Run a command on a machine with an open shell
@@ -189,15 +171,16 @@ module WinRM
         :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_CONSOLEMODE_STDIN','WINRS_SKIP_CMD_SHELL']}}}
       }
 
-      create_pipline = PSRP::MessageFactory.create_pipeline_message(3, shell_id, command_id, command)
-      b64_arguments = encode_bytes(create_pipline.bytes)
-
-      body = { "#{NS_WIN_SHELL}:Command" => "Invoke-Expression", "#{NS_WIN_SHELL}:Arguments" => b64_arguments }
+      #create_pipline = PSRP::MessageFactory.create_pipeline_message(3, shell_id, command_id, command)
+      #b64_arguments = encode_bytes(create_pipline.bytes)
+      #body = { "#{NS_WIN_SHELL}:Command" => "Invoke-Expression", "#{NS_WIN_SHELL}:Arguments" => b64_arguments }
+      body = { "#{NS_WIN_SHELL}:Command" => "\"#{command}\"", "#{NS_WIN_SHELL}:Arguments" => arguments}
 
       builder = Builder::XmlMarkup.new
       builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_command,selector_shell_id(shell_id))) }
+        #env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_command,selector_shell_id(shell_id))) }
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd, action_command, h_opts, selector_shell_id(shell_id))) }
         env.tag!(:env, :Body) do |env_body|
           env_body.tag!("#{NS_WIN_SHELL}:CommandLine", {"CommandId" => command_id}) { |cl| cl << Gyoku.xml(body) }
         end
@@ -205,6 +188,8 @@ module WinRM
 
       # Grab the command element and unescape any single quotes - issue 69
       xml = builder.target!
+      escaped_cmd = /<#{NS_WIN_SHELL}:Command>(.+)<\/#{NS_WIN_SHELL}:Command>/m.match(xml)[1]
+      xml[escaped_cmd] = escaped_cmd.gsub(/&#39;/, "'")
 
       resp_doc = send_message(xml)
       command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
@@ -250,13 +235,23 @@ module WinRM
     #   is either :stdout or :stderr.  The reason it is in an Array so so we can get the output in the order it ocurrs on
     #   the console.
     def get_command_output(shell_id, command_id, &block)
+      h_opts = {
+        "#{NS_WSMAN_DMTF}:OptionSet" => {
+          "#{NS_WSMAN_DMTF}:Option" => "TRUE", :attributes! => {
+            "#{NS_WSMAN_DMTF}:Option" => {
+              'Name' => 'WSMAN_CMDSHELL_OPTION_KEEPALIVE'
+            }
+          }
+        }
+      }
+
       body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout',
         :attributes! => {"#{NS_WIN_SHELL}:DesiredStream" => {'CommandId' => command_id}}}
 
       builder = Builder::XmlMarkup.new
       builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_receive,selector_shell_id(shell_id))) }
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd, action_receive, h_opts, selector_shell_id(shell_id))) }
         env.tag!(:env, :Body) do |env_body|
           env_body.tag!("#{NS_WIN_SHELL}:Receive") { |cl| cl << Gyoku.xml(body) }
         end
@@ -469,55 +464,6 @@ module WinRM
 
     def send_message(message)
       @xfer.send_request(message)
-    end
-
-
-    # Helper methods for SOAP Headers
-
-    def resource_uri_cmd
-      {"#{NS_WSMAN_DMTF}:ResourceURI" => 'http://schemas.microsoft.com/powershell/Microsoft.PowerShell',
-        :attributes! => {"#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => true}}}
-    end
-
-    def resource_uri_wmi(namespace = 'root/cimv2/*')
-      {"#{NS_WSMAN_DMTF}:ResourceURI" => "http://schemas.microsoft.com/wbem/wsman/1/wmi/#{namespace}",
-        :attributes! => {"#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => true}}}
-    end
-
-    def action_delete
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Delete',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def action_command
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Command',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def action_receive
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Receive',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def action_signal
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Signal',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def action_send
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Send',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def action_enumerate
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/enumeration/Enumerate',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def selector_shell_id(shell_id)
-      {"#{NS_WSMAN_DMTF}:SelectorSet" =>
-        {"#{NS_WSMAN_DMTF}:Selector" => shell_id, :attributes! => {"#{NS_WSMAN_DMTF}:Selector" => {'Name' => 'ShellId'}}}
-      }
     end
 
     def encode_bytes(bytes)
