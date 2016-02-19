@@ -32,7 +32,10 @@ module WinRM
     DEFAULT_MAX_ENV_SIZE = 153600
     DEFAULT_LOCALE = 'en-US'
 
-    attr_reader :endpoint, :timeout, :retry_limit, :retry_delay, :output_decoder
+    include WinRM::WSMV::SOAP
+    include WinRM::WSMV::Header
+
+    attr_reader :retry_limit, :retry_delay
 
     attr_accessor :logger
 
@@ -44,12 +47,13 @@ module WinRM
     #   @see WinRM::HTTP::HttpNegotiate
     #   @see WinRM::HTTP::HttpSSL
     def initialize(endpoint, transport = :kerberos, opts = {})
-      @session_id = SecureRandom.uuid.to_s.upcase
-      @endpoint = endpoint
-      @operation_timeout = DEFAULT_TIMEOUT
-      @max_env_sz = DEFAULT_MAX_ENV_SIZE
-      @locale = DEFAULT_LOCALE
-      @output_decoder = CommandOutputDecoder.new
+      @session_opts = {
+        endpoint: endpoint,
+        max_envelope_size: DEFAULT_MAX_ENV_SIZE,
+        session_id: SecureRandom.uuid.to_s.upcase,
+        operation_timeout: DEFAULT_TIMEOUT,
+        locale: DEFAULT_LOCALE
+      }
       setup_logger
       configure_retries(opts)
       begin
@@ -92,29 +96,34 @@ module WinRM
     # @param [Fixnum] The number of seconds to set the Ruby receive timeout
     # @return [String] The ISO 8601 formatted operation timeout
     def set_timeout(op_timeout_sec, receive_timeout_sec=nil)
-      @operation_timeout = op_timeout_sec
+      @session_opts[:operation_timeout] = op_timeout_sec
       @xfer.receive_timeout = receive_timeout_sec || op_timeout_sec + 10
-      Iso8601Duration.sec_to_dur(@operation_timeout)
+      Iso8601Duration.sec_to_dur(@session_opts[:operation_timeout])
     end
     alias :op_timeout :set_timeout
 
     # The operation timeout
     def timeout
-      @operation_timeout
+      @session_opts[:operation_timeout]
+    end
+
+    # The WSMan http(s) endpoint
+    def endpoint
+      @session_opts[:endpoint]
     end
 
     # Max envelope size
     # @see http://msdn.microsoft.com/en-us/library/ee916127(v=PROT.13).aspx
     # @param [Fixnum] byte_sz the max size in bytes to allow for the response
     def max_env_size(byte_sz)
-      @max_env_sz = byte_sz
+      @session_opts[:max_env_sz] = byte_sz
     end
 
     # Set the locale
     # @see http://msdn.microsoft.com/en-us/library/gg567404(v=PROT.13).aspx
     # @param [String] locale the locale to set for future messages
     def locale(locale)
-      @locale = locale
+      @session_opts[:locale] = locale
     end
 
     # Create a Shell on the destination host
@@ -130,12 +139,12 @@ module WinRM
     # @return [String] The ShellId from the SOAP response. This is our open shell instance on the remote machine.
     def open_shell(shell_opts = {}, &block)
       shell_id = SecureRandom.uuid.to_s.upcase
-      logger.debug("[WinRM] opening remote shell on #{@endpoint}")
-      msg = WSMV::CreateShellMessage.new(session_opts, shell_opts)
+      logger.debug("[WinRM] opening remote shell on #{@session_opts[:endpoint]}")
+      msg = WSMV::CreateShell.new(@session_opts, shell_opts)
       resp_doc = send_message(msg.build)
       # CMD shell returns a new shell_id
       shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
-      logger.debug("[WinRM] remote shell #{shell_id} is open on #{@endpoint}")
+      logger.debug("[WinRM] remote shell #{shell_id} is open on #{@session_opts[:endpoint]}")
 
       #keep_alive(shell_id)
 
@@ -157,7 +166,7 @@ module WinRM
       builder = Builder::XmlMarkup.new
       builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(session_opts), resource_uri_cmd,action_receive,h_opts,selector_shell_id(shell_id))) }
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_receive,h_opts,selector_shell_id(shell_id))) }
         env.tag! :env, :Body do |env_body|
           env_body.tag!("#{NS_WIN_SHELL}:Receive") { |cl| cl << Gyoku.xml(body) }
         end
@@ -189,7 +198,7 @@ module WinRM
       builder = Builder::XmlMarkup.new
       builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(session_opts), resource_uri_cmd,action_command,selector_shell_id(shell_id))) }
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_command,selector_shell_id(shell_id))) }
         env.tag!(:env, :Body) do |env_body|
           env_body.tag!("#{NS_WIN_SHELL}:CommandLine", {"CommandId" => command_id}) { |cl| cl << Gyoku.xml(body) }
         end
@@ -226,7 +235,7 @@ module WinRM
       builder = Builder::XmlMarkup.new
       builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(session_opts), resource_uri_cmd,action_send,selector_shell_id(shell_id))) }
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_send,selector_shell_id(shell_id))) }
         env.tag!(:env, :Body) do |env_body|
           env_body << Gyoku.xml(body)
         end
@@ -248,7 +257,7 @@ module WinRM
       builder = Builder::XmlMarkup.new
       builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(session_opts), resource_uri_cmd,action_receive,selector_shell_id(shell_id))) }
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_receive,selector_shell_id(shell_id))) }
         env.tag!(:env, :Body) do |env_body|
           env_body.tag!("#{NS_WIN_SHELL}:Receive") { |cl| cl << Gyoku.xml(body) }
         end
@@ -298,7 +307,7 @@ module WinRM
       builder = Builder::XmlMarkup.new
       builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(session_opts), resource_uri_cmd,action_signal,selector_shell_id(shell_id))) }
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_signal,selector_shell_id(shell_id))) }
         env.tag!(:env, :Body) do |env_body|
           env_body.tag!("#{NS_WIN_SHELL}:Signal", {'CommandId' => command_id}) { |cl| cl << Gyoku.xml(body) }
         end
@@ -311,12 +320,12 @@ module WinRM
     # @param [String] shell_id The shell id on the remote machine.  See #open_shell
     # @return [true] This should have more error checking but it just returns true for now.
     def close_shell(shell_id)
-      logger.debug("[WinRM] closing remote shell #{shell_id} on #{@endpoint}")
+      logger.debug("[WinRM] closing remote shell #{shell_id} on #{@session_opts[:endpoint]}")
       builder = Builder::XmlMarkup.new
       builder.instruct!(:xml, :encoding => 'UTF-8')
 
       builder.tag!('env:Envelope', namespaces) do |env|
-        env.tag!('env:Header') { |h| h << Gyoku.xml(merge_headers(shared_headers(session_opts), resource_uri_cmd,action_delete,selector_shell_id(shell_id))) }
+        env.tag!('env:Header') { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_delete,selector_shell_id(shell_id))) }
         env.tag!('env:Body')
       end
 
@@ -382,14 +391,14 @@ module WinRM
       body = { "#{NS_WSMAN_DMTF}:OptimizeEnumeration" => nil,
         "#{NS_WSMAN_DMTF}:MaxElements" => '32000',
         "#{NS_WSMAN_DMTF}:Filter" => wql,
-        "#{NS_WSMAN_MSFT}:SessionId" => "uuid:#{@session_id}",
+        "#{NS_WSMAN_MSFT}:SessionId" => "uuid:#{@session_opts[:session_id]}",
         :attributes! => { "#{NS_WSMAN_DMTF}:Filter" => {'Dialect' => 'http://schemas.microsoft.com/wbem/wsman/1/WQL'}}
       }
 
       builder = Builder::XmlMarkup.new
       builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(session_opts), resource_uri_wmi,action_enumerate)) }
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_wmi,action_enumerate)) }
         env.tag!(:env, :Body) do |env_body|
           env_body.tag!("#{NS_ENUM}:Enumerate") { |en| en << Gyoku.xml(body) }
         end
@@ -420,16 +429,6 @@ module WinRM
     end
 
     private
-
-    def session_opts
-      {
-        endpoint: @endpoint,
-        max_envelope_size: @max_env_sz,
-        session_id: @session_id,
-        operation_timeout: @operation_timeout,
-        locale: @locale
-      }
-    end
 
     def setup_logger
       @logger = Logging.logger[self]
@@ -477,11 +476,6 @@ module WinRM
     def resource_uri_wmi(namespace = 'root/cimv2/*')
       {"#{NS_WSMAN_DMTF}:ResourceURI" => "http://schemas.microsoft.com/wbem/wsman/1/wmi/#{namespace}",
         :attributes! => {"#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => true}}}
-    end
-
-    def action_create
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Create',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
     end
 
     def action_delete
