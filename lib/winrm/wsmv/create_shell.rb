@@ -20,7 +20,7 @@ require_relative 'header'
 module WinRM
   module WSMV
     # WSMV message to create a remote shell
-    class CreateShellMessage
+    class CreateShell
       include WinRM::WSMV::SOAP
       include WinRM::WSMV::Header
 
