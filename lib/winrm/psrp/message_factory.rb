@@ -18,6 +18,7 @@ require 'erubis'
 
 module WinRM
   module PSRP
+    # Factory for creating specific PSRP messages
     class MessageFactory
       class << self
         # Creates a new session capability PSRP message.
@@ -41,7 +42,8 @@ module WinRM
         # response.
         # @param command [String] The command passed to Invoke-Expression.
         def create_pipeline_message(id, shell_id, command_id, command)
-          Message.new(id, shell_id, command_id, 0x00021006, render('create_pipeline', command: command))
+          Message.new(id, shell_id, command_id, 0x00021006, render('create_pipeline',
+                                                                   command: command))
         end
 
         # Renders the specified template with the given context
