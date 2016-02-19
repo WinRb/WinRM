@@ -8,6 +8,9 @@ AllCops:
 Style/Encoding:
   Enabled: true
 
+Style/NumericLiterals:
+  Enabled: false
+
 Metrics/LineLength:
   Max: 100
 
