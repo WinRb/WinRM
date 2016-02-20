@@ -92,18 +92,10 @@ module WinRM
       end
 
       def shell_headers
-        merge_headers(shared_headers(@session_opts), shell_resource_uri, action_create, header_opts)
-      end
-
-      def shell_resource_uri
-        {
-          "#{NS_WSMAN_DMTF}:ResourceURI" => @shell_uri,
-          :attributes! => {
-            "#{NS_WSMAN_DMTF}:ResourceURI" => {
-              'mustUnderstand' => true
-            }
-          }
-        }
+        merge_headers(shared_headers(@session_opts),
+                      resource_uri_shell(@shell_uri),
+                      action_create,
+                      header_opts)
       end
 
       def action_create
