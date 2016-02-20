@@ -103,7 +103,7 @@ module WinRM
 
     # The operation timeout
     def timeout
-      @session_opts[:operation_timeout]
+      Iso8601Duration.sec_to_dur(@session_opts[:operation_timeout])
     end
 
     # The WSMan http(s) endpoint
@@ -115,7 +115,7 @@ module WinRM
     # @see http://msdn.microsoft.com/en-us/library/ee916127(v=PROT.13).aspx
     # @param [Fixnum] byte_sz the max size in bytes to allow for the response
     def max_env_size(byte_sz)
-      @session_opts[:max_env_sz] = byte_sz
+      @session_opts[:max_envelope_size] = byte_sz
     end
 
     # Set the locale
