@@ -11,11 +11,13 @@ describe 'Command', unit: true do
       operation_timeout: 60,
       locale: 'en-US'
     }
-    shell_id = 'D5A2622B-B842-4EB8-8A78-0225C8A993DF'
-    command_id = 'A2A2622B-B842-4EB8-8A78-0225C8A993DF'
+    cmd_opts = {
+      shell_id: 'D5A2622B-B842-4EB8-8A78-0225C8A993DF',
+      command_id: 'A2A2622B-B842-4EB8-8A78-0225C8A993DF',
+      command: 'ipconfig'
+    }
     it 'creates a well formed message' do
-      xml = WinRM::WSMV::Command.new(session_opts, shell_id, WinRM::WSMV::Header::RESOURCE_URI_CMD,
-                                     command_id, 'ipconfig').build
+      xml = WinRM::WSMV::Command.new(session_opts, cmd_opts).build
       expect(xml).to include('<w:OperationTimeout>PT60S</w:OperationTimeout>')
     end
   end

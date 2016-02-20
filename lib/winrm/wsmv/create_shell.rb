@@ -69,12 +69,15 @@ module WinRM
         }
         body["#{NS_WIN_SHELL}:WorkingDirectory"] = @working_directory if @working_directory
         if @idle_timeout
-          # backwards compat - idle_timeout as an Iso8601Duration string
-          timeout = @idle_timeout.is_a?(String) ? @idle_timeout : Iso8601Duration.sec_to_dur(@idle_timeout)
-          body["#{NS_WIN_SHELL}:IdleTimeOut"] = timeout
+          body["#{NS_WIN_SHELL}:IdleTimeOut"] = format_idle_timeout(@idle_timeout)
         end
         body["#{NS_WIN_SHELL}:Environment"] = environment_vars_body if @env_vars
         body
+      end
+
+      # backwards compat - idle_timeout as an Iso8601Duration string
+      def format_idle_timeout(timeout)
+        timeout.is_a?(String) ? timeout : Iso8601Duration.sec_to_dur(timeout)
       end
 
       def environment_vars_body

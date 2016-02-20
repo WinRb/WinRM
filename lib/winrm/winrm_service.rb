@@ -163,9 +163,13 @@ module WinRM
     # @param [Array<String>] arguments An array of arguments for this command
     # @return [String] The CommandId from the SOAP response.  This is the ID we need to query in order to get output.
     def run_command(shell_id, command, arguments = [], cmd_opts = {}, &block)
-      command_id = UUIDTools::UUID.random_create.to_s.upcase
-      consolemode = cmd_opts.has_key?(:console_mode_stdin) ? cmd_opts[:console_mode_stdin] : 'TRUE'
-      skipcmd     = cmd_opts.has_key?(:skip_cmd_shell) ? cmd_opts[:skip_cmd_shell] : 'FALSE'
+      command_opts = {
+        shell_id: shell_id,
+        command_id: SecureRandom.uuid.to_s.upcase,
+        command: command,
+        arguments: arguments
+      }.merge!(cmd_opts)
+      msg = WSMV::Command.new(@session_opts, command_opts)
 
       h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => {
         "#{NS_WSMAN_DMTF}:Option" => [consolemode, skipcmd],
