@@ -20,7 +20,6 @@ module WinRM
   module WSMV
     # SOAP header utility mixin
     module Header
-
       # WSMan URI of the regular Windows cmd shell
       RESOURCE_URI_CMD = 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd'
 
@@ -74,8 +73,13 @@ module WinRM
       # Helper methods for SOAP Headers
 
       def resource_uri_shell(shell_uri)
-        {"#{NS_WSMAN_DMTF}:ResourceURI" => shell_uri,
-          :attributes! => {"#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => true}}}
+        {
+          "#{NS_WSMAN_DMTF}:ResourceURI" => shell_uri, :attributes! => {
+            "#{NS_WSMAN_DMTF}:ResourceURI" => {
+              'mustUnderstand' => true
+            }
+          }
+        }
       end
 
       def resource_uri_cmd
@@ -83,43 +87,98 @@ module WinRM
       end
 
       def resource_uri_wmi(namespace = 'root/cimv2/*')
-        {"#{NS_WSMAN_DMTF}:ResourceURI" => "http://schemas.microsoft.com/wbem/wsman/1/wmi/#{namespace}",
-          :attributes! => {"#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => true}}}
+        {
+          "#{NS_WSMAN_DMTF}:ResourceURI" =>
+          "http://schemas.microsoft.com/wbem/wsman/1/wmi/#{namespace}",
+          :attributes! => {
+            "#{NS_WSMAN_DMTF}:ResourceURI" => {
+              'mustUnderstand' => true
+            }
+          }
+        }
       end
 
       def action_delete
-        {"#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Delete',
-          :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
+        {
+          "#{NS_ADDRESSING}:Action" =>
+          'http://schemas.xmlsoap.org/ws/2004/09/transfer/Delete',
+          :attributes! => {
+            "#{NS_ADDRESSING}:Action" => {
+              'mustUnderstand' => true
+            }
+          }
+        }
       end
 
       def action_command
-        {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Command',
-          :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
+        {
+          "#{NS_ADDRESSING}:Action" =>
+          'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Command',
+          :attributes! => {
+            "#{NS_ADDRESSING}:Action" => {
+              'mustUnderstand' => true
+            }
+          }
+        }
       end
 
       def action_receive
-        {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Receive',
-          :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
+        {
+          "#{NS_ADDRESSING}:Action" =>
+          'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Receive',
+          :attributes! => {
+            "#{NS_ADDRESSING}:Action" => {
+              'mustUnderstand' => true
+            }
+          }
+        }
       end
 
       def action_signal
-        {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Signal',
-          :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
+        {
+          "#{NS_ADDRESSING}:Action" =>
+          'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Signal',
+          :attributes! => {
+            "#{NS_ADDRESSING}:Action" => {
+              'mustUnderstand' => true
+            }
+          }
+        }
       end
 
       def action_send
-        {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Send',
-          :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
+        {
+          "#{NS_ADDRESSING}:Action" =>
+          'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Send',
+          :attributes! => {
+            "#{NS_ADDRESSING}:Action" => {
+              'mustUnderstand' => true
+            }
+          }
+        }
       end
 
       def action_enumerate
-        {"#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/enumeration/Enumerate',
-          :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
+        {
+          "#{NS_ADDRESSING}:Action" =>
+          'http://schemas.xmlsoap.org/ws/2004/09/enumeration/Enumerate',
+          :attributes! => {
+            "#{NS_ADDRESSING}:Action" => {
+              'mustUnderstand' => true
+            }
+          }
+        }
       end
 
       def selector_shell_id(shell_id)
-        {"#{NS_WSMAN_DMTF}:SelectorSet" =>
-          {"#{NS_WSMAN_DMTF}:Selector" => shell_id, :attributes! => {"#{NS_WSMAN_DMTF}:Selector" => {'Name' => 'ShellId'}}}
+        {
+          "#{NS_WSMAN_DMTF}:SelectorSet" => {
+            "#{NS_WSMAN_DMTF}:Selector" => shell_id, :attributes! => {
+              "#{NS_WSMAN_DMTF}:Selector" => {
+                'Name' => 'ShellId'
+              }
+            }
+          }
         }
       end
     end

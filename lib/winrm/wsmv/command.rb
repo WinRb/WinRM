@@ -24,18 +24,36 @@ module WinRM
       include WinRM::WSMV::SOAP
       include WinRM::WSMV::Header
 
-      def initialize(session_opts, shell_id, shell_uri, command_id, command, arguments = [], cmd_opts = {})
+      def initialize(session_opts, cmd_opts)
+        validate_opts(session_opts, cmd_opts)
+        init_ops(session_opts, cmd_opts)
+      end
+
+      def build
+        issue69_unescape_single_quotes(build_xml)
+      end
+
+      private
+
+      def init_ops(session_opts, cmd_opts)
         @session_opts = session_opts
-        @command_id = command_id
-        @shell_id = shell_id
-        @shell_uri = shell_uri
-        @command = command
-        @arguments = arguments
+        @command_id = cmd_opts[:command_id]
+        @shell_id = cmd_opts[:shell_id]
+        @command = cmd_opts[:command]
+        @arguments = cmd_opts[:arguments] || []
+        @shell_uri = cmd_opts[:shell_uri] || RESOURCE_URI_CMD
         @consolemode = cmd_opts.key?(:console_mode_stdin) ? cmd_opts[:console_mode_stdin] : 'TRUE'
         @skipcmd = cmd_opts.key?(:skip_cmd_shell) ? cmd_opts[:skip_cmd_shell] : 'FALSE'
       end
 
-      def build
+      def validate_opts(session_opts, cmd_opts)
+        fail 'session_opts is required' unless session_opts
+        fail 'cmd_opts[:command_id] is required' unless cmd_opts[:command_id]
+        fail 'cmd_opts[:shell_id] is required' unless cmd_opts[:shell_id]
+        fail 'cmd_opts[:command] is required' unless cmd_opts[:command]
+      end
+
+      def build_xml
         builder = Builder::XmlMarkup.new
         builder.instruct!(:xml, encoding: 'UTF-8')
         builder.tag! :env, :Envelope, namespaces do |env|
@@ -46,10 +64,7 @@ module WinRM
             end
           end
         end
-        issue69_unescape_single_quotes(builder.target!)
       end
-
-      private
 
       def issue69_unescape_single_quotes(xml)
         escaped_cmd = /<#{NS_WIN_SHELL}:Command>(.+)<\/#{NS_WIN_SHELL}:Command>/m.match(xml)[1]

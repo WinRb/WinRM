@@ -171,9 +171,13 @@ module WinRM
     # using cmd.exe; if set to FALSE, the server is requested to use cmd.exe.
     # @return [String] The CommandId from the SOAP response. This is the ID we need to query in order to get output.
     def run_command(shell_id, command, arguments = [], cmd_opts = {}, &block)
-      command_id = SecureRandom.uuid.to_s.upcase
-      msg = WSMV::Command.new(@session_opts, shell_id, RESOURCE_URI_CMD,
-                              command_id, command, arguments, cmd_opts)
+      command_opts = {
+        shell_id: shell_id,
+        command_id: SecureRandom.uuid.to_s.upcase,
+        command: command,
+        arguments: arguments
+      }.merge!(cmd_opts)
+      msg = WSMV::Command.new(@session_opts, command_opts)
 
       resp_doc = send_message(msg.build)
       command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
