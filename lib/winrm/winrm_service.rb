@@ -24,6 +24,7 @@ require_relative 'wsmv/soap'
 require_relative 'wsmv/header'
 require_relative 'wsmv/create_shell'
 require_relative 'wsmv/command'
+require_relative 'wsmv/write_stdin'
 
 module WinRM
   # This is the main class that does the SOAP request/response logic. There are a few helper
@@ -59,7 +60,7 @@ module WinRM
       configure_retries(opts)
       begin
         @xfer = send "init_#{transport}_transport", opts.merge({endpoint: endpoint})
-      rescue NoMethodError
+      rescue NoMethodError => e
         raise "Invalid transport '#{transport}' specified, expected: negotiate, kerberos, plaintext, ssl."
       end
     end
@@ -81,9 +82,6 @@ module WinRM
     def init_ssl_transport(opts)
       if opts[:basic_auth_only]
         HTTP::BasicAuthSSL.new(opts[:endpoint], opts[:user], opts[:pass], opts)
-      elsif opts[:client_cert]
-        HTTP::ClientCertAuthSSL.new(opts[:endpoint], opts[:client_cert],
-                                    opts[:client_key], opts[:key_pass], opts)
       else
         HTTP::HttpNegotiate.new(opts[:endpoint], opts[:user], opts[:pass], opts)
       end
@@ -194,25 +192,13 @@ module WinRM
     end
 
     def write_stdin(shell_id, command_id, stdin)
-      # Signal the Command references to terminate (close stdout/stderr)
-      body = {
-        "#{NS_WIN_SHELL}:Send" => {
-          "#{NS_WIN_SHELL}:Stream" => {
-            "@Name" => 'stdin',
-            "@CommandId" => command_id,
-            :content! => Base64.encode64(stdin)
-          }
-        }
+      stdin_opts = {
+        shell_id: shell_id,
+        command_id: command_id,
+        stdin: stdin
       }
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-      builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_send,selector_shell_id(shell_id))) }
-        env.tag!(:env, :Body) do |env_body|
-          env_body << Gyoku.xml(body)
-        end
-      end
-      send_message(builder.target!)
+      msg = WSMV::WriteStdin.new(@session_opts, stdin_opts)
+      resp = send_message(msg.build)
       true
     end
 
@@ -294,7 +280,7 @@ module WinRM
           env_body.tag!("#{NS_WIN_SHELL}:Signal", {'CommandId' => command_id}) { |cl| cl << Gyoku.xml(body) }
         end
       end
-      send_message(builder.target!)
+      resp = send_message(builder.target!)
       true
     end
 
@@ -311,7 +297,7 @@ module WinRM
         env.tag!('env:Body')
       end
 
-      send_message(builder.target!)
+      resp = send_message(builder.target!)
       logger.debug("[WinRM] remote shell #{shell_id} closed")
       true
     end
