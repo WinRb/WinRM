@@ -23,6 +23,8 @@ require_relative 'helpers/powershell_script'
 require_relative 'wsmv/soap'
 require_relative 'wsmv/header'
 require_relative 'wsmv/create_shell'
+require_relative 'wsmv/command'
+require_relative 'wsmv/write_stdin'
 
 module WinRM
   # This is the main class that does the SOAP request/response logic. There are a few helper
@@ -211,25 +213,13 @@ module WinRM
     end
 
     def write_stdin(shell_id, command_id, stdin)
-      # Signal the Command references to terminate (close stdout/stderr)
-      body = {
-        "#{NS_WIN_SHELL}:Send" => {
-          "#{NS_WIN_SHELL}:Stream" => {
-            "@Name" => 'stdin',
-            "@CommandId" => command_id,
-            :content! => Base64.encode64(stdin)
-          }
-        }
+      stdin_opts = {
+        shell_id: shell_id,
+        command_id: command_id,
+        stdin: stdin
       }
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-      builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_send,selector_shell_id(shell_id))) }
-        env.tag!(:env, :Body) do |env_body|
-          env_body << Gyoku.xml(body)
-        end
-      end
-      resp = send_message(builder.target!)
+      msg = WSMV::WriteStdin.new(@session_opts, stdin_opts)
+      resp = send_message(msg.build)
       true
     end
 
