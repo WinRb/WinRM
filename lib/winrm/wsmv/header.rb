@@ -146,18 +146,6 @@ module WinRM
         }
       end
 
-      def action_send
-        {
-          "#{NS_ADDRESSING}:Action" =>
-          'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Send',
-          :attributes! => {
-            "#{NS_ADDRESSING}:Action" => {
-              'mustUnderstand' => true
-            }
-          }
-        }
-      end
-
       def action_enumerate
         {
           "#{NS_ADDRESSING}:Action" =>
