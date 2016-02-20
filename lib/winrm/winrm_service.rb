@@ -22,6 +22,7 @@ require_relative 'helpers/powershell_script'
 require_relative 'wsmv/soap'
 require_relative 'wsmv/header'
 require_relative 'wsmv/create_shell'
+require_relative 'wsmv/command'
 
 module WinRM
   # This is the main class that does the SOAP request/response logic. There are a few helper
@@ -160,38 +161,17 @@ module WinRM
     # @param [String] shell_id The shell id on the remote machine.  See #open_shell
     # @param [String] command The command to run on the remote machine
     # @param [Array<String>] arguments An array of arguments for this command
-    # @return [String] The CommandId from the SOAP response.  This is the ID we need to query in order to get output.
+    # @param [Hash<optional>] cmd_opts additional command options you can pass
+    # @option cmd_opts [String] :console_mode_stdin The client-side mode for standard input is console if TRUE and pipe if FALSE.
+    # @option cmd_opts [String] :skip_cmd_shell If set to TRUE, this option requests that the server runs the command without
+    # using cmd.exe; if set to FALSE, the server is requested to use cmd.exe.
+    # @return [String] The CommandId from the SOAP response. This is the ID we need to query in order to get output.
     def run_command(shell_id, command, arguments = [], cmd_opts = {}, &block)
       command_id = SecureRandom.uuid.to_s.upcase
-      consolemode = cmd_opts.has_key?(:console_mode_stdin) ? cmd_opts[:console_mode_stdin] : 'TRUE'
-      skipcmd     = cmd_opts.has_key?(:skip_cmd_shell) ? cmd_opts[:skip_cmd_shell] : 'FALSE'
+      msg = WSMV::Command.new(@session_opts, shell_id, RESOURCE_URI_CMD,
+                              command_id, command, arguments, cmd_opts)
 
-      h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => {
-        "#{NS_WSMAN_DMTF}:Option" => [consolemode, skipcmd],
-        :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_CONSOLEMODE_STDIN','WINRS_SKIP_CMD_SHELL']}}}
-      }
-
-      #create_pipline = PSRP::MessageFactory.create_pipeline_message(3, shell_id, command_id, command)
-      #b64_arguments = encode_bytes(create_pipline.bytes)
-      #body = { "#{NS_WIN_SHELL}:Command" => "Invoke-Expression", "#{NS_WIN_SHELL}:Arguments" => b64_arguments }
-      body = { "#{NS_WIN_SHELL}:Command" => "\"#{command}\"", "#{NS_WIN_SHELL}:Arguments" => arguments}
-
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-      builder.tag! :env, :Envelope, namespaces do |env|
-        #env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_command,selector_shell_id(shell_id))) }
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd, action_command, h_opts, selector_shell_id(shell_id))) }
-        env.tag!(:env, :Body) do |env_body|
-          env_body.tag!("#{NS_WIN_SHELL}:CommandLine", {"CommandId" => command_id}) { |cl| cl << Gyoku.xml(body) }
-        end
-      end
-
-      # Grab the command element and unescape any single quotes - issue 69
-      xml = builder.target!
-      escaped_cmd = /<#{NS_WIN_SHELL}:Command>(.+)<\/#{NS_WIN_SHELL}:Command>/m.match(xml)[1]
-      xml[escaped_cmd] = escaped_cmd.gsub(/&#39;/, "'")
-
-      resp_doc = send_message(xml)
+      resp_doc = send_message(msg.build)
       command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
 
       if block_given?
