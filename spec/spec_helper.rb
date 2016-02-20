@@ -68,6 +68,16 @@ module ConnectionHelper
   # rubocop:enable Metrics/MethodLength
 end
 
+# Strip leading whitespace from each line that is the same as the
+# amount of whitespace on the first line of the string.
+# Leaves _additional_ indentation on later lines intact.
+# and remove newlines.
+class String
+  def unindent
+    gsub(/^#{self[/\A[ \t]*/]}/, '').gsub("\n", '')
+  end
+end
+
 RSpec.configure do |config|
   config.include(ConnectionHelper)
 end
