@@ -4,6 +4,9 @@ describe 'WinRM options', unit: true do
 
   context 'when operations timeout is set to 60' do
     before(:each) { subject.set_timeout(60) }
+    it 'returns PT60S' do
+      expect(subject.set_timeout(60)).to eql('PT60S')
+    end
     describe '#receive_timeout' do
       it 'is set to 70s' do
         transportclass = subject.instance_variable_get(:@xfer)
@@ -33,10 +36,10 @@ describe 'WinRM options', unit: true do
   end
 
   context 'when max_env_size is set to 614400' do
-    before(:each) { subject.max_env_size(614_400) }
+    before(:each) { subject.max_env_size(614400) }
     describe '@max_env_sz' do
       it 'is set to 614400' do
-        expect(subject.instance_variable_get('@max_env_sz')).to eq(614_400)
+        expect(subject.instance_variable_get('@session_opts')[:max_envelope_size]).to eq(614400)
       end
     end
   end
@@ -45,7 +48,7 @@ describe 'WinRM options', unit: true do
     before(:each) { subject.locale('en-CA') }
     describe '@locale' do
       it 'is set to en-CA' do
-        expect(subject.instance_variable_get('@locale')).to eq('en-CA')
+        expect(subject.instance_variable_get('@session_opts')[:locale]).to eq('en-CA')
       end
     end
   end
@@ -64,12 +67,12 @@ describe 'WinRM options', unit: true do
     end
     describe '@locale' do
       it 'should be en-US' do
-        expect(subject.instance_variable_get('@locale')).to eq('en-US')
+        expect(subject.instance_variable_get('@session_opts')[:locale]).to eq('en-US')
       end
     end
     describe '@max_env_sz' do
       it 'should be 153600' do
-        expect(subject.instance_variable_get('@max_env_sz')).to eq(153_600)
+        expect(subject.instance_variable_get('@session_opts')[:max_envelope_size]).to eq(153600)
       end
     end
   end
