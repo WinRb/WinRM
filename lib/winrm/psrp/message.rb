@@ -3,14 +3,14 @@
 # Copyright 2015 Matt Wrock <matt@mattwrock.com>
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
+# Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
+# distributed under the License is distributed on an 'AS IS' BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
@@ -28,7 +28,7 @@ module WinRM
       BLOB_HEADER_LEN = 43
 
       # Maximum allowed length of the blob
-      BLOB_MAX_LEN = 32768 - BLOB_HEADER_LEN
+      BLOB_MAX_LEN = 32_768 - BLOB_HEADER_LEN
 
       # All known PSRP message types
       MESSAGE_TYPES = [
@@ -74,9 +74,9 @@ module WinRM
       # specified in hex, e.g. 0x00010002.
       # @param payload [String] The PSRP payload as serialized XML
       def initialize(id, shell_id, command_id, message_type, payload)
-        raise 'shell_id cannot be nil' if shell_id.nil?
-        raise 'invalid message type' unless MESSAGE_TYPES.include?(message_type)
-        raise 'payload cannot be nil' if payload.nil?
+        fail 'shell_id cannot be nil' if shell_id.nil?
+        fail 'invalid message type' unless MESSAGE_TYPES.include?(message_type)
+        fail 'payload cannot be nil' if payload.nil?
         @id = id
         @shell_id = shell_id
         @command_id = command_id
@@ -84,22 +84,22 @@ module WinRM
         @payload = payload
       end
 
+      # rubocop:disable AbcSize
       # Returns the raw PSRP message bytes ready for transfer to Windows inside a
       # WinRM message.
       # @return [Array<Byte>] Unencoded raw byte array of the PSRP message.
       def bytes
-        raise "payload cannot be greater than #{BLOB_MAX_LEN} bytes" if blob_bytes.length > BLOB_MAX_LEN
-        message = message_id
-        message += fragment_id
-        message += end_start_fragment
-        message += blob_length
-        message += blob_destination
-        message += message_type
-        message += runspace_pool_id
-        message += pipeline_id
-        message += byte_order_mark
-        message += blob_bytes
+        if blob_bytes.length > BLOB_MAX_LEN
+          fail "payload cannot be greater than #{BLOB_MAX_LEN} bytes"
+        end
+
+        message = message_id << fragment_id << end_start_fragment
+        message << blob_length << blob_destination << message_type
+        message << runspace_pool_id << pipeline_id << byte_order_mark
+        message << blob_bytes
+        message.flatten
       end
+      # rubocop:enable AbcSize
 
       private
 
@@ -145,15 +145,15 @@ module WinRM
       end
 
       def int64be(int64)
-        [int64 >> 32, int64 & 0x00000000ffffffff].pack("N2").unpack("C8")
+        [int64 >> 32, int64 & 0x00000000ffffffff].pack('N2').unpack('C8')
       end
 
       def int16be(int16)
-        [int16].pack("N").unpack("C4")
+        [int16].pack('N').unpack('C4')
       end
 
       def int16le(int16)
-        [int16].pack("N").unpack("C4").reverse
+        [int16].pack('N').unpack('C4').reverse
       end
     end
   end

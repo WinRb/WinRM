@@ -16,8 +16,9 @@
 
 module WinRM
   module Protocol
+    # Constructs MS-WSMV protocol SOAP messages
     class Base
-      def initialize(transport, options)
+      def initialize(options)
         @logger = options[:logger]
         @options = options
       end
@@ -29,15 +30,15 @@ module WinRM
       end
 
       def resource_uri
-        raise NotImplementedError
+        fail NotImplementedError
       end
 
       def input_streams
-        raise NotImplementedError
+        fail NotImplementedError
       end
 
       def output_streams
-        raise NotImplementedError
+        fail NotImplementedError
       end
 
       protected
@@ -46,7 +47,9 @@ module WinRM
         builder = Builder::XmlMarkup.new
         builder.instruct!(:xml, encoding: 'UTF-8')
         builder.tag! :env, :Envelope, namespaces do |env|
-          env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri,action,option_set)) }
+          env.tag!(:env, :Header) do |h|
+            h << Gyoku.xml(merge_headers(header, resource_uri, action, option_set))
+          end
           env.tag! :env, :Body do |body|
             yield body
           end
@@ -74,32 +77,51 @@ module WinRM
           'xmlns:w' => 'http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd',
           'xmlns:p' => 'http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd',
           'xmlns:rsp' => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell',
-          'xmlns:cfg' => 'http://schemas.microsoft.com/wbem/wsman/1/config',
+          'xmlns:cfg' => 'http://schemas.microsoft.com/wbem/wsman/1/config'
         }
       end
 
       def header
-        { "#{NS_ADDRESSING}:To" => transport.endpoint.to_s,
+        {
+          "#{NS_ADDRESSING}:To" => transport.endpoint.to_s,
           "#{NS_ADDRESSING}:ReplyTo" => {
-          "#{NS_ADDRESSING}:Address" => 'http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous',
-            :attributes! => {"#{NS_ADDRESSING}:Address" => {'mustUnderstand' => true}}},
+            "#{NS_ADDRESSING}:Address" => 'http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous',
+            attributes!: {
+              "#{NS_ADDRESSING}:Address" => {
+                'mustUnderstand' => true
+              }
+            }
+          },
           "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => options[:max_envelope_size],
           "#{NS_ADDRESSING}:MessageID" => "uuid:#{SecureRandom.uuid.to_s.upcase}",
           "#{NS_WSMAN_MSFT}:SessionId" => "uuid:#{@session_id}",
           "#{NS_WSMAN_DMTF}:Locale/" => '',
           "#{NS_WSMAN_MSFT}:DataLocale/" => '',
           "#{NS_WSMAN_DMTF}:OperationTimeout" => options[:timeout],
-          :attributes! => {
-            "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => {'mustUnderstand' => true},
-            "#{NS_WSMAN_DMTF}:Locale/" => {'xml:lang' => options[:locale], 'mustUnderstand' => false},
-            "#{NS_WSMAN_MSFT}:DataLocale/" => {'xml:lang' => options[:locale], 'mustUnderstand' => false},
-            "#{NS_WSMAN_MSFT}:SessionId" => {'mustUnderstand' => false}
-          }}
+          attributes: {
+            "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => { 'mustUnderstand' => true },
+            "#{NS_WSMAN_DMTF}:Locale/" => {
+              'xml:lang' => options[:locale],
+              'mustUnderstand' => false
+            },
+            "#{NS_WSMAN_MSFT}:DataLocale/" => {
+              'xml:lang' => options[:locale],
+              'mustUnderstand' => false
+            },
+            "#{NS_WSMAN_MSFT}:SessionId" => { 'mustUnderstand' => false }
+          }
+        }
       end
 
       def action_create
-        {"#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Create',
-          :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
+        {
+          "#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Create',
+          attributes!: {
+            "#{NS_ADDRESSING}:Action" => {
+              'mustUnderstand' => true
+            }
+          }
+        }
       end
     end
   end
