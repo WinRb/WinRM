@@ -18,15 +18,21 @@ module WinRM
   module Protocol
     # Constructs MS-WSMV protocol SOAP messages
     class Base
-      def initialize(options)
+      def initialize(transport, options)
+        @transport = transport
         @logger = options[:logger]
         @options = options
       end
 
       def open
-        write_envelope(action_create, create_option_set) do |body|
-          body.tag!("#{NS_WIN_SHELL}:Shell") { |s| s << Gyoku.xml(shell_body) }
-        end
+        logger.debug("[WinRM] opening remote shell on #{@endpoint}")
+
+        resp_doc = send_message(shell_envelope)
+        shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
+
+        logger.debug("[WinRM] remote shell #{shell_id} is open on #{@endpoint}")
+
+        shell_id
       end
 
       def resource_uri
@@ -43,12 +49,14 @@ module WinRM
 
       protected
 
-      def write_envelope(action, option_set)
+      def write_envelope(action, option_set, shell_id = nil)
+        headers = [header, resource_uri, action, option_set]
+        headers << selector_shell_id(shell_id) if shell_id
         builder = Builder::XmlMarkup.new
         builder.instruct!(:xml, encoding: 'UTF-8')
         builder.tag! :env, :Envelope, namespaces do |env|
           env.tag!(:env, :Header) do |h|
-            h << Gyoku.xml(merge_headers(header, resource_uri, action, option_set))
+            h << Gyoku.xml(merge_headers(*headers))
           end
           env.tag! :env, :Body do |body|
             yield body
@@ -56,6 +64,12 @@ module WinRM
         end
 
         builder
+      end
+
+      def shell_envelope
+        write_envelope(action_create, create_option_set) do |body|
+          body.tag!("#{NS_WIN_SHELL}:Shell") { |s| s << Gyoku.xml(shell_body) }
+        end
       end
 
       def shell_body_streams
@@ -94,7 +108,7 @@ module WinRM
           },
           "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => options[:max_envelope_size],
           "#{NS_ADDRESSING}:MessageID" => "uuid:#{SecureRandom.uuid.to_s.upcase}",
-          "#{NS_WSMAN_MSFT}:SessionId" => "uuid:#{@session_id}",
+          "#{NS_WSMAN_MSFT}:SessionId" => "uuid:#{session_id}",
           "#{NS_WSMAN_DMTF}:Locale/" => '',
           "#{NS_WSMAN_MSFT}:DataLocale/" => '',
           "#{NS_WSMAN_DMTF}:OperationTimeout" => options[:timeout],
@@ -122,6 +136,35 @@ module WinRM
             }
           }
         }
+      end
+
+      def session_id
+        @session_id ||= SecureRandom.uuid.to_s.upcase
+      end
+
+      def selector_shell_id(shell_id)
+        {
+          "#{NS_WSMAN_DMTF}:SelectorSet" => {
+            "#{NS_WSMAN_DMTF}:Selector" => shell_id,
+            attributes!: {
+              "#{NS_WSMAN_DMTF}:Selector" => {
+                'Name' => 'ShellId'
+              }
+            }
+          }
+        }
+      end
+
+      # merge the various header hashes and make sure we carry all of the attributes
+      #   through instead of overwriting them.
+      def merge_headers(*headers)
+        hdr = {}
+        headers.each do |h|
+          hdr.merge!(h) do |k, v1, v2|
+            v1.merge!(v2) if k == :attributes!
+          end
+        end
+        hdr
       end
     end
   end

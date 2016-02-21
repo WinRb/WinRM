@@ -412,7 +412,6 @@ module WinRM
       body = { "#{NS_WSMAN_DMTF}:OptimizeEnumeration" => nil,
         "#{NS_WSMAN_DMTF}:MaxElements" => '32000',
         "#{NS_WSMAN_DMTF}:Filter" => wql,
-        "#{NS_WSMAN_MSFT}:SessionId" => "uuid:#{@session_id}",
         :attributes! => { "#{NS_WSMAN_DMTF}:Filter" => {'Dialect' => 'http://schemas.microsoft.com/wbem/wsman/1/WQL'}}
       }
 

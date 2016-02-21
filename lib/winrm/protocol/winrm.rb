@@ -18,19 +18,6 @@ module WinRM
   module Protocol
     # Constructs MS-WSMV protocol SOAP messages for WinRM messages
     class WinRM < Base
-      def open
-        envelope = write_envelope(action_create, create_option_set) do |body|
-          body.tag!("#{NS_WIN_SHELL}:Shell") { |s| s << Gyoku.xml(shell_body) }
-        end
-
-        resp_doc = send_message(envelope)
-        shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
-
-        logger.debug("[WinRM] remote shell #{shell_id} is open on #{@endpoint}")
-
-        shell_id
-      end
-
       def resource_uri
         {
           "#{NS_WSMAN_DMTF}:ResourceURI" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd',
