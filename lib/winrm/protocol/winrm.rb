@@ -16,23 +16,13 @@
 
 module WinRM
   module Protocol
+    # Constructs MS-WSMV protocol SOAP messages for WinRM messages
     class WinRM < Base
-      def open
-        envelope = write_envelope(action_create, create_option_set) do |body|
-          body.tag!("#{NS_WIN_SHELL}:Shell") { |s| s << Gyoku.xml(shell_body) }
-        end
-
-        resp_doc = send_message(envelope)
-        shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
- 
-        logger.debug("[WinRM] remote shell #{shell_id} is open on #{@endpoint}")
-
-        shell_id
-      end
-
       def resource_uri
-        {"#{NS_WSMAN_DMTF}:ResourceURI" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd',
-          :attributes! => {"#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => true}}}
+        {
+          "#{NS_WSMAN_DMTF}:ResourceURI" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd',
+          attributes!: { "#{NS_WSMAN_DMTF}:ResourceURI" => { 'mustUnderstand' => true } }
+        }
       end
 
       def input_streams
@@ -40,24 +30,24 @@ module WinRM
       end
 
       def output_streams
-        ['stdout', 'stderr']
+        %w(stdout stderr)
       end
 
+      # rubocop:disable AbcSize
       def shell_body
         body = shell_body_streams
         body["#{NS_WIN_SHELL}:WorkingDirectory"] = working_directory if working_directory
         body["#{NS_WIN_SHELL}:IdleTimeOut"] = idle_timeout if idle_timeout
 
-        if(options.has_key?(:env_vars) && options[:env_vars].is_a?(Hash))
-          keys = options[:env_vars].keys
-          vals = options[:env_vars].values
+        if options.key?(:env_vars) && options[:env_vars].is_a?(Hash)
           body["#{NS_WIN_SHELL}:Environment"] = {
-            "#{NS_WIN_SHELL}:Variable" => vals,
-            :attributes! => {"#{NS_WIN_SHELL}:Variable" => {'Name' => keys}}
+            "#{NS_WIN_SHELL}:Variable" => options[:env_vars].values,
+            :attributes! => { "#{NS_WIN_SHELL}:Variable" => { 'Name' => options[:env_vars].keys } }
           }
         end
         body
       end
+      # rubocop:enable AbcSize
 
       protected
 
@@ -67,7 +57,7 @@ module WinRM
             "#{NS_WSMAN_DMTF}:Option" => [noprofile, codepage],
             :attributes! => {
               "#{NS_WSMAN_DMTF}:Option" => {
-                'Name' => ['WINRS_NOPROFILE','WINRS_CODEPAGE']
+                'Name' => %w(WINRS_NOPROFILE WINRS_CODEPAGE)
               }
             }
           }
@@ -78,11 +68,11 @@ module WinRM
 
       def codepage
         # utf8 as default codepage (from https://msdn.microsoft.com/en-us/library/dd317756(VS.85).aspx)
-        @codepage ||= options.has_key?(:codepage) ? options[:codepage] : 65001
+        @codepage ||= options.key?(:codepage) ? options[:codepage] : 65_001
       end
 
       def noprofile
-        @noprofile ||= options.has_key?(:noprofile) ? options[:noprofile] : 'FALSE'
+        @noprofile ||= options.key?(:noprofile) ? options[:noprofile] : 'FALSE'
       end
 
       def working_directory
