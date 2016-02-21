@@ -25,8 +25,8 @@ describe 'PsrpMessage', unit: true do
     it 'sets start fragment bit' do
       expect(bytes[16] & 0b00000001).to eq(1)
     end
-    it 'sets message blob length to 64' do
-      expect(bytes[17..20]).to eq([0, 0, 0, 64])
+    it 'sets message blob length to 3640' do
+      expect(bytes[17..20]).to eq([0, 0, 14, 56])
     end
     it 'sets the destination to server LE' do
       expect(bytes[21..24]).to eq([2, 0, 0, 0])
