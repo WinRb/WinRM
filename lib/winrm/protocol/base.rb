@@ -28,11 +28,10 @@ module WinRM
         logger.debug("[WinRM] opening remote shell on #{@endpoint}")
 
         resp_doc = send_message(shell_envelope)
-        shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
 
         logger.debug("[WinRM] remote shell #{shell_id} is open on #{@endpoint}")
 
-        shell_id
+        REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
       end
 
       def resource_uri
@@ -55,12 +54,8 @@ module WinRM
         builder = Builder::XmlMarkup.new
         builder.instruct!(:xml, encoding: 'UTF-8')
         builder.tag! :env, :Envelope, namespaces do |env|
-          env.tag!(:env, :Header) do |h|
-            h << Gyoku.xml(merge_headers(*headers))
-          end
-          env.tag! :env, :Body do |body|
-            yield body
-          end
+          env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(*headers)) }
+          env.tag!(:env, :Body) { |body| yield body }
         end
 
         builder
@@ -100,11 +95,7 @@ module WinRM
           "#{NS_ADDRESSING}:To" => transport.endpoint.to_s,
           "#{NS_ADDRESSING}:ReplyTo" => {
             "#{NS_ADDRESSING}:Address" => 'http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous',
-            attributes!: {
-              "#{NS_ADDRESSING}:Address" => {
-                'mustUnderstand' => true
-              }
-            }
+            attributes!: { "#{NS_ADDRESSING}:Address" => { 'mustUnderstand' => true } }
           },
           "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => options[:max_envelope_size],
           "#{NS_ADDRESSING}:MessageID" => "uuid:#{SecureRandom.uuid.to_s.upcase}",
@@ -114,27 +105,21 @@ module WinRM
           "#{NS_WSMAN_DMTF}:OperationTimeout" => options[:timeout],
           attributes: {
             "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => { 'mustUnderstand' => true },
-            "#{NS_WSMAN_DMTF}:Locale/" => {
-              'xml:lang' => options[:locale],
-              'mustUnderstand' => false
-            },
-            "#{NS_WSMAN_MSFT}:DataLocale/" => {
-              'xml:lang' => options[:locale],
-              'mustUnderstand' => false
-            },
+            "#{NS_WSMAN_DMTF}:Locale/" => locale_attributes,
+            "#{NS_WSMAN_MSFT}:DataLocale/" => locale_attributes,
             "#{NS_WSMAN_MSFT}:SessionId" => { 'mustUnderstand' => false }
           }
         }
       end
 
+      def locale_attributes
+        { 'xml:lang' => options[:locale], 'mustUnderstand' => false }
+      end
+
       def action_create
         {
           "#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Create',
-          attributes!: {
-            "#{NS_ADDRESSING}:Action" => {
-              'mustUnderstand' => true
-            }
-          }
+          attributes!: { "#{NS_ADDRESSING}:Action" => { 'mustUnderstand' => true } }
         }
       end
 
@@ -146,11 +131,7 @@ module WinRM
         {
           "#{NS_WSMAN_DMTF}:SelectorSet" => {
             "#{NS_WSMAN_DMTF}:Selector" => shell_id,
-            attributes!: {
-              "#{NS_WSMAN_DMTF}:Selector" => {
-                'Name' => 'ShellId'
-              }
-            }
+            attributes!: { "#{NS_WSMAN_DMTF}:Selector" => { 'Name' => 'ShellId' } }
           }
         }
       end
@@ -158,13 +139,9 @@ module WinRM
       # merge the various header hashes and make sure we carry all of the attributes
       #   through instead of overwriting them.
       def merge_headers(*headers)
-        hdr = {}
-        headers.each do |h|
-          hdr.merge!(h) do |k, v1, v2|
-            v1.merge!(v2) if k == :attributes!
-          end
+        headers.each_with_object({}) do |h, o|
+          o.merge!(h) { |k, v1, v2| v1.merge!(v2) if k == :attributes! }
         end
-        hdr
       end
     end
   end
