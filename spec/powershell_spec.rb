@@ -26,6 +26,7 @@ describe 'winrm client powershell', integration: true do
     end
   end
 
+# rubocop:disable BlockComments, AsciiComments, CommentIndentation
 =begin
   describe 'ipconfig' do
     subject(:output) { @winrm.powershell('ipconfig') }
@@ -118,4 +119,5 @@ describe 'winrm client powershell', integration: true do
     it { should have_stdout_match(/✓1234-äöü/) }
   end
 =end
+# rubocop:enable BlockComments, AsciiComments, CommentIndentation
 end
