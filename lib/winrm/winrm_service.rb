@@ -120,21 +120,33 @@ module WinRM
 
       shell_id = SecureRandom.uuid.to_s.upcase
 
-      session_capabilities = PSRP::MessageFactory.session_capability_message(1, shell_id).bytes
-      runspace_init = PSRP::MessageFactory.init_runspace_pool_message(2, shell_id).bytes
-      creation_xml = encode_bytes(session_capabilities + runspace_init)
-
-      i_stream = shell_opts.has_key?(:i_stream) ? shell_opts[:i_stream] : 'stdin pr'
-      o_stream = shell_opts.has_key?(:o_stream) ? shell_opts[:o_stream] : 'stdout'
       codepage = shell_opts.has_key?(:codepage) ? shell_opts[:codepage] : 65001 # utf8 as default codepage (from https://msdn.microsoft.com/en-us/library/dd317756(VS.85).aspx)
       noprofile = shell_opts.has_key?(:noprofile) ? shell_opts[:noprofile] : 'FALSE'
-      h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => { "#{NS_WSMAN_DMTF}:Option" => 2.3,
-        :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => 'protocolversion', 'MustComply' => 'true'}}}, :attributes! => {"#{NS_WSMAN_DMTF}:OptionSet" => {'env:mustUnderstand' => 'true'}}}
+
+      # TODO: abstract out PRSP/WinRM differences
+      # session_capabilities = PSRP::MessageFactory.session_capability_message(1, shell_id).bytes
+      # runspace_init = PSRP::MessageFactory.init_runspace_pool_message(2, shell_id).bytes
+      # creation_xml = encode_bytes(session_capabilities + runspace_init)
+      # i_stream = shell_opts.has_key?(:i_stream) ? shell_opts[:i_stream] : 'stdin pr'
+      # o_stream = shell_opts.has_key?(:o_stream) ? shell_opts[:o_stream] : 'stdout'
+      # h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => { "#{NS_WSMAN_DMTF}:Option" => 2.3,
+      #   :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => 'protocolversion', 'MustComply' => 'true'}}}, :attributes! => {"#{NS_WSMAN_DMTF}:OptionSet" => {'env:mustUnderstand' => 'true'}}}
+      
+      i_stream = shell_opts.has_key?(:i_stream) ? shell_opts[:i_stream] : 'stdin'
+      o_stream = shell_opts.has_key?(:o_stream) ? shell_opts[:o_stream] : 'stdout stderr'
+      h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => { "#{NS_WSMAN_DMTF}:Option" => [noprofile, codepage],
+        :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_NOPROFILE','WINRS_CODEPAGE']}}}}
+
       shell_body = {
         "#{NS_WIN_SHELL}:InputStreams" => i_stream,
         "#{NS_WIN_SHELL}:OutputStreams" => o_stream,
-        "creationXml" => creation_xml, :attributes! => { "creationXml" => {"xmlns" => "http://schemas.microsoft.com/powershell"}}
+        #"creationXml" => creation_xml, :attributes! => { "creationXml" => {"xmlns" => "http://schemas.microsoft.com/powershell"}} # commenting out PSRP
       }
+
+      # These two settings might break PSRP
+      shell_body["#{NS_WIN_SHELL}:WorkingDirectory"] = shell_opts[:working_directory] if shell_opts.has_key?(:working_directory)
+      shell_body["#{NS_WIN_SHELL}:IdleTimeOut"] = shell_opts[:idle_timeout] if(shell_opts.has_key?(:idle_timeout) && shell_opts[:idle_timeout].is_a?(String))
+
       if(shell_opts.has_key?(:env_vars) && shell_opts[:env_vars].is_a?(Hash))
         keys = shell_opts[:env_vars].keys
         vals = shell_opts[:env_vars].values
@@ -148,7 +160,8 @@ module WinRM
       builder.tag! :env, :Envelope, namespaces do |env|
         env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_create,h_opts)) }
         env.tag! :env, :Body do |body|
-          body.tag!("#{NS_WIN_SHELL}:Shell", { "ShellId" => shell_id}) { |s| s << Gyoku.xml(shell_body) }
+          # body.tag!("#{NS_WIN_SHELL}:Shell", { "ShellId" => shell_id}) { |s| s << Gyoku.xml(shell_body) } # PSRP
+          body.tag!("#{NS_WIN_SHELL}:Shell") { |s| s << Gyoku.xml(shell_body) }
         end
       end
 
@@ -156,7 +169,8 @@ module WinRM
       shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
       logger.debug("[WinRM] remote shell #{shell_id} is open on #{@endpoint}")
 
-      keep_alive(shell_id)
+      # PSRP needs the below
+      # keep_alive(shell_id)
 
       if block_given?
         begin
@@ -191,7 +205,6 @@ module WinRM
     # @param [Array<String>] arguments An array of arguments for this command
     # @return [String] The CommandId from the SOAP response.  This is the ID we need to query in order to get output.
     def run_command(shell_id, command, arguments = [], cmd_opts = {}, &block)
-      command_id = SecureRandom.uuid.to_s.upcase
       consolemode = cmd_opts.has_key?(:console_mode_stdin) ? cmd_opts[:console_mode_stdin] : 'TRUE'
       skipcmd     = cmd_opts.has_key?(:skip_cmd_shell) ? cmd_opts[:skip_cmd_shell] : 'FALSE'
 
@@ -200,22 +213,30 @@ module WinRM
         :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_CONSOLEMODE_STDIN','WINRS_SKIP_CMD_SHELL']}}}
       }
 
-      create_pipline = PSRP::MessageFactory.create_pipeline_message(3, shell_id, command_id, command)
-      b64_arguments = encode_bytes(create_pipline.bytes)
-
-      body = { "#{NS_WIN_SHELL}:Command" => "Invoke-Expression", "#{NS_WIN_SHELL}:Arguments" => b64_arguments }
+      # Commented PSRP stuff
+      # command_id = SecureRandom.uuid.to_s.upcase
+      # create_pipline = PSRP::MessageFactory.create_pipeline_message(3, shell_id, command_id, command)
+      # b64_arguments = encode_bytes(create_pipline.bytes)
+      # body = { "#{NS_WIN_SHELL}:Command" => "Invoke-Expression", "#{NS_WIN_SHELL}:Arguments" => b64_arguments }
+      body = { "#{NS_WIN_SHELL}:Command" => "\"#{command}\"", "#{NS_WIN_SHELL}:Arguments" => arguments}
 
       builder = Builder::XmlMarkup.new
       builder.instruct!(:xml, :encoding => 'UTF-8')
       builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_command,selector_shell_id(shell_id))) }
+        # env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_command,selector_shell_id(shell_id))) } # PSRP
+        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_command,h_opts,selector_shell_id(shell_id))) }
         env.tag!(:env, :Body) do |env_body|
-          env_body.tag!("#{NS_WIN_SHELL}:CommandLine", {"CommandId" => command_id}) { |cl| cl << Gyoku.xml(body) }
+          env_body.tag!("#{NS_WIN_SHELL}:CommandLine") { |cl| cl << Gyoku.xml(body) }
+          # env_body.tag!("#{NS_WIN_SHELL}:CommandLine", {"CommandId" => command_id}) { |cl| cl << Gyoku.xml(body) } #PSRP
         end
       end
 
       # Grab the command element and unescape any single quotes - issue 69
       xml = builder.target!
+
+      # escaping not needed for PSRP
+      escaped_cmd = /<#{NS_WIN_SHELL}:Command>(.+)<\/#{NS_WIN_SHELL}:Command>/m.match(xml)[1]
+      xml[escaped_cmd] = escaped_cmd.gsub(/&#39;/, "'")
 
       resp_doc = send_message(xml)
       command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
@@ -261,7 +282,8 @@ module WinRM
     #   is either :stdout or :stderr.  The reason it is in an Array so so we can get the output in the order it ocurrs on
     #   the console.
     def get_command_output(shell_id, command_id, &block)
-      body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout',
+      # body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout', #PSRP
+      body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout stderr',
         :attributes! => {"#{NS_WIN_SHELL}:DesiredStream" => {'CommandId' => command_id}}}
 
       builder = Builder::XmlMarkup.new
@@ -532,7 +554,8 @@ module WinRM
     # Helper methods for SOAP Headers
 
     def resource_uri_cmd
-      {"#{NS_WSMAN_DMTF}:ResourceURI" => 'http://schemas.microsoft.com/powershell/Microsoft.PowerShell',
+      # {"#{NS_WSMAN_DMTF}:ResourceURI" => 'http://schemas.microsoft.com/powershell/Microsoft.PowerShell', #PSRP
+      {"#{NS_WSMAN_DMTF}:ResourceURI" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd',
         :attributes! => {"#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => true}}}
     end
 
