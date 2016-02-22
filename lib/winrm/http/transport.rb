@@ -243,7 +243,6 @@ module WinRM
     end
 
     # Uses Kerberos/GSSAPI to authenticate and encrypt messages
-    # rubocop:disable Metrics/ClassLength
     class HttpGSSAPI < HttpTransport
       # @param [String,URI] endpoint the WinRM webservice endpoint
       # @param [String] realm the Kerberos realm we are authenticating to
@@ -279,9 +278,6 @@ module WinRM
       end
 
       private
-
-      # rubocop:disable Metrics/MethodLength
-      # rubocop:disable Metrics/AbcSize
 
       # Sends the SOAP payload to the WinRM service and returns the service's
       # HTTP response.
@@ -413,9 +409,6 @@ module WinRM
 
         iov1[:buffer].value
       end
-      # rubocop:enable Metrics/MethodLength
-      # rubocop:enable Metrics/AbcSize
     end
-    # rubocop:enable Metrics/ClassLength
   end
 end # WinRM
