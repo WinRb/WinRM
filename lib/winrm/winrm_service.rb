@@ -218,7 +218,8 @@ module WinRM
         }
       }
 
-      body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout',
+      # body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout', #PSRP
+      body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout stderr',
         :attributes! => {"#{NS_WIN_SHELL}:DesiredStream" => {'CommandId' => command_id}}}
 
       builder = Builder::XmlMarkup.new
@@ -346,7 +347,8 @@ module WinRM
     # @yieldparam [CommandExecutor] a CommandExecutor instance
     # @return [CommandExecutor] a CommandExecutor instance
     def create_executor(&block)
-      executor = CommandExecutor.new(self)
+      protocol = Protocol::WinRM.new(@xfer, executor_options)
+      executor = CommandExecutor.new(self, protocol)
       executor.open
 
       if block_given?
@@ -358,6 +360,16 @@ module WinRM
       else
         executor
       end
+    end
+
+    # TODO: Executor should use session_opts directly
+    def executor_options
+      {
+        logger: logger,
+        max_envelope_size: @session_opts[:max_envelope_size],
+        timeout: Iso8601Duration.sec_to_dur(@session_opts[:operation_timeout]),
+        locale:  @session_opts[:locale]
+      }
     end
 
     # Run a WQL Query
