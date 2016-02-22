@@ -44,16 +44,16 @@ describe WinRM::CommandExecutor, unit: true do
   end
 
   describe '#close' do
-    it 'calls service#close_shell' do
+    it 'calls service#close' do
       executor.open
-      expect(service).to receive(:close_shell).with(shell_id)
+      expect(protocol).to receive(:close).with(shell_id)
 
       executor.close
     end
 
-    it 'only calls service#close_shell once for multiple calls' do
+    it 'only calls protocol#close once for multiple calls' do
       executor.open
-      expect(service).to receive(:close_shell).with(shell_id).once
+      expect(protocol).to receive(:close).with(shell_id).once
 
       executor.close
       executor.close
@@ -61,7 +61,7 @@ describe WinRM::CommandExecutor, unit: true do
     end
 
     it 'undefines finalizer' do
-      allow(service).to receive(:close_shell)
+      allow(protocol).to receive(:close)
       allow(ObjectSpace).to receive(:define_finalizer) { |e, _| e == executor }
       expect(ObjectSpace).to receive(:undefine_finalizer).with(executor)
       executor.open
@@ -295,7 +295,7 @@ describe WinRM::CommandExecutor, unit: true do
 
       before do
         allow(protocol).to receive(:open).and_return('s1', 's2')
-        allow(service).to receive(:close_shell)
+        allow(protocol).to receive(:close)
         allow(service).to receive(:run_command).and_yield('command-xxx')
         allow(service).to receive(:get_command_output).and_return(echo_output)
         allow(service).to receive(:run_wql).with('select version from Win32_OperatingSystem')
@@ -306,7 +306,7 @@ describe WinRM::CommandExecutor, unit: true do
         iterations = 35
         reset_times = iterations / (15 - 2)
 
-        expect(service).to receive(:close_shell).exactly(reset_times).times
+        expect(protocol).to receive(:close).exactly(reset_times).times
         executor.open
         iterations.times { executor.run_cmd('echo', ['Hello']) }
       end
@@ -408,7 +408,7 @@ describe WinRM::CommandExecutor, unit: true do
 
       before do
         allow(protocol).to receive(:open).and_return('s1', 's2')
-        allow(service).to receive(:close_shell)
+        allow(protocol).to receive(:close)
         allow(service).to receive(:run_command).and_yield('command-xxx')
         allow(service).to receive(:get_command_output).and_return(echo_output)
         allow(service).to receive(:wsman_identify).with('select version from Win32_OperatingSystem')
@@ -419,7 +419,7 @@ describe WinRM::CommandExecutor, unit: true do
         iterations = 35
         reset_times = iterations / (15 - 2)
 
-        expect(service).to receive(:close_shell).exactly(reset_times).times
+        expect(protocol).to receive(:close).exactly(reset_times).times
         executor.open
         iterations.times { executor.run_powershell_script('echo Hello') }
       end
