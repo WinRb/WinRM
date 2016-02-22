@@ -411,8 +411,7 @@ module WinRM
     # @yieldparam [CommandExecutor] a CommandExecutor instance
     # @return [CommandExecutor] a CommandExecutor instance
     def create_executor(&block)
-      protocol = Protocol::WinRM.new(@xfer, executor_options)
-      executor = CommandExecutor.new(self, protocol)
+      executor = CommandExecutor.new(self)
       executor.open
 
       if block_given?
