@@ -411,7 +411,8 @@ module WinRM
     # @yieldparam [CommandExecutor] a CommandExecutor instance
     # @return [CommandExecutor] a CommandExecutor instance
     def create_executor(&block)
-      executor = CommandExecutor.new(self)
+      protocol = Protocol::WinRM.new(@xfer, executor_options)
+      executor = CommandExecutor.new(self, protocol)
       executor.open
 
       if block_given?
@@ -423,6 +424,15 @@ module WinRM
       else
         executor
       end
+    end
+
+    def executor_options
+      {
+        logger: logger,
+        max_envelope_size: @max_env_sz,
+        timeout: @timeout,
+        locale:  @locale
+      }
     end
 
     # Run a WQL Query

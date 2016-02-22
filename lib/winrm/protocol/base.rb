@@ -24,14 +24,16 @@ module WinRM
         @options = options
       end
 
+      attr_reader :options, :logger, :transport
+
       def open
         logger.debug("[WinRM] opening remote shell on #{@endpoint}")
 
-        resp_doc = send_message(shell_envelope)
-
+        resp_doc = transport.send_request(shell_envelope.target!)
+        shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
         logger.debug("[WinRM] remote shell #{shell_id} is open on #{@endpoint}")
 
-        REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
+        shell_id
       end
 
       def resource_uri
@@ -103,7 +105,7 @@ module WinRM
           "#{NS_WSMAN_DMTF}:Locale/" => '',
           "#{NS_WSMAN_MSFT}:DataLocale/" => '',
           "#{NS_WSMAN_DMTF}:OperationTimeout" => options[:timeout],
-          attributes: {
+          attributes!: {
             "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => { 'mustUnderstand' => true },
             "#{NS_WSMAN_DMTF}:Locale/" => locale_attributes,
             "#{NS_WSMAN_MSFT}:DataLocale/" => locale_attributes,

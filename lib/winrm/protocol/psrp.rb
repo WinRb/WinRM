@@ -80,7 +80,7 @@ module WinRM
           body.tag!("#{NS_WIN_SHELL}:Receive") { |cl| cl << Gyoku.xml(keep_alive_body) }
         end
 
-        send_message(builder.target!)
+        transport.send_request(builder.target!)
       end
 
       def shell_id
