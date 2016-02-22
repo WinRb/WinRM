@@ -100,7 +100,6 @@ module WinRM
         message += byte_order_mark + blob_bytes
         message
       end
-      # rubocop:enable Metrics/AbcSize
 
       private
 

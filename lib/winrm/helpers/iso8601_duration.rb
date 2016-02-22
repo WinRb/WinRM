@@ -15,7 +15,6 @@
 # limitations under the License.
 
 # rubocop:disable Metrics/MethodLength
-# rubocop:disable Metrics/AbcSize
 
 # Format an ISO8601 Duration
 module Iso8601Duration
@@ -55,4 +54,3 @@ module Iso8601Duration
 end
 
 # rubocop:enable Metrics/MethodLength
-# rubocop:enable Metrics/AbcSize
