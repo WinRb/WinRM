@@ -372,15 +372,6 @@ module WinRM
       end
     end
 
-    def executor_options
-      {
-        logger: logger,
-        max_envelope_size: @max_env_sz,
-        timeout: @timeout,
-        locale:  @locale
-      }
-    end
-
     # Run a WQL Query
     # @see http://msdn.microsoft.com/en-us/library/aa394606(VS.85).aspx
     # @param [String] wql The WQL query
