@@ -61,7 +61,7 @@ module WinRM
     def close
       return if shell.nil?
 
-      service.close_shell(shell)
+      protocol.close(shell)
       remove_finalizer
       @shell = nil
     end
