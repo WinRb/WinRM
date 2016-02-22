@@ -38,6 +38,9 @@ module WinRM
     # @return [WinRM::WinRMWebService] a WinRM web service object
     attr_reader :service
 
+    # @return [WinRM::Protocol] a WinRM protocol
+    attr_reader :protocol
+
     # @return [String,nil] the identifier for the current open remote
     #   shell session, or `nil` if the session is not open
     attr_reader :shell
@@ -46,8 +49,10 @@ module WinRM
     #
     # @param service [WinRM::WinRMWebService] a winrm web service object
     #   responds to `#debug` and `#info` (default: `nil`)
-    def initialize(service)
+    def initialize(service, protocol)
       @service = service
+      @protocol = protocol
+      protocol.options[:codepage] = code_page
       @command_count = 0
     end
 
@@ -69,7 +74,7 @@ module WinRM
     def open
       close
       retryable(service.retry_limit, service.retry_delay) do
-        @shell = service.open_shell(codepage: code_page)
+        @shell = protocol.open
       end
       add_finalizer(shell)
       @command_count = 0
