@@ -46,6 +46,10 @@ module WinRM
         true
       end
 
+      def run_command(_shell_id, _command, _arguments = [])
+        fail NotImplementedError
+      end
+
       def resource_uri
         fail NotImplementedError
       end
@@ -133,6 +137,12 @@ module WinRM
           "#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Create',
           attributes!: { "#{NS_ADDRESSING}:Action" => { 'mustUnderstand' => true } }
         }
+      end
+
+      def action_command
+        {
+          "#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Command',
+          attributes!: { "#{NS_ADDRESSING}:Action" => { 'mustUnderstand' => true } } }
       end
 
       def action_delete
