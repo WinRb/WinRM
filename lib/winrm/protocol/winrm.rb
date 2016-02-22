@@ -18,6 +18,24 @@ module WinRM
   module Protocol
     # Constructs MS-WSMV protocol SOAP messages for WinRM messages
     class WinRM < Base
+      def run_command(shell_id, command, arguments = [])
+        cmd_envelope = write_envelope(action_command, command_option_set, shell_id) do |env_body|
+          env_body.tag!("#{NS_WIN_SHELL}:CommandLine") do |s|
+            s << Gyoku.xml(
+              "#{NS_WIN_SHELL}:Command" => "\"#{command}\"",
+              "#{NS_WIN_SHELL}:Arguments" => arguments
+            )
+          end
+        end
+
+        # Grab the command element and unescape any single quotes - issue 69
+        xml = cmd_envelope.target!
+        escaped_cmd = /<#{NS_WIN_SHELL}:Command>(.+)<\/#{NS_WIN_SHELL}:Command>/m.match(xml)[1]
+        xml[escaped_cmd] = escaped_cmd.gsub(/&#39;/, "'")
+
+        REXML::XPath.first(transport.send_request(xml), "//#{NS_WIN_SHELL}:CommandId").text
+      end
+
       def resource_uri
         {
           "#{NS_WSMAN_DMTF}:ResourceURI" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd',
@@ -33,7 +51,6 @@ module WinRM
         %w(stdout stderr)
       end
 
-      # rubocop:disable AbcSize
       def shell_body
         body = shell_body_streams
         body["#{NS_WIN_SHELL}:WorkingDirectory"] = working_directory if working_directory
@@ -47,7 +64,6 @@ module WinRM
         end
         body
       end
-      # rubocop:enable AbcSize
 
       protected
 
@@ -64,15 +80,36 @@ module WinRM
         }
       end
 
+      def command_option_set
+        @option_set ||= {
+          "#{NS_WSMAN_DMTF}:OptionSet" => {
+            "#{NS_WSMAN_DMTF}:Option" => [consolemode, skipcmd],
+            :attributes! => {
+              "#{NS_WSMAN_DMTF}:Option" => {
+                'Name' => %w(WINRS_CONSOLEMODE_STDIN WINRS_SKIP_CMD_SHELL)
+              }
+            }
+          }
+        }
+      end
+
       private
 
       def codepage
         # utf8 as default codepage (from https://msdn.microsoft.com/en-us/library/dd317756(VS.85).aspx)
-        @codepage ||= options.key?(:codepage) ? options[:codepage] : 65_001
+        @codepage ||= options[:codepage] || 65_001
       end
 
       def noprofile
-        @noprofile ||= options.key?(:noprofile) ? options[:noprofile] : 'FALSE'
+        @noprofile ||= options[:noprofile] || 'FALSE'
+      end
+
+      def consolemode
+        @consolemode ||= options[:console_mode_stdin] || 'TRUE'
+      end
+
+      def skipcmd
+        @skipcmd ||= options[:skip_cmd_shell] || 'FALSE'
       end
 
       def working_directory

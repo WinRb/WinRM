@@ -24,6 +24,28 @@ module WinRM
         shell_id
       end
 
+      def run_command(shell_id, command)
+        command_id = SecureRandom.uuid.to_s.upcase
+        pipline = PSRP::MessageFactory.create_pipeline_message(3, shell_id, command_id, command)
+
+        cmd_envelope = write_envelope(action_command, nil, shell_id) do |env_body|
+          env_body.tag!(
+            "#{NS_WIN_SHELL}:CommandLine",
+            'CommandId' => command_id
+          ) do |s|
+            s << Gyoku.xml(
+              "#{NS_WIN_SHELL}:Command" => 'Invoke-Expression',
+              "#{NS_WIN_SHELL}:Arguments" => encode_bytes(pipline.bytes)
+            )
+          end
+        end
+
+        REXML::XPath.first(
+          transport.send_request(cmd_envelope.target!),
+          "//#{NS_WIN_SHELL}:CommandId"
+        ).text
+      end
+
       def shell_body
         session_capabilities = WinRM::PSRP::MessageFactory.session_capability_message(1, shell_id)
         runspace_init = WinRM::PSRP::MessageFactory.init_runspace_pool_message(1, shell_id)
@@ -104,6 +126,10 @@ module WinRM
             }
           }
         }
+      end
+
+      def encode_bytes(bytes)
+        Base64.strict_encode64(bytes.pack('C*'))
       end
     end
   end
