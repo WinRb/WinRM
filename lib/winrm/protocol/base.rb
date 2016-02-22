@@ -27,13 +27,23 @@ module WinRM
       attr_reader :options, :logger, :transport
 
       def open
-        logger.debug("[WinRM] opening remote shell on #{@endpoint}")
+        logger.debug("[WinRM] opening remote shell on #{transport.endpoint}")
 
         resp_doc = transport.send_request(shell_envelope.target!)
         shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
-        logger.debug("[WinRM] remote shell #{shell_id} is open on #{@endpoint}")
+        logger.debug("[WinRM] remote shell #{shell_id} is open on #{transport.endpoint}")
 
         shell_id
+      end
+
+      def close(shell_id)
+        logger.debug("[WinRM] closing remote shell #{shell_id} on #{transport.endpoint}")
+
+        envelope = write_envelope(action_delete, nil, shell_id)
+        transport.send_request(envelope.target!)
+
+        logger.debug("[WinRM] remote shell #{shell_id} closed")
+        true
       end
 
       def resource_uri
@@ -57,7 +67,7 @@ module WinRM
         builder.instruct!(:xml, encoding: 'UTF-8')
         builder.tag! :env, :Envelope, namespaces do |env|
           env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(*headers)) }
-          env.tag!(:env, :Body) { |body| yield body }
+          env.tag!(:env, :Body) { |body| yield body if block_given? }
         end
 
         builder
@@ -125,6 +135,13 @@ module WinRM
         }
       end
 
+      def action_delete
+        {
+          "#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Delete',
+          attributes!: { "#{NS_ADDRESSING}:Action" => { 'mustUnderstand' => true } }
+        }
+      end
+
       def session_id
         @session_id ||= SecureRandom.uuid.to_s.upcase
       end
@@ -142,6 +159,7 @@ module WinRM
       #   through instead of overwriting them.
       def merge_headers(*headers)
         headers.each_with_object({}) do |h, o|
+          next if h.nil?
           o.merge!(h) { |k, v1, v2| v1.merge!(v2) if k == :attributes! }
         end
       end
