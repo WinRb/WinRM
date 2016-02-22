@@ -7,14 +7,12 @@ require_relative 'matchers'
 
 # Creates a WinRM connection for integration tests
 module ConnectionHelper
-  # rubocop:disable AbcSize
   def winrm_connection
     winrm = WinRM::WinRMWebService.new(
       config[:endpoint], config[:auth_type].to_sym, config[:options])
     winrm.logger.level = :error
     winrm
   end
-  # rubocop:enable AbcSize
 
   def config
     @config ||= begin
@@ -50,7 +48,6 @@ module ConnectionHelper
     path
   end
 
-  # rubocop:disable Metrics/MethodLength
   def symbolize_keys(hash)
     hash.each_with_object({}) do |(key, value), result|
       new_key = case key
@@ -65,7 +62,6 @@ module ConnectionHelper
       result
     end
   end
-  # rubocop:enable Metrics/MethodLength
 end
 
 RSpec.configure do |config|
