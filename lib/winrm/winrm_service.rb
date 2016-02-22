@@ -361,16 +361,6 @@ module WinRM
       end
     end
 
-    # TODO: Executor should use session_opts directly
-    def executor_options
-      {
-        logger: logger,
-        max_envelope_size: @session_opts[:max_envelope_size],
-        timeout: Iso8601Duration.sec_to_dur(@session_opts[:operation_timeout]),
-        locale:  @session_opts[:locale]
-      }
-    end
-
     # Run a WQL Query
     # @see http://msdn.microsoft.com/en-us/library/aa394606(VS.85).aspx
     # @param [String] wql The WQL query
