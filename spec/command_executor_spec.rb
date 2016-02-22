@@ -25,7 +25,8 @@ describe WinRM::CommandExecutor, unit: true do
   let(:logged_output)   { StringIO.new }
   let(:shell_id)        { 'shell-123' }
   let(:executor_args)   { [service, logger] }
-  let(:executor) { WinRM::CommandExecutor.new(service) }
+  let(:protocol)        { double('protocol', options: {}) }
+  let(:executor) { WinRM::CommandExecutor.new(service, protocol) }
   let(:service) do
     double(
       'winrm_service',
@@ -38,7 +39,7 @@ describe WinRM::CommandExecutor, unit: true do
   let(:version_output) { { xml_fragment: [{ version: '6.3.9600' }] } }
 
   before do
-    allow(service).to receive(:open_shell).and_return(shell_id)
+    allow(protocol).to receive(:open).and_return(shell_id)
     allow(service).to receive(:run_wql).and_return(version_output)
   end
 
@@ -71,7 +72,7 @@ describe WinRM::CommandExecutor, unit: true do
 
   describe '#open' do
     it 'calls service#open_shell' do
-      expect(service).to receive(:open_shell).and_return(shell_id)
+      expect(protocol).to receive(:open).and_return(shell_id)
 
       executor.open
     end
@@ -94,14 +95,14 @@ describe WinRM::CommandExecutor, unit: true do
       let(:delay) { 0.1 }
 
       before do
-        allow(service).to receive(:open_shell).and_raise(error)
+        allow(protocol).to receive(:open).and_raise(error)
         allow(service).to receive(:retry_delay).and_return(delay)
         allow(service).to receive(:retry_limit).and_return(limit)
       end
 
       it 'attempts to connect :retry_limit times' do
         begin
-          allow(service).to receive(:open_shell).exactly.times(limit)
+          allow(protocol).to receive(:open).exactly.times(limit)
           executor.open
         rescue # rubocop:disable Lint/HandleExceptions
           # the raise is not what is being tested here, rather its side-effect
@@ -293,7 +294,7 @@ describe WinRM::CommandExecutor, unit: true do
       end
 
       before do
-        allow(service).to receive(:open_shell).and_return('s1', 's2')
+        allow(protocol).to receive(:open).and_return('s1', 's2')
         allow(service).to receive(:close_shell)
         allow(service).to receive(:run_command).and_yield('command-xxx')
         allow(service).to receive(:get_command_output).and_return(echo_output)
@@ -406,7 +407,7 @@ describe WinRM::CommandExecutor, unit: true do
       end
 
       before do
-        allow(service).to receive(:open_shell).and_return('s1', 's2')
+        allow(protocol).to receive(:open).and_return('s1', 's2')
         allow(service).to receive(:close_shell)
         allow(service).to receive(:run_command).and_yield('command-xxx')
         allow(service).to receive(:get_command_output).and_return(echo_output)
