@@ -19,7 +19,7 @@ require_relative 'header'
 
 module WinRM
   module WSMV
-    # WSMV message to execute a command inside a remote shell
+    # WSMV message to get output from a remote shell
     class CommandOutput
       include WinRM::WSMV::SOAP
       include WinRM::WSMV::Header
