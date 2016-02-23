@@ -1,6 +1,6 @@
 # encoding: UTF-8
 
-require_relative '../lib/winrm/wsmv/wql_query'
+require 'winrm/wsmv/wql_query'
 
 describe 'WqlQuery', unit: true do
   context 'default session options' do

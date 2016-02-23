@@ -4,7 +4,7 @@ describe 'winrm client primitives' do
     @winrm = winrm_connection
   end
 
-  describe 'open and close shell', integration: true do
+  describe 'open and close shell' do
     it 'should #open_shell and #close_shell' do
       sid = @winrm.open_shell
       expect(sid).to be_a_uid

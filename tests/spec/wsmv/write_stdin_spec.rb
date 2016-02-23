@@ -1,7 +1,7 @@
 # encoding: UTF-8
 
 require 'base64'
-require_relative '../lib/winrm/wsmv/write_stdin'
+require 'winrm/wsmv/write_stdin'
 
 describe 'WriteStdin', unit: true do
   context 'default session options' do

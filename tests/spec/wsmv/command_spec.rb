@@ -1,8 +1,8 @@
 # encoding: UTF-8
 
-require_relative '../lib/winrm/wsmv/command'
+require 'winrm/wsmv/command'
 
-describe 'Command', unit: true do
+describe 'Command' do
   context 'default session options' do
     session_opts = {
       endpoint: 'http://localhost:5985/wsman',

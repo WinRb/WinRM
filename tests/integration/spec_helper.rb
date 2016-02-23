@@ -3,7 +3,7 @@ require 'rubygems'
 require 'bundler/setup'
 require 'winrm'
 require 'json'
-require_relative 'matchers'
+require_relative '../matchers'
 
 # Creates a WinRM connection for integration tests
 module ConnectionHelper
@@ -61,16 +61,6 @@ module ConnectionHelper
       result[new_key] = new_value
       result
     end
-  end
-end
-
-# Strip leading whitespace from each line that is the same as the
-# amount of whitespace on the first line of the string.
-# Leaves _additional_ indentation on later lines intact.
-# and remove newlines.
-class String
-  def unindent
-    gsub(/^#{self[/\A[ \t]*/]}/, '').gsub("\n", '')
   end
 end
 

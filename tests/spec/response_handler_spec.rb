@@ -1,10 +1,10 @@
 # encoding: UTF-8
 require 'winrm/http/response_handler'
 
-describe 'response handler', unit: true do
+describe 'response handler' do
   %w(v1, v2).each do |winrm_version|
-    let(:soap_fault) { File.read("spec/stubs/responses/soap_fault_#{winrm_version}.xml") }
-    let(:open_shell) { File.read("spec/stubs/responses/open_shell_#{winrm_version}.xml") }
+    let(:soap_fault) { stubbed_response("soap_fault_#{winrm_version}.xml") }
+    let(:open_shell) { stubbed_response("open_shell_#{winrm_version}.xml") }
 
     describe "successful 200 #{winrm_version} response" do
       it 'returns an xml doc' do
@@ -44,7 +44,7 @@ describe 'response handler', unit: true do
   end
 
   describe 'failed 500 WMI error response' do
-    let(:wmi_error) { File.read('spec/stubs/responses/wmi_error_v2.xml') }
+    let(:wmi_error) { stubbed_response('wmi_error_v2.xml') }
 
     it 'raises a WinRMWMIError' do
       handler = WinRM::ResponseHandler.new(wmi_error, 500)

@@ -1,5 +1,5 @@
 # encoding: UTF-8
-describe 'issue 59', integration: true do
+describe 'issue 59' do
   before(:all) do
     @winrm = winrm_connection
   end

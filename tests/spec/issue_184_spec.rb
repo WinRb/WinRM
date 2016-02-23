@@ -4,11 +4,11 @@ require 'rexml/document'
 require 'erb'
 require 'base64'
 
-describe 'issue 184', unit: true do
+describe 'issue 184' do
   let(:shell_id)    { 'shell-123' }
   let(:command_id)  { 123 }
   let(:test_data_xml_template) do
-    ERB.new(File.read('spec/stubs/responses/get_command_output_response.xml.erb'))
+    ERB.new(stubbed_response('get_command_output_response.xml.erb'))
   end
   let(:service) do
     WinRM::WinRMWebService.new(

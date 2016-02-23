@@ -21,7 +21,7 @@ require 'winrm/command_executor'
 require 'base64'
 require 'securerandom'
 
-describe WinRM::CommandExecutor, unit: true do
+describe WinRM::CommandExecutor do
   let(:logged_output)   { StringIO.new }
   let(:shell_id)        { 'shell-123' }
   let(:executor_args)   { [service, logger] }

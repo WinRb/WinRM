@@ -1,8 +1,8 @@
 # encoding: UTF-8
 
-require_relative '../lib/winrm/wsmv/create_shell'
+require 'winrm/wsmv/create_shell'
 
-describe 'CreateShell', unit: true do
+describe 'CreateShell' do
   context 'default session options' do
     session_opts = {
       endpoint: 'http://localhost:5985/wsman',

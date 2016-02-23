@@ -11,6 +11,6 @@ describe 'Verify kerberos will reauth when necessary', kerberos: true do
   it 'work with a 18 second sleep' do
     ps_command = 'Start-Sleep -s 18'
     output = @winrm.run_powershell_script(ps_command)
-    output[:exitcode].should == 0
+    expect(output[:exitcode]).to eq(0)
   end
 end

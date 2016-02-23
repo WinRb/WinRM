@@ -1,5 +1,5 @@
 # encoding: UTF-8
-describe 'Exceptions', unit: true do
+describe 'Exceptions' do
   describe WinRM::WinRMAuthorizationError do
     let(:error) { WinRM::WinRMHTTPTransportError.new('Foo happened', 500) }
 
