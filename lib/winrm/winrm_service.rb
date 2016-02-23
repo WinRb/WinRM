@@ -257,23 +257,18 @@ module WinRM
       output
     end
 
-    # Clean-up after a command.
+    # Clean-up after a command. Signal the Command references to terminate (close stdout/stderr)
     # @see #run_command
     # @param [String] shell_id The shell id on the remote machine.  See #open_shell
     # @param [String] command_id The command id on the remote machine.  See #run_command
     # @return [true] This should have more error checking but it just returns true for now.
     def cleanup_command(shell_id, command_id)
-      # Signal the Command references to terminate (close stdout/stderr)
-      body = { "#{NS_WIN_SHELL}:Code" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/signal/terminate' }
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-      builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_signal,selector_shell_id(shell_id))) }
-        env.tag!(:env, :Body) do |env_body|
-          env_body.tag!("#{NS_WIN_SHELL}:Signal", {'CommandId' => command_id}) { |cl| cl << Gyoku.xml(body) }
-        end
-      end
-      resp = send_message(builder.target!)
+      cmd_opts = {
+        shell_id: shell_id,
+        command_id: command_id
+      }
+      msg = WinRM::WSMV::CommandOutput.new(@session_opts, cmd_opts)
+      resp = send_message(msg.build)
       true
     end
 
