@@ -37,9 +37,15 @@ module WinRM
   end
 end
 
+require 'httpclient'
+require 'builder'
+require 'gyoku'
+require 'base64'
 require 'winrm/output'
 require 'winrm/helpers/iso8601_duration'
 require 'winrm/helpers/uuid'
-require 'winrm/soap_provider'
+require 'winrm/exceptions/exceptions'
+require 'winrm/winrm_service'
+require 'winrm/http/transport'
 require 'winrm/psrp/message'
 require 'winrm/psrp/message_factory'
