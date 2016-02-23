@@ -1,5 +1,5 @@
 # encoding: UTF-8
-describe 'PsrpMessage', unit: true do
+describe 'PsrpMessage' do
   context 'all fields provided' do
     subject(:bytes) do
       msg = WinRM::PSRP::Message.new(

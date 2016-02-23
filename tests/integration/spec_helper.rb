@@ -3,7 +3,7 @@ require 'rubygems'
 require 'bundler/setup'
 require 'winrm'
 require 'json'
-require_relative 'matchers'
+require_relative '../matchers'
 
 # Creates a WinRM connection for integration tests
 module ConnectionHelper

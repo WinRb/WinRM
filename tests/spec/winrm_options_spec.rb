@@ -1,5 +1,5 @@
 # encoding: UTF-8
-describe 'WinRM options', unit: true do
+describe 'WinRM options' do
   let(:subject) { WinRM::WinRMWebService.new('http://localhost:55985/wsman', :plaintext) }
 
   context 'when operations timeout is set to 60' do

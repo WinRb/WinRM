@@ -1,5 +1,5 @@
 # encoding: UTF-8
-describe 'UUIDHelper', unit: true do
+describe 'UUIDHelper' do
   subject(:uuid_helper) do
     Object.new.extend(WinRM::UUIDHelper)
   end

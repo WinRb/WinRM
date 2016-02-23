@@ -1,8 +1,8 @@
 # encoding: UTF-8
 
-require_relative '../lib/winrm/wsmv/close_shell'
+require 'winrm/wsmv/close_shell'
 
-describe 'CloseShell', unit: true do
+describe 'CloseShell' do
   context 'default session options' do
     session_opts = {
       endpoint: 'http://localhost:5985/wsman',

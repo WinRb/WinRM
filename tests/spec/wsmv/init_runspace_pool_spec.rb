@@ -1,8 +1,8 @@
 # encoding: UTF-8
 
-require_relative '../lib/winrm/wsmv/init_runspace_pool'
+require 'winrm/wsmv/init_runspace_pool'
 
-describe 'InitRunspacePool', unit: true do
+describe 'InitRunspacePool' do
   context 'default session options' do
     let(:session_opts) do
       {

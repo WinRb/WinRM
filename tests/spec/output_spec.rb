@@ -1,5 +1,5 @@
 # encoding: UTF-8
-describe WinRM::Output, unit: true do
+describe WinRM::Output do
   subject { WinRM::Output.new }
 
   context 'when there is no output' do

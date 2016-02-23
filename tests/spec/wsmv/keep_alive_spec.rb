@@ -1,8 +1,8 @@
 # encoding: UTF-8
 
-require_relative '../lib/winrm/wsmv/keep_alive'
+require 'winrm/wsmv/keep_alive'
 
-describe 'KeepAlive', unit: true do
+describe 'KeepAlive' do
   context 'default session options' do
     let(:session_opts) do
       {
