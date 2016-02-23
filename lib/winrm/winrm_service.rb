@@ -28,6 +28,7 @@ require_relative 'wsmv/close_shell'
 require_relative 'wsmv/wql_query'
 require_relative 'wsmv/init_runspace_pool'
 require_relative 'wsmv/keep_alive'
+require_relative 'wsmv/create_pipeline'
 
 module WinRM
   # This is the main class that does the SOAP request/response logic. There are a few helper
