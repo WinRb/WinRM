@@ -55,17 +55,6 @@ module WinRM
         body
       end
 
-      def environment_vars_body
-        {
-          "#{NS_WIN_SHELL}:Variable" => @env_vars.values,
-          :attributes! => {
-            "#{NS_WIN_SHELL}:Variable" => {
-              'Name' => @env_vars.keys
-            }
-          }
-        }
-      end
-
       def shell_headers
         merge_headers(shared_headers(@session_opts),
                       resource_uri_shell(RESOURCE_URI_POWERSHELL),
