@@ -14,16 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require_relative 'soap'
-require_relative 'header'
+require_relative 'base'
 
 module WinRM
   module WSMV
     # WSMV message to create a remote shell
-    class CreateShell
-      include WinRM::WSMV::SOAP
-      include WinRM::WSMV::Header
-
+    class CreateShell < Base
       # utf8 as default codepage
       # https://msdn.microsoft.com/en-us/library/dd317756(VS.85).aspx
       UTF8_CODE_PAGE = 65001
@@ -43,17 +39,14 @@ module WinRM
         @env_vars = opt_or_default(shell_opts, :env_vars)
       end
 
-      def build
-        builder = Builder::XmlMarkup.new
-        builder.instruct!(:xml, encoding: 'UTF-8')
-        builder.tag! :env, :Envelope, namespaces do |env|
-          env.tag!(:env, :Header) do |h|
-            h << Gyoku.xml(shell_headers)
-          end
-          env.tag! :env, :Body do |body|
-            body.tag!("#{NS_WIN_SHELL}:Shell") { |s| s << Gyoku.xml(shell_body) }
-          end
-        end
+      protected
+
+      def create_header(header)
+        header << Gyoku.xml(shell_headers)
+      end
+
+      def create_body(body)
+        body.tag!("#{NS_WIN_SHELL}:Shell") { |s| s << Gyoku.xml(shell_body) }
       end
 
       private
