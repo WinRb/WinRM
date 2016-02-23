@@ -2,17 +2,8 @@
 
 require 'winrm/wsmv/init_runspace_pool'
 
-describe 'InitRunspacePool' do
+describe WinRM::WSMV::InitRunspacePool do
   context 'default session options' do
-    let(:session_opts) do
-      {
-        endpoint: 'http://localhost:5985/wsman',
-        max_envelope_size: 153600,
-        session_id: '05A2622B-B842-4EB8-8A78-0225C8A993DF',
-        operation_timeout: 60,
-        locale: 'en-US'
-      }
-    end
     let(:creation_xml) do
       session_capabilities = WinRM::PSRP::MessageFactory.session_capability_message(
         1, subject.shell_id)
@@ -20,7 +11,7 @@ describe 'InitRunspacePool' do
       Base64.strict_encode64((session_capabilities.bytes + runspace_init.bytes).pack('C*'))
     end
 
-    subject { WinRM::WSMV::InitRunspacePool.new(session_opts) }
+    subject { described_class.new(default_session_opts) }
 
     it 'creates a well formed message' do
       xml = subject.build

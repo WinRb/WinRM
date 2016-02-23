@@ -5,9 +5,19 @@ require 'winrm'
 require 'json'
 require_relative '../matchers'
 
-module StubHelper
+module SpecUnitHelper
   def stubbed_response(file)
     File.read("tests/spec/stubs/responses/#{file}")
+  end
+
+  def default_session_opts
+    {
+      endpoint: 'http://localhost:5985/wsman',
+      max_envelope_size: 153600,
+      session_id: '05A2622B-B842-4EB8-8A78-0225C8A993DF',
+      operation_timeout: 60,
+      locale: 'en-US'
+    }
   end
 end
 
@@ -22,5 +32,5 @@ class String
 end
 
 RSpec.configure do |config|
-  config.include(StubHelper)
+  config.include(SpecUnitHelper)
 end
