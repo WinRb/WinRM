@@ -25,6 +25,7 @@ require_relative 'wsmv/create_shell'
 require_relative 'wsmv/command'
 require_relative 'wsmv/command_output'
 require_relative 'wsmv/close_shell'
+require_relative 'wsmv/wql_query'
 
 module WinRM
   # This is the main class that does the SOAP request/response logic. There are a few helper
@@ -340,24 +341,8 @@ module WinRM
     # @param [String] wql The WQL query
     # @return [Hash] Returns a Hash that contain the key/value pairs returned from the query.
     def run_wql(wql)
-
-      body = { "#{NS_WSMAN_DMTF}:OptimizeEnumeration" => nil,
-        "#{NS_WSMAN_DMTF}:MaxElements" => '32000',
-        "#{NS_WSMAN_DMTF}:Filter" => wql,
-        "#{NS_WSMAN_MSFT}:SessionId" => "uuid:#{@session_opts[:session_id]}",
-        :attributes! => { "#{NS_WSMAN_DMTF}:Filter" => {'Dialect' => 'http://schemas.microsoft.com/wbem/wsman/1/WQL'}}
-      }
-
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-      builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_wmi,action_enumerate)) }
-        env.tag!(:env, :Body) do |env_body|
-          env_body.tag!("#{NS_ENUM}:Enumerate") { |en| en << Gyoku.xml(body) }
-        end
-      end
-
-      resp = send_message(builder.target!)
+      msg = WinRM::WSMV::WqlQuery.new(@session_opts, wql)
+      resp = send_message(msg.build)
       parser = Nori.new(:parser => :rexml, :advanced_typecasting => false, :convert_tags_to => lambda { |tag| tag.snakecase.to_sym }, :strip_namespaces => true)
       hresp = parser.parse(resp.to_s)[:envelope][:body]
 
@@ -412,10 +397,6 @@ module WinRM
 
     def send_message(message)
       @xfer.send_request(message)
-    end
-
-    def encode_bytes(bytes)
-      Base64.strict_encode64(bytes.pack('C*'))
     end
   end # WinRMWebService
 end # WinRM
