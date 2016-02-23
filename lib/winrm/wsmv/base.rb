@@ -27,7 +27,7 @@ module WinRM
       # Builds the WSMV message XML payload
       def build
         builder = Builder::XmlMarkup.new
-        builder.instruct!(:xml, :encoding => 'UTF-8')
+        builder.instruct!(:xml, encoding: 'UTF-8')
         builder.tag! :env, :Envelope, namespaces do |env|
           env.tag!(:env, :Header) do |env_header|
             create_header(env_header)
