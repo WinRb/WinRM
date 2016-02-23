@@ -52,7 +52,7 @@ module WinRM
       def header_opts
         {
           "#{NS_WSMAN_DMTF}:OptionSet" => {
-            "#{NS_WSMAN_DMTF}:Option" => "TRUE", :attributes! => {
+            "#{NS_WSMAN_DMTF}:Option" => 'TRUE', :attributes! => {
               "#{NS_WSMAN_DMTF}:Option" => {
                 'Name' => 'WSMAN_CMDSHELL_OPTION_KEEPALIVE'
               }

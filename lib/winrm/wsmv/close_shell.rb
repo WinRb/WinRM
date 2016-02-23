@@ -33,7 +33,7 @@ module WinRM
         header << Gyoku.xml(close_header)
       end
 
-      def create_body(body)
+      def create_body(_body)
         # no body
       end
 
