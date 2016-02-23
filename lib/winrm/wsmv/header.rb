@@ -16,6 +16,8 @@
 
 # rubocop:disable Metrics/MethodLength
 
+require_relative 'soap'
+
 module WinRM
   module WSMV
     # SOAP header utility mixin
@@ -40,32 +42,32 @@ module WinRM
 
       def shared_headers(session_opts)
         {
-          "#{NS_ADDRESSING}:To" => "#{session_opts[:endpoint]}",
-          "#{NS_ADDRESSING}:ReplyTo" => {
-            "#{NS_ADDRESSING}:Address" =>
+          "#{SOAP::NS_ADDRESSING}:To" => "#{session_opts[:endpoint]}",
+          "#{SOAP::NS_ADDRESSING}:ReplyTo" => {
+            "#{SOAP::NS_ADDRESSING}:Address" =>
               'http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous',
             :attributes! => {
-              "#{NS_ADDRESSING}:Address" => {
+              "#{SOAP::NS_ADDRESSING}:Address" => {
                 'mustUnderstand' => true
               }
             }
           },
-          "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => session_opts[:max_envelope_size],
-          "#{NS_ADDRESSING}:MessageID" => "uuid:#{SecureRandom.uuid.to_s.upcase}",
-          "#{NS_WSMAN_MSFT}:SessionId" => "uuid:#{session_opts[:session_id]}",
-          "#{NS_WSMAN_DMTF}:Locale/" => '',
-          "#{NS_WSMAN_MSFT}:DataLocale/" => '',
-          "#{NS_WSMAN_DMTF}:OperationTimeout" =>
+          "#{SOAP::NS_WSMAN_DMTF}:MaxEnvelopeSize" => session_opts[:max_envelope_size],
+          "#{SOAP::NS_ADDRESSING}:MessageID" => "uuid:#{SecureRandom.uuid.to_s.upcase}",
+          "#{SOAP::NS_WSMAN_MSFT}:SessionId" => "uuid:#{session_opts[:session_id]}",
+          "#{SOAP::NS_WSMAN_DMTF}:Locale/" => '',
+          "#{SOAP::NS_WSMAN_MSFT}:DataLocale/" => '',
+          "#{SOAP::NS_WSMAN_DMTF}:OperationTimeout" =>
             Iso8601Duration.sec_to_dur(session_opts[:operation_timeout]),
           :attributes! => {
-            "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => { 'mustUnderstand' => true },
-            "#{NS_WSMAN_DMTF}:Locale/" => {
+            "#{SOAP::NS_WSMAN_DMTF}:MaxEnvelopeSize" => { 'mustUnderstand' => true },
+            "#{SOAP::NS_WSMAN_DMTF}:Locale/" => {
               'xml:lang' => session_opts[:locale], 'mustUnderstand' => false
             },
-            "#{NS_WSMAN_MSFT}:DataLocale/" => {
+            "#{SOAP::NS_WSMAN_MSFT}:DataLocale/" => {
               'xml:lang' => session_opts[:locale], 'mustUnderstand' => false
             },
-            "#{NS_WSMAN_MSFT}:SessionId" => { 'mustUnderstand' => false }
+            "#{SOAP::NS_WSMAN_MSFT}:SessionId" => { 'mustUnderstand' => false }
           }
         }
       end
@@ -74,8 +76,8 @@ module WinRM
 
       def resource_uri_shell(shell_uri)
         {
-          "#{NS_WSMAN_DMTF}:ResourceURI" => shell_uri, :attributes! => {
-            "#{NS_WSMAN_DMTF}:ResourceURI" => {
+          "#{SOAP::NS_WSMAN_DMTF}:ResourceURI" => shell_uri, :attributes! => {
+            "#{SOAP::NS_WSMAN_DMTF}:ResourceURI" => {
               'mustUnderstand' => true
             }
           }
@@ -88,10 +90,10 @@ module WinRM
 
       def resource_uri_wmi(namespace = 'root/cimv2/*')
         {
-          "#{NS_WSMAN_DMTF}:ResourceURI" =>
+          "#{SOAP::NS_WSMAN_DMTF}:ResourceURI" =>
           "http://schemas.microsoft.com/wbem/wsman/1/wmi/#{namespace}",
           :attributes! => {
-            "#{NS_WSMAN_DMTF}:ResourceURI" => {
+            "#{SOAP::NS_WSMAN_DMTF}:ResourceURI" => {
               'mustUnderstand' => true
             }
           }
@@ -100,10 +102,10 @@ module WinRM
 
       def action_delete
         {
-          "#{NS_ADDRESSING}:Action" =>
+          "#{SOAP::NS_ADDRESSING}:Action" =>
           'http://schemas.xmlsoap.org/ws/2004/09/transfer/Delete',
           :attributes! => {
-            "#{NS_ADDRESSING}:Action" => {
+            "#{SOAP::NS_ADDRESSING}:Action" => {
               'mustUnderstand' => true
             }
           }
@@ -112,10 +114,10 @@ module WinRM
 
       def action_command
         {
-          "#{NS_ADDRESSING}:Action" =>
+          "#{SOAP::NS_ADDRESSING}:Action" =>
           'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Command',
           :attributes! => {
-            "#{NS_ADDRESSING}:Action" => {
+            "#{SOAP::NS_ADDRESSING}:Action" => {
               'mustUnderstand' => true
             }
           }
@@ -124,10 +126,10 @@ module WinRM
 
       def action_receive
         {
-          "#{NS_ADDRESSING}:Action" =>
+          "#{SOAP::NS_ADDRESSING}:Action" =>
           'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Receive',
           :attributes! => {
-            "#{NS_ADDRESSING}:Action" => {
+            "#{SOAP::NS_ADDRESSING}:Action" => {
               'mustUnderstand' => true
             }
           }
@@ -136,10 +138,10 @@ module WinRM
 
       def action_signal
         {
-          "#{NS_ADDRESSING}:Action" =>
+          "#{SOAP::NS_ADDRESSING}:Action" =>
           'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Signal',
           :attributes! => {
-            "#{NS_ADDRESSING}:Action" => {
+            "#{SOAP::NS_ADDRESSING}:Action" => {
               'mustUnderstand' => true
             }
           }
@@ -148,10 +150,10 @@ module WinRM
 
       def action_enumerate
         {
-          "#{NS_ADDRESSING}:Action" =>
+          "#{SOAP::NS_ADDRESSING}:Action" =>
           'http://schemas.xmlsoap.org/ws/2004/09/enumeration/Enumerate',
           :attributes! => {
-            "#{NS_ADDRESSING}:Action" => {
+            "#{SOAP::NS_ADDRESSING}:Action" => {
               'mustUnderstand' => true
             }
           }
@@ -160,9 +162,9 @@ module WinRM
 
       def selector_shell_id(shell_id)
         {
-          "#{NS_WSMAN_DMTF}:SelectorSet" => {
-            "#{NS_WSMAN_DMTF}:Selector" => shell_id, :attributes! => {
-              "#{NS_WSMAN_DMTF}:Selector" => {
+          "#{SOAP::NS_WSMAN_DMTF}:SelectorSet" => {
+            "#{SOAP::NS_WSMAN_DMTF}:Selector" => shell_id, :attributes! => {
+              "#{SOAP::NS_WSMAN_DMTF}:Selector" => {
                 'Name' => 'ShellId'
               }
             }
