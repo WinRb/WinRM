@@ -40,8 +40,6 @@ module WinRM
     include WinRM::WSMV::SOAP
     include WinRM::WSMV::Header
 
-    attr_reader :retry_limit, :retry_delay
-
     attr_accessor :logger
 
     # @param [String,URI] endpoint the WinRM webservice endpoint
@@ -57,10 +55,11 @@ module WinRM
         max_envelope_size: DEFAULT_MAX_ENV_SIZE,
         session_id: SecureRandom.uuid.to_s.upcase,
         operation_timeout: DEFAULT_TIMEOUT,
-        locale: DEFAULT_LOCALE
+        locale: DEFAULT_LOCALE,
+        retry_delay: opts[:retry_delay] || 10,
+        retry_limit: opts[:retry_limit] || 3
       }
       setup_logger
-      configure_retries(opts)
       begin
         @xfer = send "init_#{transport}_transport", opts.merge({endpoint: endpoint})
       rescue NoMethodError => e
@@ -117,6 +116,21 @@ module WinRM
       @session_opts[:endpoint]
     end
 
+    # The maximum number of retries on any remote call
+    def retry_limit
+      @session_opts[:retry_limit]
+    end
+
+    # The amount of time in seconds to wait between remote call retries
+    def retry_delay
+      @session_opts[:retry_delay]
+    end
+
+    # TODO: the remote OS version of Windows
+    def os_version
+      10
+    end
+
     # Max envelope size
     # @see http://msdn.microsoft.com/en-us/library/ee916127(v=PROT.13).aspx
     # @param [Fixnum] byte_sz the max size in bytes to allow for the response
@@ -143,22 +157,15 @@ module WinRM
     #   :env_vars => {:myvar1 => 'val1', :myvar2 => 'var2'}
     # @return [String] The ShellId from the SOAP response. This is our open shell instance on the remote machine.
     def open_shell(shell_opts = {}, &block)
-      shell_id = SecureRandom.uuid.to_s.upcase
-      logger.debug("[WinRM] opening remote shell on #{@session_opts[:endpoint]}")
-      msg = WSMV::CreateShell.new(@session_opts, shell_opts)
-      resp_doc = send_message(msg.build)
-      # CMD shell returns a new shell_id
-      shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
-      logger.debug("[WinRM] remote shell #{shell_id} is open on #{@session_opts[:endpoint]}")
-
+      executor = create_executor(shell_opts, &block)
       if block_given?
         begin
-          yield shell_id
+          yield executor.shell
         ensure
-          close_shell(shell_id)
+          executor.close
         end
       else
-        shell_id
+        executor.shell
       end
     end
 
@@ -323,9 +330,13 @@ module WinRM
     # The CommandExecutor is simply returned if no block is given.
     # @yieldparam [CommandExecutor] a CommandExecutor instance
     # @return [CommandExecutor] a CommandExecutor instance
-    def create_executor(&block)
-      executor = CommandExecutor.new(self)
-      executor.open
+    def create_executor(shell_opts = {}, &block)
+      #TODO: need to query the remote OS version
+      executor = CommandExecutor.new(@session_opts, shell_opts, @xfer, os_version, @logger)
+      shell_id = executor.open
+
+      # keep track of open command executors
+      @command_executors[shell_id] = executor
 
       if block_given?
         begin
@@ -374,11 +385,6 @@ module WinRM
       @logger = Logging.logger[self]
       @logger.level = :warn
       @logger.add_appenders(Logging.appenders.stdout)
-    end
-
-    def configure_retries(opts)
-      @retry_delay = opts[:retry_delay] || 10
-      @retry_limit = opts[:retry_limit] || 3
     end
 
     def send_get_output_message(message)
