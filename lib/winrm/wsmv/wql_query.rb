@@ -54,7 +54,6 @@ module WinRM
           }
         }
       end
-
     end
   end
 end
