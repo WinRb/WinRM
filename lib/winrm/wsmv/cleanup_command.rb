@@ -14,16 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require_relative 'soap'
-require_relative 'header'
+require_relative 'base'
 
 module WinRM
   module WSMV
     # WSMV message to execute a command inside a remote shell
-    class CleanupCommand
-      include WinRM::WSMV::SOAP
-      include WinRM::WSMV::Header
-
+    class CleanupCommand < Base
       def initialize(session_opts, opts)
         fail 'opts[:shell_id] is required' unless opts[:shell_id]
         fail 'opts[:command_id] is required' unless opts[:command_id]
@@ -33,16 +29,17 @@ module WinRM
         @shell_uri = opts[:shell_uri] || RESOURCE_URI_CMD
       end
 
-      def build
-        builder = Builder::XmlMarkup.new
-        builder.instruct!(:xml, :encoding => 'UTF-8')
-        builder.tag! :env, :Envelope, namespaces do |env|
-          env.tag!(:env, :Header) { |h| h << Gyoku.xml(cleanup_header) }
-          env.tag!(:env, :Body) do |env_body|
-            env_body.tag!("#{NS_WIN_SHELL}:Receive") { |cl| cl << Gyoku.xml(cleanup_body) }
-          end
-        end
+      protected
+
+      def create_header(header)
+        header << Gyoku.xml(cleanup_header)
       end
+
+      def create_body(body)
+        body.tag!("#{NS_WIN_SHELL}:Receive") { |cl| cl << Gyoku.xml(cleanup_body) }
+      end
+
+      private
 
       def cleanup_header
         merge_headers(shared_headers(@session_opts),

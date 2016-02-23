@@ -14,30 +14,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require_relative 'soap'
-require_relative 'header'
+require_relative 'base'
 
 module WinRM
   module WSMV
     # WSMV message to query Windows via WQL
-    class WqlQuery
-      include WinRM::WSMV::SOAP
-      include WinRM::WSMV::Header
-
+    class WqlQuery < Base
       def initialize(session_opts, wql)
         @session_opts = session_opts
         @wql = wql
       end
 
-      def build
-        builder = Builder::XmlMarkup.new
-        builder.instruct!(:xml, :encoding => 'UTF-8')
-        builder.tag! :env, :Envelope, namespaces do |env|
-          env.tag!(:env, :Header) { |h| h << Gyoku.xml(wql_header) }
-          env.tag!(:env, :Body) do |env_body|
-            env_body.tag!("#{NS_ENUM}:Enumerate") { |en| en << Gyoku.xml(wql_body) }
-          end
-        end
+      protected
+
+      def create_header(header)
+        header << Gyoku.xml(wql_header)
+      end
+
+      def create_body(body)
+        body.tag!("#{NS_ENUM}:Enumerate") { |en| en << Gyoku.xml(wql_body) }
       end
 
       private

@@ -15,31 +15,25 @@
 # limitations under the License.
 
 require 'base64'
-require_relative 'soap'
-require_relative 'header'
+require_relative 'base'
 
 module WinRM
   module WSMV
     # WSMV message to send stdin to a remote shell
-    class WriteStdin
-      include WinRM::WSMV::SOAP
-      include WinRM::WSMV::Header
-
+    class WriteStdin < Base
       def initialize(session_opts, stdin_opts)
         validate_opts(session_opts, stdin_opts)
         init_ops(session_opts, stdin_opts)
       end
 
-      def build
-        # Signal the Command references to terminate (close stdout/stderr)
-        builder = Builder::XmlMarkup.new
-        builder.instruct!(:xml, encoding: 'UTF-8')
-        builder.tag! :env, :Envelope, namespaces do |env|
-          env.tag!(:env, :Header) { |h| h << Gyoku.xml(stdin_headers) }
-          env.tag!(:env, :Body) do |env_body|
-            env_body << Gyoku.xml(stdin_body)
-          end
-        end
+      protected
+
+      def create_header(header)
+        header << Gyoku.xml(stdin_headers)
+      end
+
+      def create_body(body)
+        body << Gyoku.xml(stdin_body)
       end
 
       private
