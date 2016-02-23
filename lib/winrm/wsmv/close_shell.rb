@@ -14,16 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require_relative 'soap'
-require_relative 'header'
+require_relative 'base'
 
 module WinRM
   module WSMV
     # WSMV message to close a remote shell
-    class CloseShell
-      include WinRM::WSMV::SOAP
-      include WinRM::WSMV::Header
-
+    class CloseShell < Base
       def initialize(session_opts, shell_opts)
         fail 'shell_opts[:shell_id] is required' unless shell_opts[:shell_id]
         @session_opts = session_opts
@@ -31,13 +27,14 @@ module WinRM
         @shell_uri = shell_opts[:shell_uri] || RESOURCE_URI_CMD
       end
 
-      def build
-        builder = Builder::XmlMarkup.new
-        builder.instruct!(:xml, :encoding => 'UTF-8')
-        builder.tag!('env:Envelope', namespaces) do |env|
-          env.tag!('env:Header') { |h| h << Gyoku.xml(close_header) }
-          env.tag!('env:Body')
-        end
+      protected
+
+      def create_header(header)
+        header << Gyoku.xml(close_header)
+      end
+
+      def create_body(body)
+        # no body
       end
 
       private

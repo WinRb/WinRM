@@ -14,23 +14,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require_relative 'soap'
-require_relative 'header'
+require_relative 'base'
 
 module WinRM
   module WSMV
     # WSMV message to execute a command inside a remote shell
-    class Command
-      include WinRM::WSMV::SOAP
-      include WinRM::WSMV::Header
-
+    class Command < Base
       def initialize(session_opts, cmd_opts)
         validate_opts(session_opts, cmd_opts)
         init_ops(session_opts, cmd_opts)
       end
 
       def build
-        issue69_unescape_single_quotes(build_xml)
+        xml = super
+        issue69_unescape_single_quotes(xml)
+      end
+
+      protected
+
+      def create_header(header)
+        header << Gyoku.xml(command_headers)
+      end
+
+      def create_body(body)
+        body.tag!("#{NS_WIN_SHELL}:CommandLine", 'CommandId' => @command_id) do |cl|
+          cl << Gyoku.xml(command_body)
+        end
       end
 
       private
@@ -51,19 +60,6 @@ module WinRM
         fail 'cmd_opts[:command_id] is required' unless cmd_opts[:command_id]
         fail 'cmd_opts[:shell_id] is required' unless cmd_opts[:shell_id]
         fail 'cmd_opts[:command] is required' unless cmd_opts[:command]
-      end
-
-      def build_xml
-        builder = Builder::XmlMarkup.new
-        builder.instruct!(:xml, encoding: 'UTF-8')
-        builder.tag! :env, :Envelope, namespaces do |env|
-          env.tag!(:env, :Header) { |h| h << Gyoku.xml(command_headers) }
-          env.tag!(:env, :Body) do |env_body|
-            env_body.tag!("#{NS_WIN_SHELL}:CommandLine", 'CommandId' => @command_id) do |cl|
-              cl << Gyoku.xml(command_body)
-            end
-          end
-        end
       end
 
       def issue69_unescape_single_quotes(xml)

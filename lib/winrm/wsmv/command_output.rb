@@ -14,16 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require_relative 'soap'
-require_relative 'header'
+require_relative 'base'
 
 module WinRM
   module WSMV
     # WSMV message to get output from a remote shell
-    class CommandOutput
-      include WinRM::WSMV::SOAP
-      include WinRM::WSMV::Header
-
+    class CommandOutput < Base
       def initialize(session_opts, command_out_opts)
         fail 'command_out_opts[:shell_id] is required' unless command_out_opts[:shell_id]
         fail 'command_out_opts[:command_id] is required' unless command_out_opts[:command_id]
@@ -33,16 +29,17 @@ module WinRM
         @shell_uri = command_out_opts[:shell_uri] || RESOURCE_URI_CMD
       end
 
-      def build
-        builder = Builder::XmlMarkup.new
-        builder.instruct!(:xml, :encoding => 'UTF-8')
-        builder.tag! :env, :Envelope, namespaces do |env|
-          env.tag!(:env, :Header) { |h| h << Gyoku.xml(output_header) }
-          env.tag!(:env, :Body) do |env_body|
-            env_body.tag!("#{NS_WIN_SHELL}:Receive") { |cl| cl << Gyoku.xml(output_body) }
-          end
-        end
+      protected
+
+      def create_header(header)
+        header << Gyoku.xml(output_header)
       end
+
+      def create_body(body)
+        body.tag!("#{NS_WIN_SHELL}:Receive") { |cl| cl << Gyoku.xml(output_body) }
+      end
+
+      private
 
       def output_header
         merge_headers(shared_headers(@session_opts),
