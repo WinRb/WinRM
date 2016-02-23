@@ -208,31 +208,13 @@ module WinRM
     #   is either :stdout or :stderr.  The reason it is in an Array so so we can get the output in the order it ocurrs on
     #   the console.
     def get_command_output(shell_id, command_id, &block)
-      h_opts = {
-        "#{NS_WSMAN_DMTF}:OptionSet" => {
-          "#{NS_WSMAN_DMTF}:Option" => "TRUE", :attributes! => {
-            "#{NS_WSMAN_DMTF}:Option" => {
-              'Name' => 'WSMAN_CMDSHELL_OPTION_KEEPALIVE'
-            }
-          }
-        }
+      cmd_out_opts = {
+        shell_id: shell_id,
+        command_id: command_id
       }
 
-      # body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout', #PSRP
-      body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout stderr',
-        :attributes! => {"#{NS_WIN_SHELL}:DesiredStream" => {'CommandId' => command_id}}}
-
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-      builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd, action_receive, h_opts, selector_shell_id(shell_id))) }
-        env.tag!(:env, :Body) do |env_body|
-          env_body.tag!("#{NS_WIN_SHELL}:Receive") { |cl| cl << Gyoku.xml(body) }
-        end
-      end
-
       resp_doc = nil
-      request_msg = builder.target!
+      request_msg = WinRM::WSMV::CommandOutput.new(@session_opts, cmd_out_opts).build
       done_elems = []
       output = Output.new
 
