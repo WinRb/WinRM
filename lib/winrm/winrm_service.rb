@@ -23,7 +23,8 @@ require_relative 'wsmv/soap'
 require_relative 'wsmv/header'
 require_relative 'wsmv/create_shell'
 require_relative 'wsmv/command'
-require_relative 'wsmv/write_stdin'
+require_relative 'wsmv/command_output'
+require_relative 'wsmv/close_shell'
 
 module WinRM
   # This is the main class that does the SOAP request/response logic. There are a few helper
@@ -277,15 +278,11 @@ module WinRM
     # @return [true] This should have more error checking but it just returns true for now.
     def close_shell(shell_id)
       logger.debug("[WinRM] closing remote shell #{shell_id} on #{@session_opts[:endpoint]}")
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-
-      builder.tag!('env:Envelope', namespaces) do |env|
-        env.tag!('env:Header') { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_delete,selector_shell_id(shell_id))) }
-        env.tag!('env:Body')
-      end
-
-      resp = send_message(builder.target!)
+      cmd_opts = {
+        shell_id: shell_id
+      }
+      msg = WinRM::WSMV::CloseShell.new(@session_opts, cmd_opts)
+      resp = send_message(msg.build)
       logger.debug("[WinRM] remote shell #{shell_id} closed")
       true
     end
