@@ -47,6 +47,10 @@ module WinRM
       def create_body
         fail 'create_body must be implemented'
       end
+
+      def encode_bytes(bytes)
+        Base64.strict_encode64(bytes.pack('C*'))
+      end
     end
   end
 end

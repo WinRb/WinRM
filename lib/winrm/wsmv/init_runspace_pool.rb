@@ -91,10 +91,6 @@ module WinRM
           }
         }
       end
-
-      def encode_bytes(bytes)
-        Base64.strict_encode64(bytes.pack('C*'))
-      end
     end
   end
 end
