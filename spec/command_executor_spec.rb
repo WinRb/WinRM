@@ -114,7 +114,7 @@ describe WinRM::CommandExecutor, unit: true do
     end
 
     describe 'for modern windows distributions' do
-      let(:version_output) { { xml_fragment: [{ version: '6.3.9600' }] } }
+      let(:version_output) { { xml_fragment: [{ version: '10.0.10586.63' }] } }
 
       it 'sets #max_commands to 1500 - 2' do
         expect(executor.max_commands).to eq(1500 - 2)
