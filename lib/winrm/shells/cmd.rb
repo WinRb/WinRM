@@ -15,19 +15,14 @@
 # limitations under the License.
 
 require_relative 'retryable'
+require_relative '../http/transport'
 require_relative '../wsmv/cleanup_command'
 require_relative '../wsmv/close_shell'
 require_relative '../wsmv/command'
 require_relative '../wsmv/command_output'
 require_relative '../wsmv/command_output_processor'
-require_relative '../wsmv/create_pipeline'
 require_relative '../wsmv/create_shell'
-require_relative '../wsmv/header'
-require_relative '../wsmv/init_runspace_pool'
-require_relative '../wsmv/keep_alive'
 require_relative '../wsmv/soap'
-require_relative '../wsmv/wql_query'
-require_relative '../http/transport'
 
 module WinRM
   module Shells
