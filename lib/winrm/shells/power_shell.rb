@@ -49,11 +49,16 @@ module WinRM
         @transport.send_request(pipeline_msg.build)
 
         # get the command output
-        out_processor = WinRM::WSMV::CommandOutputProcessor.new(@connection_opts, @transport)
+        out_processor = WinRM::WSMV::CommandOutputProcessor.new(
+          @connection_opts,
+          @transport,
+          shell_uri: WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL,
+          out_streams: %w(stdout))
         output = out_processor.command_output(@shell_id, pipeline_msg.command_id, &block)
 
         # cleanup the command IO
         cmd_opts = {
+          shell_uri: WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL,
           shell_id: @shell_id,
           command_id: pipeline_msg.command_id
         }

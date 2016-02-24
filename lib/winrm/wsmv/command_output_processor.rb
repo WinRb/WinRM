@@ -21,17 +21,19 @@ module WinRM
   module WSMV
     class CommandOutputProcessor
       include WinRM::WSMV::SOAP
+      include WinRM::WSMV::Header
 
-      def initialize(connection_opts, transport)
+      def initialize(connection_opts, transport, out_opts = {})
         @connection_opts = connection_opts
         @transport = transport
+        @out_opts = out_opts
       end
 
       def command_output(shell_id, command_id, &block)
         cmd_out_opts = {
           shell_id: shell_id,
           command_id: command_id
-        }
+        }.merge(@out_opts)
 
         resp_doc = nil
         request_msg = WinRM::WSMV::CommandOutput.new(@connection_opts, cmd_out_opts).build
