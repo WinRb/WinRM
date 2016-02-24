@@ -26,6 +26,7 @@ require_relative '../wsmv/soap'
 
 module WinRM
   module Shells
+    # Proxy to a remote cmd.exe shell
     class Cmd
       include Retryable
 
@@ -41,30 +42,25 @@ module WinRM
         @command_count += 1
 
         # send the command
-        command_id = SecureRandom.uuid.to_s.upcase
         cmd_opts = {
           shell_id: @shell_id,
-          command_id: command_id,
           command: command,
           arguments: arguments
         }
-        msg = WinRM::WSMV::Command.new(@connection_opts, cmd_opts)
-        resp_doc = @transport.send_request(msg.build)
-        command_id = REXML::XPath.first(
-          resp_doc,
-          "//#{WinRM::WSMV::SOAP::NS_WIN_SHELL}:CommandId").text
+        cmd_msg = WinRM::WSMV::Command.new(@connection_opts, cmd_opts)
+        resp_doc = @transport.send_request(cmd_msg.build)
 
         # get the command output
         out_processor = WinRM::WSMV::CommandOutputProcessor.new(@connection_opts, @transport)
-        output = out_processor.command_output(@shell_id, command_id, &block)
+        output = out_processor.command_output(@shell_id, cmd_msg.command_id, &block)
 
         # cleanup the command IO
         cmd_opts = {
           shell_id: @shell_id,
-          command_id: command_id
+          command_id: cmd_msg.command_id
         }
-        msg = WinRM::WSMV::CleanupCommand.new(@connection_opts, cmd_opts)
-        @transport.send_request(msg.build)
+        cleanup_msg = WinRM::WSMV::CleanupCommand.new(@connection_opts, cmd_opts)
+        @transport.send_request(cleanup_msg.build)
 
         output
       end

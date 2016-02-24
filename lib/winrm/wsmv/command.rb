@@ -20,7 +20,10 @@ module WinRM
   module WSMV
     # WSMV message to execute a command inside a remote shell
     class Command < Base
+      attr_reader :command_id
+
       def initialize(session_opts, cmd_opts)
+        @command_id = command_id = SecureRandom.uuid.to_s.upcase
         validate_opts(session_opts, cmd_opts)
         init_ops(session_opts, cmd_opts)
       end
@@ -46,7 +49,6 @@ module WinRM
 
       def init_ops(session_opts, cmd_opts)
         @session_opts = session_opts
-        @command_id = cmd_opts[:command_id]
         @shell_id = cmd_opts[:shell_id]
         @command = cmd_opts[:command]
         @arguments = cmd_opts[:arguments] || []
@@ -57,7 +59,6 @@ module WinRM
 
       def validate_opts(session_opts, cmd_opts)
         fail 'session_opts is required' unless session_opts
-        fail 'cmd_opts[:command_id] is required' unless cmd_opts[:command_id]
         fail 'cmd_opts[:shell_id] is required' unless cmd_opts[:shell_id]
         fail 'cmd_opts[:command] is required' unless cmd_opts[:command]
       end

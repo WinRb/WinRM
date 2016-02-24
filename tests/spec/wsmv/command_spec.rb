@@ -7,7 +7,6 @@ describe WinRM::WSMV::Command do
     let(:cmd_opts) do
       {
         shell_id: 'D5A2622B-B842-4EB8-8A78-0225C8A993DF',
-        command_id: 'A2A2622B-B842-4EB8-8A78-0225C8A993DF',
         command: 'ipconfig'
       }
     end
