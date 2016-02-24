@@ -19,13 +19,21 @@ require_relative 'power_shell'
 
 module WinRM
   module Shells
+    # Factory for creating concrete shell instances
     class ShellFactory
+      # Creates a new ShellFactory instance
+      # @param connection_opts [Configuration] The WinRM connection options
+      # @param transport [HttpTransport] The WinRM SOAP transport for sending messages
+      # @param logger [Logger] The logger to log messages to
       def initialize(connection_opts, transport, logger)
         @connection_opts = connection_opts
         @transport = transport
         @logger = logger
       end
 
+      # Creates a new shell instance based off the shell_type
+      # @param shell_type [Symbol] The shell type :cmd or :powershell
+      # @return The ready to use shell instance
       def create_shell(shell_type)
         case shell_type
         when :cmd

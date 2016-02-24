@@ -17,6 +17,7 @@
 
 module WinRM
   module Shells
+    # Shell mixin for retrying an operation
     module Retryable
       RETRYABLE_EXCEPTIONS = lambda do
         [
@@ -27,9 +28,12 @@ module WinRM
         ].freeze
       end
 
+      # Retries the operation a specified number of times with a delay between
+      # @param retries [Fixnum] The number of times to retry
+      # @param delay [Fixnum] The number of seconds to wait between retry attempts
       def retryable(retries, delay)
         yield
-      rescue *RETRYABLE_EXCEPTIONS.call => e
+      rescue *RETRYABLE_EXCEPTIONS.call
         if (retries -= 1) > 0
           sleep(delay)
           retry
