@@ -127,13 +127,13 @@ module WinRM
     #
     # @return [Integer] code page in use
     def code_page
-      @code_page ||= os_version < '6.1' ? 437 : 65_001
+      @code_page ||= os_version < Gem::Version.new('6.1') ? 437 : 65_001
     end
 
     # @return [Integer] the safe maximum number of commands that can
     #   be executed in one remote shell session
     def max_commands
-      @max_commands ||= (os_version < '6.2' ? 15 : 1500) - 2
+      @max_commands ||= (os_version < Gem::Version.new('6.2') ? 15 : 1500) - 2
     end
 
     private
@@ -173,7 +173,7 @@ module WinRM
           version = wql[:xml_fragment].first[:version] if wql[:xml_fragment].first[:version]
         end
         fail ::WinRM::WinRMError, 'Unable to determine endpoint os version' if version.nil?
-        version
+        Gem::Version.new(version)
       end
     end
 

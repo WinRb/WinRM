@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 1.7.1
+- Fix OS version comparisons for Windows 10 using `Gem::Version` instead of strings
+
 # 1.7.0
 - Bump rubyntlm gem to 0.6.0 to get channel binding support for HTTPS fixing connections to endoints with `CbtHardeningLevel` set to `Strict`
 - Fix for parsing binary data in command output
