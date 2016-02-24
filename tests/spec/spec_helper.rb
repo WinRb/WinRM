@@ -5,6 +5,7 @@ require 'winrm'
 require 'json'
 require_relative '../matchers'
 
+# Unit test spec helper
 module SpecUnitHelper
   def stubbed_response(file)
     File.read("tests/spec/stubs/responses/#{file}")
