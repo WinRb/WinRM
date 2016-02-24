@@ -25,6 +25,7 @@ module WinRM
       DEFAULT_LOCALE = 'en-US'
       DEFAULT_RETRY_DELAY = 10
       DEFAULT_RETRY_LIMIT = 3
+      DEFAULT_MAX_COMMANDS = 1480 # TODO: interrogate remote OS version
 
       def self.create_with_defaults(overrides)
         config = default.merge(overrides)
@@ -50,6 +51,7 @@ module WinRM
         validate_fixnum(:retry_limit)
         validate_fixnum(:retry_delay)
         validate_fixnum(:max_envelope_size)
+        validate_fixnum(:max_commands)
         validate_fixnum(:operation_timeout)
         validate_fixnum(:receive_timeout, self[:operation_timeout])
       end
@@ -73,6 +75,7 @@ module WinRM
         config[:transport] = :negotiate
         config[:locale] = DEFAULT_LOCALE
         config[:max_envelope_size] = DEFAULT_MAX_ENV_SIZE
+        config[:max_commands] = DEFAULT_MAX_COMMANDS
         config[:operation_timeout] = DEFAULT_OPERATION_TIMEOUT
         config[:receive_timeout] = DEFAULT_RECEIVE_TIMEOUT
         config[:retry_delay] = DEFAULT_RETRY_DELAY

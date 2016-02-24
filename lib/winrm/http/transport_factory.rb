@@ -31,7 +31,7 @@ module WinRM
       private
 
       def init_negotiate_transport(opts)
-        HTTP::HttpNegotiate.new(opts[:endpoint], opts[:user], opts[:pass], opts)
+        HTTP::HttpNegotiate.new(opts[:endpoint], opts[:user], opts[:password], opts)
       end
 
       def init_kerberos_transport(opts)
@@ -41,14 +41,14 @@ module WinRM
       end
 
       def init_plaintext_transport(opts)
-        HTTP::HttpPlaintext.new(opts[:endpoint], opts[:user], opts[:pass], opts)
+        HTTP::HttpPlaintext.new(opts[:endpoint], opts[:user], opts[:password], opts)
       end
 
       def init_ssl_transport(opts)
         if opts[:basic_auth_only]
-          HTTP::BasicAuthSSL.new(opts[:endpoint], opts[:user], opts[:pass], opts)
+          HTTP::BasicAuthSSL.new(opts[:endpoint], opts[:user], opts[:password], opts)
         else
-          HTTP::HttpNegotiate.new(opts[:endpoint], opts[:user], opts[:pass], opts)
+          HTTP::HttpNegotiate.new(opts[:endpoint], opts[:user], opts[:password], opts)
         end
       end
     end

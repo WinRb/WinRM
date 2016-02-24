@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 #
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
+# Copyright 2015 Matt Wrock <matt@mattwrock.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,27 +15,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require_relative 'cmd'
-require_relative 'power_shell'
+require_relative '../exceptions/exceptions'
 
 module WinRM
-  module Shells
-    class ShellFactory
-      def initialize(connection_opts, transport, logger)
-        @connection_opts = connection_opts
-        @transport = transport
-        @logger = logger
+  module Core
+    module Retryable
+      RETRYABLE_EXCEPTIONS = lambda do
+        [
+          Errno::EACCES, Errno::EADDRINUSE, Errno::ECONNREFUSED, Errno::ETIMEDOUT,
+          Errno::ECONNRESET, Errno::ENETUNREACH, Errno::EHOSTUNREACH,
+          ::WinRM::WinRMHTTPTransportError, ::WinRM::WinRMAuthorizationError,
+          HTTPClient::KeepAliveDisconnected, HTTPClient::ConnectTimeoutError
+        ].freeze
       end
 
-      def create_shell(shell_type)
-        case shell_type
-        when :cmd
-          return WinRM::Shells::Cmd.new(@connection_opts, @transport, @logger)
-        when :powershell
-          return WinRM::Shells::PowerShell.new()
+      def retryable(retries, delay)
+        yield
+      rescue *RETRYABLE_EXCEPTIONS.call => e
+        if (retries -= 1) > 0
+          sleep(delay)
+          retry
         else
-          fail "#{shell_type} is not a valid WinRM shell type. " \
-            'Expected either :cmd or :powershell.'
+          raise
         end
       end
     end

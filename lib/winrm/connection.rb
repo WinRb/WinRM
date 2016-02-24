@@ -24,12 +24,11 @@ module WinRM
     def initialize(connection_opts)
       configure_connection_opts(connection_opts)
       configure_logger
-      create_http_transport
+      create_shell_factory
     end
 
     def shell(shell_type)
-      shell_factory = WinRM::Shells::ShellFactory.new(@connection_opts)
-      shell_factory.create_shell(shell_type)
+      @shell_factory.create_shell(shell_type)
     end
 
     private
@@ -44,9 +43,10 @@ module WinRM
       @logger.add_appenders(Logging.appenders.stdout)
     end
 
-    def create_http_transport
+    def create_shell_factory
       transport_factory = WinRM::HTTP::TransportFactory.new
-      @http_transport = transport_factory.create_transport(@connection_opts)
+      transport = transport_factory.create_transport(@connection_opts)
+      @shell_factory = WinRM::Shells::ShellFactory.new(@connection_opts, transport, @logger)
     end
   end
 end

@@ -1,25 +1,25 @@
 # encoding: UTF-8
 describe 'winrm client cmd' do
   before(:all) do
-    @winrm = winrm_connection
+    @cmd_shell = winrm_connection.shell(:cmd)
   end
 
   describe 'empty string' do
-    subject(:output) { @winrm.cmd('') }
+    subject(:output) { @cmd_shell.run('') }
     it { should have_exit_code 0 }
     it { should have_no_stdout }
     it { should have_no_stderr }
   end
 
   describe 'ipconfig' do
-    subject(:output) { @winrm.cmd('ipconfig') }
+    subject(:output) { @cmd_shell.run('ipconfig') }
     it { should have_exit_code 0 }
     it { should have_stdout_match(/Windows IP Configuration/) }
     it { should have_no_stderr }
   end
 
   describe 'echo \'hello world\' using apostrophes' do
-    subject(:output) { @winrm.cmd("echo 'hello world'") }
+    subject(:output) { @cmd_shell.run("echo 'hello world'") }
     it { should have_exit_code 0 }
     it { should have_stdout_match(/'hello world'/) }
     it { should have_no_stderr }
@@ -29,7 +29,7 @@ describe 'winrm client cmd' do
     # This is a regression test for #131.  " is converted to &quot; when serializing
     # the command to SOAP/XML.  Any naive substitution performed on such a serialized
     # string can result in any \& sequence being interpreted as a back-substitution.
-    subject(:output) { @winrm.cmd('echo "string with trailing \\"') }
+    subject(:output) { @cmd_shell.run('echo "string with trailing \\"') }
     it { should have_exit_code 0 }
     it { should have_stdout_match(/string with trailing \\/) }
     it { should have_no_stderr }
@@ -47,7 +47,7 @@ describe 'winrm client cmd' do
 
       @captured_stdout = ''
       @captured_stderr = ''
-      @winrm.cmd(script) do |stdout, stderr|
+      @cmd_shell.run(script) do |stdout, stderr|
         @captured_stdout << stdout if stdout
         @captured_stderr << stderr if stderr
       end
@@ -69,21 +69,21 @@ describe 'winrm client cmd' do
   end
 
   describe 'ipconfig with /all argument' do
-    subject(:output) { @winrm.cmd('ipconfig', %w(/all)) }
+    subject(:output) { @cmd_shell.run('ipconfig', %w(/all)) }
     it { should have_exit_code 0 }
     it { should have_stdout_match(/Windows IP Configuration/) }
     it { should have_no_stderr }
   end
 
   describe 'dir with incorrect argument /z' do
-    subject(:output) { @winrm.cmd('dir /z') }
+    subject(:output) { @cmd_shell.run('dir /z') }
     it { should have_exit_code 1 }
     it { should have_no_stdout }
     it { should have_stderr_match(/Invalid switch/) }
   end
 
   describe 'ipconfig && echo error 1>&2' do
-    subject(:output) { @winrm.cmd('ipconfig && echo error 1>&2') }
+    subject(:output) { @cmd_shell.run('ipconfig && echo error 1>&2') }
     it { should have_exit_code 0 }
     it { should have_stdout_match(/Windows IP Configuration/) }
     it { should have_stderr_match(/error/) }
@@ -92,7 +92,7 @@ describe 'winrm client cmd' do
   describe 'ipconfig with a block' do
     subject(:stdout) do
       outvar = ''
-      @winrm.cmd('ipconfig') do |stdout, _stderr|
+      @cmd_shell.run('ipconfig') do |stdout, _stderr|
         outvar << stdout
       end
       outvar

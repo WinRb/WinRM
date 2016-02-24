@@ -8,29 +8,25 @@ require_relative '../matchers'
 # Creates a WinRM connection for integration tests
 module ConnectionHelper
   def winrm_connection
-    winrm = WinRM::WinRMWebService.new(
-      config[:endpoint], config[:auth_type].to_sym, config[:options])
-    winrm.logger.level = :error
-    winrm
+    WinRM::Connection.new(connection_opts)
   end
 
-  def config
+  def connection_opts
     @config ||= begin
       cfg = symbolize_keys(YAML.load(File.read(winrm_config_path)))
-      cfg[:options].merge!(basic_auth_only: true) unless cfg[:auth_type].eql? :kerberos
-      merge_environment!(cfg)
-      cfg
+      merge_environment(cfg)
     end
   end
 
-  def merge_environment!(config)
+  def merge_environment(config)
     merge_config_option_from_environment(config, 'user')
-    merge_config_option_from_environment(config, 'pass')
+    merge_config_option_from_environment(config, 'password')
     merge_config_option_from_environment(config, 'no_ssl_peer_verification')
     if ENV['use_ssl_peer_fingerprint']
       config[:options][:ssl_peer_fingerprint] = ENV['winrm_cert']
     end
     config[:endpoint] = ENV['winrm_endpoint'] if ENV['winrm_endpoint']
+    config
   end
 
   def merge_config_option_from_environment(config, key)

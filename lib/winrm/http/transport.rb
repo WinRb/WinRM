@@ -166,6 +166,7 @@ module WinRM
       def send_request(message, auth_header = nil)
         ssl_peer_fingerprint_verification!
         auth_header = init_auth if @ntlmcli.session.nil?
+        log_soap_message(message)
 
         original_length = message.bytesize
 
@@ -196,6 +197,7 @@ module WinRM
         else
           @retryable = true
           decrypted_body = resp.body.empty? ? '' : winrm_decrypt(resp.body)
+          log_soap_message(decrypted_body)
           handler = WinRM::ResponseHandler.new(decrypted_body, resp.status)
           handler.parse_to_xml()
         end
@@ -217,7 +219,7 @@ module WinRM
       end
 
       def init_auth
-        @logger.debug "Initializing Negotiate for #{@service}"
+        @logger.debug "Initializing Negotiate for #{@endpoint}"
         auth1 = @ntlmcli.init_context
         hdr = {"Authorization" => "Negotiate #{auth1.encode64}",
                "Content-Type" => "application/soap+xml;charset=UTF-8"
