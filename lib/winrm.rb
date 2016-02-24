@@ -14,9 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'date'
 require 'logging'
 require_relative 'winrm/version'
+require_relative 'winrm/connection'
+require_relative 'winrm/exceptions'
 
 # Main WinRM module entry point
 module WinRM
@@ -36,17 +37,3 @@ module WinRM
     end
   end
 end
-
-require 'httpclient'
-require 'builder'
-require 'gyoku'
-require 'base64'
-require 'winrm/connection'
-require 'winrm/output'
-require 'winrm/helpers/iso8601_duration'
-require 'winrm/helpers/uuid'
-require 'winrm/exceptions/exceptions'
-require 'winrm/winrm_service'
-require 'winrm/http/transport'
-require 'winrm/psrp/message'
-require 'winrm/psrp/message_factory'
