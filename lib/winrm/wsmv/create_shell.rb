@@ -15,6 +15,7 @@
 # limitations under the License.
 
 require_relative 'base'
+require_relative 'iso8601_duration'
 
 module WinRM
   module WSMV

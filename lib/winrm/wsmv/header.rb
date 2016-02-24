@@ -17,6 +17,7 @@
 # rubocop:disable Metrics/MethodLength
 
 require_relative 'soap'
+require_relative 'iso8601_duration'
 
 module WinRM
   module WSMV
