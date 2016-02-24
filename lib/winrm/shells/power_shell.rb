@@ -34,6 +34,10 @@ module WinRM
     class PowerShell
       include Retryable
 
+      # Create a new PowerShell shell
+      # @param connection_opts [Configuration] The WinRM Connection config
+      # @param transport [HttpTransport] The WinRM SOAP transport
+      # @param logger [Logger] The logger to log diagnostic messages to
       def initialize(connection_opts, transport, logger)
         @connection_opts = connection_opts
         @transport = transport
@@ -41,35 +45,44 @@ module WinRM
         @command_count = 0
       end
 
+      # Runs the specified command with optional arguments
+      # @param command [String] The command or executable to run
+      # @param arguments [Array] The optional command arguments
+      # @param block [&block] The optional callback for any realtime output
       def run(command, arguments = [], &block)
         open if @command_count > @connection_opts[:max_commands] || !@shell_id
         @command_count += 1
+        command_id = send_command(command, arguments)
+        command_output(command_id, &block)
+      ensure
+        cleanup_command(command_id) if command_id
+      end
 
-        # send the command
+      private
+
+      def send_command(command, _arguments)
         pipeline_msg = WinRM::WSMV::CreatePipeline.new(@connection_opts, @shell_id, command)
         @transport.send_request(pipeline_msg.build)
+        pipeline_msg.command_id
+      end
 
-        # get the command output
+      def command_output(command_id, &block)
         out_processor = WinRM::WSMV::CommandOutputProcessor.new(
           @connection_opts,
           @transport,
           shell_uri: WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL,
           out_streams: %w(stdout))
-        output = out_processor.command_output(@shell_id, pipeline_msg.command_id, &block)
-
-        # cleanup the command IO
-        cmd_opts = {
-          shell_uri: WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL,
-          shell_id: @shell_id,
-          command_id: pipeline_msg.command_id
-        }
-        cleanup_msg = WinRM::WSMV::CleanupCommand.new(@connection_opts, cmd_opts)
-        @transport.send_request(cleanup_msg.build)
-
-        output
+        out_processor.command_output(@shell_id, command_id, &block)
       end
 
-      private
+      def cleanup_command(command_id)
+        cleanup_msg = WinRM::WSMV::CleanupCommand.new(
+          @connection_opts,
+          shell_uri: WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL,
+          shell_id: @shell_id,
+          command_id: command_id)
+        @transport.send_request(cleanup_msg.build)
+      end
 
       def open
         close
@@ -92,7 +105,9 @@ module WinRM
       end
 
       def add_finalizer
-        ObjectSpace.define_finalizer(self, self.class.finalize(@connection_opts, @transport, @shell_id))
+        ObjectSpace.define_finalizer(
+          self,
+          self.class.finalize(@connection_opts, @transport, @shell_id))
       end
 
       def remove_finalizer
