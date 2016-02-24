@@ -14,9 +14,9 @@ describe WinRM::WSMV::CleanupCommand do
     let(:xml) { subject.build }
     it 'creates a well formed message' do
       expect(xml).to include('<w:OperationTimeout>PT60S</w:OperationTimeout>')
-      expect(xml).to include('<rsp:Receive><rsp:Code>' \
-        'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/signal/terminate' \
-        '</rsp:Code></rsp:Receive>')
+      expect(xml).to include('<rsp:Signal CommandId="A2A2622B-B842-4EB8-8A78-0225C8A993DF">' \
+        '<rsp:Code>http://schemas.microsoft.com/wbem/wsman/1/windows/shell/signal/terminate' \
+        '</rsp:Code></rsp:Signal>')
     end
   end
 end
