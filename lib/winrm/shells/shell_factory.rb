@@ -31,7 +31,7 @@ module WinRM
         when :cmd
           return WinRM::Shells::Cmd.new(@connection_opts, @transport, @logger)
         when :powershell
-          return WinRM::Shells::PowerShell.new()
+          return WinRM::Shells::PowerShell.new(@connection_opts, @transport, @logger)
         else
           fail "#{shell_type} is not a valid WinRM shell type. " \
             'Expected either :cmd or :powershell.'
