@@ -4,7 +4,7 @@ require 'winrm/wsmv/create_shell'
 
 describe WinRM::WSMV::CreateShell do
   context 'default session options' do
-    subject { described_class.new(default_session_opts) }
+    subject { described_class.new(default_connection_opts) }
     let(:xml) { subject.build }
     it 'creates a well formed message' do
       expect(xml).to include('<w:OperationTimeout>PT60S</w:OperationTimeout>')
@@ -27,7 +27,7 @@ describe WinRM::WSMV::CreateShell do
           env_vars: { 'FOO' => 'BAR' }
         }
       end
-      subject { described_class.new(default_session_opts, shell_opts) }
+      subject { described_class.new(default_connection_opts, shell_opts) }
       let(:xml) { subject.build }
       it 'includes environemt vars' do
         expect(xml).to include(

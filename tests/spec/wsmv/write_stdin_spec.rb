@@ -10,7 +10,7 @@ describe WinRM::WSMV::WriteStdin do
       command_id: 'A2A2622B-B842-4EB8-8A78-0225C8A993DF',
       stdin: 'dir'
     }
-    subject { described_class.new(default_session_opts, stdin_opts) }
+    subject { described_class.new(default_connection_opts, stdin_opts) }
     let(:xml) { subject.build }
     it 'creates a well formed message' do
       b64_stdin = Base64.encode64(stdin_opts[:stdin])

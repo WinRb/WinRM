@@ -11,7 +11,7 @@ describe WinRM::WSMV::Command do
         command: 'ipconfig'
       }
     end
-    subject { described_class.new(default_session_opts, cmd_opts) }
+    subject { described_class.new(default_connection_opts, cmd_opts) }
     let(:xml) { subject.build }
     it 'creates a well formed message' do
       expect(xml).to include('<w:OperationTimeout>PT60S</w:OperationTimeout>')

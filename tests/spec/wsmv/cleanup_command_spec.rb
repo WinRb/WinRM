@@ -10,7 +10,7 @@ describe WinRM::WSMV::CleanupCommand do
         command_id: 'A2A2622B-B842-4EB8-8A78-0225C8A993DF'
       }
     end
-    subject { described_class.new(default_session_opts, cmd_opts) }
+    subject { described_class.new(default_connection_opts, cmd_opts) }
     let(:xml) { subject.build }
     it 'creates a well formed message' do
       expect(xml).to include('<w:OperationTimeout>PT60S</w:OperationTimeout>')

@@ -1,5 +1,4 @@
 # encoding: UTF-8
-require 'winrm/winrm_service'
 require 'rexml/document'
 require 'erb'
 require 'base64'

@@ -11,7 +11,7 @@ module SpecUnitHelper
     File.read("tests/spec/stubs/responses/#{file}")
   end
 
-  def default_session_opts
+  def default_connection_opts
     {
       user: 'Administrator',
       password: 'password',

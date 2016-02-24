@@ -11,7 +11,7 @@ describe WinRM::WSMV::InitRunspacePool do
       Base64.strict_encode64((session_capabilities.bytes + runspace_init.bytes).pack('C*'))
     end
 
-    subject { described_class.new(default_session_opts) }
+    subject { described_class.new(default_connection_opts) }
 
     it 'creates a well formed message' do
       xml = subject.build

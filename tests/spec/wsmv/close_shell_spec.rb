@@ -5,7 +5,7 @@ require 'winrm/wsmv/close_shell'
 describe WinRM::WSMV::CloseShell do
   context 'default session options' do
     subject do
-      described_class.new(default_session_opts, shell_id: 'F4A2622B-B842-4EB8-8A78-0225C8A993DF')
+      described_class.new(default_connection_opts, shell_id: 'F4A2622B-B842-4EB8-8A78-0225C8A993DF')
     end
     let(:xml) { subject.build }
     it 'creates a well formed message' do

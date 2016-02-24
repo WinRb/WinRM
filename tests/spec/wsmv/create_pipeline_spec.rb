@@ -11,7 +11,7 @@ describe WinRM::WSMV::CreatePipeline do
         3, shell_id, subject.command_id, command)
       Base64.strict_encode64(message.bytes.pack('C*'))
     end
-    subject { WinRM::WSMV::CreatePipeline.new(default_session_opts, shell_id, command) }
+    subject { WinRM::WSMV::CreatePipeline.new(default_connection_opts, shell_id, command) }
     let(:xml) { subject.build }
     it 'creates a well formed message' do
       expect(xml).to include('<w:OperationTimeout>PT60S</w:OperationTimeout>')
