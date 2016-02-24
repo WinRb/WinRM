@@ -272,7 +272,7 @@ module WinRM
         shell_id: shell_id,
         command_id: command_id
       }
-      msg = WinRM::WSMV::CommandOutput.new(@session_opts, cmd_opts)
+      msg = WinRM::WSMV::CleanupCommand.new(@session_opts, cmd_opts)
       resp = send_message(msg.build)
       true
     end
