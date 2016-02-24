@@ -1,4 +1,7 @@
 # encoding: UTF-8
+
+require 'winrm/psrp/message'
+
 describe WinRM::PSRP::Message do
   context 'all fields provided' do
     subject(:bytes) do

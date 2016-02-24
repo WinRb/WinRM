@@ -1,11 +1,11 @@
 # encoding: UTF-8
-require 'winrm/core/connection_configuration'
+require 'winrm/configuration'
 
-describe WinRM::Core::ConnectionConfiguration do
+describe WinRM::Configuration do
   context 'when there are no overrides' do
     describe '#create_with_defaults' do
       it 'throws a validation error' do
-        expect { WinRM::Core::ConnectionConfiguration.create_with_defaults({}) }.to raise_error
+        expect { WinRM::Configuration.create_with_defaults({}) }.to raise_error
       end
     end
   end
@@ -19,7 +19,7 @@ describe WinRM::Core::ConnectionConfiguration do
     end
     describe '#create_with_defaults' do
       it 'creates a configuration object' do
-        config = WinRM::Core::ConnectionConfiguration.create_with_defaults(overrides)
+        config = WinRM::Configuration.create_with_defaults(overrides)
         expect(config[:user]).to eq(overrides[:user])
         expect(config[:password]).to eq(overrides[:password])
         expect(config[:endpoint]).to eq(overrides[:endpoint])
@@ -37,7 +37,7 @@ describe WinRM::Core::ConnectionConfiguration do
     end
     describe '#create_with_defaults' do
       it 'creates a configuration object with overrides' do
-        config = WinRM::Core::ConnectionConfiguration.create_with_defaults(overrides)
+        config = WinRM::Configuration.create_with_defaults(overrides)
         expect(config[:transport]).to eq(overrides[:transport])
       end
     end
@@ -53,7 +53,7 @@ describe WinRM::Core::ConnectionConfiguration do
     end
     describe '#create_with_defaults' do
       it 'creates a configuration object with the correct receive_timeout' do
-        config = WinRM::Core::ConnectionConfiguration.create_with_defaults(overrides)
+        config = WinRM::Configuration.create_with_defaults(overrides)
         expect(config[:receive_timeout]).to eq(overrides[:receive_timeout])
       end
     end
@@ -69,7 +69,7 @@ describe WinRM::Core::ConnectionConfiguration do
     end
     describe '#create_with_defaults' do
       it 'creates a configuration object with the correct timeouts' do
-        config = WinRM::Core::ConnectionConfiguration.create_with_defaults(overrides)
+        config = WinRM::Configuration.create_with_defaults(overrides)
         expect(config[:operation_timeout]).to eq(overrides[:operation_timeout])
         expect(config[:receive_timeout]).to eq(overrides[:operation_timeout] + 10)
       end
@@ -86,7 +86,7 @@ describe WinRM::Core::ConnectionConfiguration do
     end
     describe '#create_with_defaults' do
       it 'raises an error' do
-        expect { WinRM::Core::ConnectionConfiguration.create_with_defaults(overrides) }.to raise_error
+        expect { WinRM::Configuration.create_with_defaults(overrides) }.to raise_error
       end
     end
   end

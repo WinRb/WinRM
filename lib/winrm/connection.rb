@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require_relative 'core/connection_configuration'
+require_relative 'configuration'
 require_relative 'http/transport_factory'
 require_relative 'shells/shell_factory'
 
@@ -34,7 +34,7 @@ module WinRM
     private
 
     def configure_connection_opts(connection_opts)
-      @connection_opts = WinRM::Core::ConnectionConfiguration.create_with_defaults(connection_opts)
+      @connection_opts = Configuration.create_with_defaults(connection_opts)
     end
 
     def configure_logger
