@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require_relative 'retryable'
 require_relative '../wsmv/cleanup_command'
 require_relative '../wsmv/close_shell'
 require_relative '../wsmv/command'
@@ -27,12 +28,11 @@ require_relative '../wsmv/keep_alive'
 require_relative '../wsmv/soap'
 require_relative '../wsmv/wql_query'
 require_relative '../http/transport'
-require_relative '../core/retryable'
 
 module WinRM
   module Shells
     class Cmd
-      include WinRM::Core::Retryable
+      include Retryable
 
       def initialize(connection_opts, transport, logger)
         @connection_opts = connection_opts

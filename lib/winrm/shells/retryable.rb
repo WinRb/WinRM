@@ -16,7 +16,7 @@
 # limitations under the License.
 
 module WinRM
-  module Core
+  module Shells
     module Retryable
       RETRYABLE_EXCEPTIONS = lambda do
         [
