@@ -1,29 +1,25 @@
 # encoding: UTF-8
-require 'rexml/document'
-require 'erb'
-require 'base64'
 
-describe 'issue 184' do
-  let(:shell_id)    { 'shell-123' }
-  let(:command_id)  { 123 }
+require 'winrm/wsmv/command_output_processor'
+
+describe WinRM::WSMV::CommandOutputProcessor do
+  let(:shell_id) { 'F4A2622B-B842-4EB8-8A78-0225C8A993DF' }
+  let(:command_id) { 'A2A2622B-B842-4EB8-8A78-0225C8A993DF' }
   let(:test_data_xml_template) do
     ERB.new(stubbed_response('get_command_output_response.xml.erb'))
   end
-  let(:service) do
-    WinRM::WinRMWebService.new(
-      'http://dummy/wsman',
-      :plaintext,
-      user: 'dummy',
-      pass: 'dummy')
+  let(:transport) do
+    {}
   end
+  subject { described_class.new(default_connection_opts, transport) }
 
-  describe 'response doc stdout with invalid UTF-8 characters' do
+  context 'response doc stdout with invalid UTF-8 characters, issue 184' do
     let(:test_data_stdout) { 'ffff' } # Base64-decodes to '}\xF7\xDF', an invalid sequence
     let(:test_data_stderr) { '' }
     let(:test_data_xml)    { test_data_xml_template.result(binding) }
 
     before do
-      allow(service).to receive(:send_get_output_message).and_return(
+      allow(transport).to receive(:send_request).and_return(
         REXML::Document.new(test_data_xml)
       )
     end
@@ -31,7 +27,7 @@ describe 'issue 184' do
     it 'does not raise an ArgumentError: invalid byte sequence in UTF-8' do
       begin
         expect(
-          service.get_command_output(shell_id, command_id)
+          subject.command_output(shell_id, command_id)
         ).not_to raise_error
       rescue RSpec::Expectations::ExpectationNotMetError => e
         expect(e.message).not_to include 'ArgumentError'
@@ -40,26 +36,26 @@ describe 'issue 184' do
 
     it 'does not have an empty stdout' do
       expect(
-        service.get_command_output(shell_id, command_id)[:data][0][:stdout]
+        subject.command_output(shell_id, command_id)[:data][0][:stdout]
       ).not_to be_empty
     end
   end
 
-  describe 'response doc stdout with valid UTF-8' do
+  context 'response doc stdout with valid UTF-8' do
     let(:test_data_raw)    { '✓1234-äöü' }
     let(:test_data_stdout) { Base64.encode64(test_data_raw) }
     let(:test_data_stderr) { '' }
     let(:test_data_xml)    { test_data_xml_template.result(binding) }
 
     before do
-      allow(service).to receive(:send_get_output_message).and_return(
+      allow(transport).to receive(:send_request).and_return(
         REXML::Document.new(test_data_xml)
       )
     end
 
     it 'decodes to match input data' do
       expect(
-        service.get_command_output(shell_id, command_id)[:data][0][:stdout]
+        subject.command_output(shell_id, command_id)[:data][0][:stdout]
       ).to eq(test_data_raw)
     end
   end
