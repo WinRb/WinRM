@@ -19,14 +19,20 @@ require_relative 'http/transport_factory'
 require_relative 'shells/shell_factory'
 
 module WinRM
+  # WinRM connection used to establish a session with the remote WinRM service.
   class Connection
-
+    # Creates a new WinRM connection
+    # See the Configuration class for connection options.
     def initialize(connection_opts)
       configure_connection_opts(connection_opts)
       configure_logger
       create_shell_factory
     end
 
+    # Creates a new shell on the remote Windows server associated with
+    # this connection.
+    # @param shell_type [Symbol] The shell type :cmd or :powershell
+    # @return [Shell|Cmd] PowerShell or Cmd shell instance.
     def shell(shell_type)
       @shell_factory.create_shell(shell_type)
     end

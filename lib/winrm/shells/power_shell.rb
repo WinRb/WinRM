@@ -30,6 +30,7 @@ require_relative '../wsmv/soap'
 
 module WinRM
   module Shells
+    # Proxy to a remote PowerShell instance
     class PowerShell
       include Retryable
 

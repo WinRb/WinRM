@@ -17,6 +17,7 @@
 require 'securerandom'
 
 module WinRM
+  # WinRM connection configuration, provides defaults and validation.
   class Configuration < Hash
     DEFAULT_OPERATION_TIMEOUT = 60
     DEFAULT_RECEIVE_TIMEOUT = DEFAULT_OPERATION_TIMEOUT + 10
@@ -79,7 +80,7 @@ module WinRM
       config[:receive_timeout] = DEFAULT_RECEIVE_TIMEOUT
       config[:retry_delay] = DEFAULT_RETRY_DELAY
       config[:retry_limit] = DEFAULT_RETRY_LIMIT
-      return config
+      config
     end
   end
 end

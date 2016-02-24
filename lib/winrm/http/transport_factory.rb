@@ -18,14 +18,19 @@ require_relative 'transport'
 
 module WinRM
   module HTTP
+    # Factory for creating a HTTP transport that can be used for WinRM SOAP calls.
     class TransportFactory
+      # Creates a new WinRM HTTP transport using the specified connection options.
+      # @param connection_opts [Configuration|Hash] The connection configuration.
+      # @return [HttpTransport] A transport instance for making WinRM calls.
       def create_transport(connection_opts)
         transport = connection_opts[:transport]
-      #  begin
+        begin
           send "init_#{transport}_transport", connection_opts
-        #rescue NoMethodError => e
-      #    fail "Invalid transport '#{transport}' specified, expected: negotiate, kerberos, plaintext, ssl."
-      #  end
+        rescue NoMethodError
+          raise "Invalid transport '#{transport}' specified, expected: " \
+            'negotiate, kerberos, plaintext, ssl.'
+        end
       end
 
       private
