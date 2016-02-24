@@ -1,7 +1,7 @@
 # encoding: UTF-8
-describe 'UUIDHelper' do
+describe WinRM::PSRP::UUID do
   subject(:uuid_helper) do
-    Object.new.extend(WinRM::UUIDHelper)
+    Object.new.extend(WinRM::PSRP::UUID)
   end
   context 'uuid is nil' do
     uuid = nil
