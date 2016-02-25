@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 1.7.2
+- Fix regression where BOM appears in 2008R2 output and is not stripped
+
 # 1.7.1
 - Fix OS version comparisons for Windows 10 using `Gem::Version` instead of strings
 

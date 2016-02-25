@@ -17,7 +17,8 @@
 require 'nori'
 require 'rexml/document'
 require 'securerandom'
-require 'winrm/command_executor'
+require_relative 'command_executor'
+require_relative 'command_output_decoder'
 require_relative 'helpers/powershell_script'
 
 module WinRM
@@ -28,7 +29,7 @@ module WinRM
     DEFAULT_MAX_ENV_SIZE = 153600
     DEFAULT_LOCALE = 'en-US'
 
-    attr_reader :endpoint, :timeout, :retry_limit, :retry_delay
+    attr_reader :endpoint, :timeout, :retry_limit, :retry_delay, :output_decoder
 
     attr_accessor :logger
 
@@ -44,6 +45,7 @@ module WinRM
       @timeout = DEFAULT_TIMEOUT
       @max_env_sz = DEFAULT_MAX_ENV_SIZE
       @locale = DEFAULT_LOCALE
+      @output_decoder = CommandOutputDecoder.new
       setup_logger
       configure_retries(opts)
       begin
@@ -256,19 +258,8 @@ module WinRM
         REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |n|
           next if n.text.nil? || n.text.empty?
 
-          # decode and replace invalid unicode characters
-          decoded_text = Base64.decode64(n.text).force_encoding('utf-8')
-          if ! decoded_text.valid_encoding?
-            if decoded_text.respond_to?(:scrub!)        
-              decoded_text.scrub!
-            else
-              decoded_text = decoded_text.encode('utf-16', invalid: :replace, undef: :replace)
-                .encode('utf-8')
-            end
-          end
-
-          # remove BOM which 2008R2 applies
-          stream = { n.attributes['Name'].to_sym => decoded_text.sub('\xEF\xBB\xBF', '') }
+          decoded_text = output_decoder.decode(n.text)
+          stream = { n.attributes['Name'].to_sym => decoded_text }
           output[:data] << stream
           yield stream[:stdout], stream[:stderr] if block_given?
         end
