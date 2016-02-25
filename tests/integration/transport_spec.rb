@@ -39,7 +39,7 @@ describe 'WinRM connection' do
     end
 
     it 'includes command output' do
-      expect(subject).to have_stdout_match(/Windows IP Configuration/)
+      expect(subject).to have_stdout_match(/Windows IP ConnectionOpts/)
     end
 
     it 'has no errors' do

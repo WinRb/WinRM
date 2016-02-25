@@ -17,8 +17,8 @@
 require 'securerandom'
 
 module WinRM
-  # WinRM connection configuration, provides defaults and validation.
-  class Configuration < Hash
+  # WinRM connection options, provides defaults and validation.
+  class ConnectionOpts < Hash
     DEFAULT_OPERATION_TIMEOUT = 60
     DEFAULT_RECEIVE_TIMEOUT = DEFAULT_OPERATION_TIMEOUT + 10
     DEFAULT_MAX_ENV_SIZE = 153600
@@ -70,7 +70,7 @@ module WinRM
     end
 
     def self.default
-      config = Configuration.new
+      config = ConnectionOpts.new
       config[:session_id] = SecureRandom.uuid.to_s.upcase
       config[:transport] = :negotiate
       config[:locale] = DEFAULT_LOCALE

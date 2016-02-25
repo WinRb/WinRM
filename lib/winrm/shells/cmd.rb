@@ -31,7 +31,7 @@ module WinRM
       include Retryable
 
       # Create a new Cmd shell
-      # @param connection_opts [Configuration] The WinRM Connection config
+      # @param connection_opts [ConnectionOpts] The WinRM connection options
       # @param transport [HttpTransport] The WinRM SOAP transport
       # @param logger [Logger] The logger to log diagnostic messages to
       def initialize(connection_opts, transport, logger)

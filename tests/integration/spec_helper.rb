@@ -35,7 +35,7 @@ module ConnectionHelper
   end
 
   def winrm_config_path
-    # Copy config-example.yml to config.yml and edit for your local configuration
+    # Copy config-example.yml to config.yml and edit for your local ConnectionOpts
     path = File.expand_path("#{File.dirname(__FILE__)}/config.yml")
     unless File.exist?(path)
       # user hasn't done this, so use sane defaults for unit tests

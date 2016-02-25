@@ -27,7 +27,7 @@ module WinRM
       include WinRM::WSMV::Header
 
       # Creates a new command output processor
-      # @param connection_opts [Configuration] The connection configuration options
+      # @param connection_opts [ConnectionOpts] The WinRM connection options
       # @param transport [HttpTransport] The WinRM SOAP transport
       # @param out_opts [Hash] Additional output options
       def initialize(connection_opts, transport, out_opts = {})

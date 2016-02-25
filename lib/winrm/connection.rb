@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require_relative 'configuration'
+require_relative 'connection_opts'
 require_relative 'http/transport_factory'
 require_relative 'shells/shell_factory'
 
@@ -22,7 +22,7 @@ module WinRM
   # WinRM connection used to establish a session with the remote WinRM service.
   class Connection
     # Creates a new WinRM connection
-    # See the Configuration class for connection options.
+    # See the ConnectionOpts class for connection options.
     def initialize(connection_opts)
       configure_connection_opts(connection_opts)
       configure_logger
@@ -40,7 +40,7 @@ module WinRM
     private
 
     def configure_connection_opts(connection_opts)
-      @connection_opts = Configuration.create_with_defaults(connection_opts)
+      @connection_opts = ConnectionOpts.create_with_defaults(connection_opts)
     end
 
     def configure_logger

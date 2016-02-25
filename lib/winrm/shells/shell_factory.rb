@@ -22,7 +22,7 @@ module WinRM
     # Factory for creating concrete shell instances
     class ShellFactory
       # Creates a new ShellFactory instance
-      # @param connection_opts [Configuration] The WinRM connection options
+      # @param connection_opts [ConnectionOpts] The WinRM connection options
       # @param transport [HttpTransport] The WinRM SOAP transport for sending messages
       # @param logger [Logger] The logger to log messages to
       def initialize(connection_opts, transport, logger)

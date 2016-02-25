@@ -21,7 +21,7 @@ module WinRM
     # Factory for creating a HTTP transport that can be used for WinRM SOAP calls.
     class TransportFactory
       # Creates a new WinRM HTTP transport using the specified connection options.
-      # @param connection_opts [Configuration|Hash] The connection configuration.
+      # @param connection_opts [ConnectionOpts|Hash] The connection ConnectionOpts.
       # @return [HttpTransport] A transport instance for making WinRM calls.
       def create_transport(connection_opts)
         transport = connection_opts[:transport]
