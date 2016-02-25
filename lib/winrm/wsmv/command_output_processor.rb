@@ -16,62 +16,58 @@
 
 require_relative 'soap'
 require_relative 'header'
+require_relative 'command_output_decoder'
+require_relative '../output'
 
 module WinRM
   module WSMV
+    # Class to handle getting all the output of a command until it completes
     class CommandOutputProcessor
       include WinRM::WSMV::SOAP
       include WinRM::WSMV::Header
 
+      # Creates a new command output processor
+      # @param connection_opts [Configuration] The connection configuration options
+      # @param transport [HttpTransport] The WinRM SOAP transport
+      # @param out_opts [Hash] Additional output options
       def initialize(connection_opts, transport, out_opts = {})
         @connection_opts = connection_opts
         @transport = transport
         @out_opts = out_opts
+        @output_decoder = CommandOutputDecoder.new
       end
 
+      # Gets the command output from the remote shell
+      # @param shell_id [UUID] The remote shell id running the command
+      # @param command_id [UUID] The command id to get output for
+      # @param block Optional callback for any output
       def command_output(shell_id, command_id, &block)
-        cmd_out_opts = {
-          shell_id: shell_id,
-          command_id: command_id
-        }.merge(@out_opts)
-
         resp_doc = nil
-        request_msg = WinRM::WSMV::CommandOutput.new(@connection_opts, cmd_out_opts).build
-        done_elems = []
-        output = Output.new
-
-        while done_elems.empty?
-          resp_doc = send_get_output_message(request_msg)
-
+        output = WinRM::Output.new
+        out_message = command_output_message(shell_id, command_id)
+        until command_done?(resp_doc)
+          resp_doc = send_get_output_message(out_message)
           REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |n|
             next if n.text.nil? || n.text.empty?
-
-            # decode and replace invalid unicode characters
-            decoded_text = Base64.decode64(n.text).force_encoding('utf-8')
-            if ! decoded_text.valid_encoding?
-              if decoded_text.respond_to?(:scrub!)
-                decoded_text.scrub!
-              else
-                decoded_text = decoded_text.encode('utf-16', invalid: :replace, undef: :replace)
-                  .encode('utf-8')
-              end
-            end
-
-            # remove BOM which 2008R2 applies
-            stream = { n.attributes['Name'].to_sym => decoded_text.sub('\xEF\xBB\xBF', '') }
+            decoded_text = @output_decoder.decode(n.text)
+            stream = { n.attributes['Name'].to_sym => decoded_text }
             output[:data] << stream
-            yield stream[:stdout], stream[:stderr] if block_given?
+            block.call stream[:stdout], stream[:stderr] if block
           end
-
-          # We may need to get additional output if the stream has not finished.
-          done_elems = REXML::XPath.match(resp_doc, "//*[@State='http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done']")
         end
-
-        output[:exitcode] = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:ExitCode").text.to_i
+        output[:exitcode] = exit_code(resp_doc)
         output
       end
 
       private
+
+      def command_output_message(shell_id, command_id)
+        cmd_out_opts = {
+          shell_id: shell_id,
+          command_id: command_id
+        }.merge(@out_opts)
+        WinRM::WSMV::CommandOutput.new(@connection_opts, cmd_out_opts).build
+      end
 
       def send_get_output_message(message)
         @transport.send_request(message)
@@ -82,11 +78,22 @@ module WinRM
         # another Receive request.
         # http://msdn.microsoft.com/en-us/library/cc251676.aspx
         if e.fault_code == '2150858793'
-          #logger.debug("[WinRM] retrying receive request after timeout")
           retry
         else
           raise
         end
+      end
+
+      def exit_code(resp_doc)
+        REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:ExitCode").text.to_i
+      end
+
+      def command_done?(resp_doc)
+        return false unless resp_doc
+        REXML::XPath.match(
+          resp_doc,
+          "//*[@State='http://schemas.microsoft.com/wbem/wsman/1/windows/shell/" \
+          "CommandState/Done']").any?
       end
     end
   end
