@@ -36,7 +36,7 @@ module WinRM
       end
 
       def create_body(body)
-        body.tag!("#{NS_WIN_SHELL}:Signal", {'CommandId' => @command_id}) do
+        body.tag!("#{NS_WIN_SHELL}:Signal", 'CommandId' => @command_id) do
           |cl| cl << Gyoku.xml(cleanup_body)
         end
       end
