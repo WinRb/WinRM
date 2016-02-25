@@ -48,7 +48,7 @@ module WinRM
 
       def remove_bom(decoded_text)
         # remove BOM which 2008R2 applies
-        decoded_text.sub('\xEF\xBB\xBF', '')
+        decoded_text.sub("\xEF\xBB\xBF", '')
       end
     end
   end
