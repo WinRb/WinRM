@@ -19,6 +19,7 @@
 # Format an ISO8601 Duration
 module WinRM
   module WSMV
+    # Converts seconds to ISO8601 duration format
     module Iso8601Duration
       # Convert the number of seconds to an ISO8601 duration format
       # @see http://tools.ietf.org/html/rfc2445#section-4.3.6
