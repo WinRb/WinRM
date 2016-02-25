@@ -23,7 +23,7 @@ module WinRM
       attr_reader :command_id
 
       def initialize(session_opts, cmd_opts)
-        @command_id = command_id = SecureRandom.uuid.to_s.upcase
+        @command_id = SecureRandom.uuid.to_s.upcase
         validate_opts(session_opts, cmd_opts)
         init_ops(session_opts, cmd_opts)
       end
