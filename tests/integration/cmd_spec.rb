@@ -14,7 +14,7 @@ describe 'winrm client cmd' do
   describe 'ipconfig' do
     subject(:output) { @cmd_shell.run('ipconfig') }
     it { should have_exit_code 0 }
-    it { should have_stdout_match(/Windows IP ConnectionOpts/) }
+    it { should have_stdout_match(/Windows IP Configuration/) }
     it { should have_no_stderr }
   end
 
@@ -71,7 +71,7 @@ describe 'winrm client cmd' do
   describe 'ipconfig with /all argument' do
     subject(:output) { @cmd_shell.run('ipconfig', %w(/all)) }
     it { should have_exit_code 0 }
-    it { should have_stdout_match(/Windows IP ConnectionOpts/) }
+    it { should have_stdout_match(/Windows IP Configuration/) }
     it { should have_no_stderr }
   end
 
@@ -85,7 +85,7 @@ describe 'winrm client cmd' do
   describe 'ipconfig && echo error 1>&2' do
     subject(:output) { @cmd_shell.run('ipconfig && echo error 1>&2') }
     it { should have_exit_code 0 }
-    it { should have_stdout_match(/Windows IP ConnectionOpts/) }
+    it { should have_stdout_match(/Windows IP Configuration/) }
     it { should have_stderr_match(/error/) }
   end
 
@@ -97,6 +97,6 @@ describe 'winrm client cmd' do
       end
       outvar
     end
-    it { should match(/Windows IP ConnectionOpts/) }
+    it { should match(/Windows IP Configuration/) }
   end
 end
