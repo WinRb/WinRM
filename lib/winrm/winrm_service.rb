@@ -25,6 +25,7 @@ require_relative 'wsmv/header'
 require_relative 'wsmv/create_shell'
 require_relative 'wsmv/command'
 require_relative 'wsmv/command_output'
+require_relative 'wsmv/cleanup_command'
 require_relative 'wsmv/close_shell'
 require_relative 'wsmv/wql_query'
 require_relative 'wsmv/init_runspace_pool'
@@ -42,7 +43,7 @@ module WinRM
     include WinRM::WSMV::SOAP
     include WinRM::WSMV::Header
 
-    attr_reader :retry_limit, :retry_delay
+    attr_reader :retry_limit, :retry_delay, :output_decoder
 
     attr_accessor :logger
 
@@ -61,6 +62,7 @@ module WinRM
         operation_timeout: DEFAULT_TIMEOUT,
         locale: DEFAULT_LOCALE
       }
+      @output_decoder = CommandOutputDecoder.new
       setup_logger
       configure_retries(opts)
       begin
@@ -152,6 +154,7 @@ module WinRM
       # CMD shell returns a new shell_id
       shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
       logger.debug("[WinRM] remote shell #{shell_id} is open on #{@session_opts[:endpoint]}")
+      
       if block_given?
         begin
           yield shell_id
@@ -177,34 +180,7 @@ module WinRM
       }.merge!(cmd_opts)
       msg = WSMV::Command.new(@session_opts, command_opts)
 
-      h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => {
-        "#{NS_WSMAN_DMTF}:Option" => [consolemode, skipcmd],
-        :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_CONSOLEMODE_STDIN','WINRS_SKIP_CMD_SHELL']}}}
-      }
-
-      body = { "#{NS_WIN_SHELL}:Command" => "\"#{command}\"", "#{NS_WIN_SHELL}:Arguments" => arguments}
-
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-      builder.tag! :env, :Envelope, namespaces do |env|
-        #env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd,action_command,selector_shell_id(shell_id))) }
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(shared_headers(@session_opts), resource_uri_cmd, action_command, h_opts, selector_shell_id(shell_id))) }
-        env.tag!(:env, :Body) do |env_body|
-          env_body.tag!("#{NS_WIN_SHELL}:CommandLine") { |cl| cl << Gyoku.xml(body) }
-          # env_body.tag!("#{NS_WIN_SHELL}:CommandLine", {"CommandId" => command_id}) { |cl| cl << Gyoku.xml(body) } #PSRP
-        end
-      end
-
-      # Grab the command element and unescape any single quotes - issue 69
-      xml = builder.target!
-      escaped_cmd = /<#{NS_WIN_SHELL}:Command>(.+)<\/#{NS_WIN_SHELL}:Command>/m.match(xml)[1]
-      xml[escaped_cmd] = escaped_cmd.gsub(/&#39;/, "'")
-
-      # escaping not needed for PSRP
-      escaped_cmd = /<#{NS_WIN_SHELL}:Command>(.+)<\/#{NS_WIN_SHELL}:Command>/m.match(xml)[1]
-      xml[escaped_cmd] = escaped_cmd.gsub(/&#39;/, "'")
-
-      resp_doc = send_message(xml)
+      resp_doc = send_message(msg.build)
       command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
 
       if block_given?
@@ -284,7 +260,7 @@ module WinRM
         shell_id: shell_id,
         command_id: command_id
       }
-      msg = WinRM::WSMV::CommandOutput.new(@session_opts, cmd_opts)
+      msg = WinRM::WSMV::CleanupCommand.new(@session_opts, cmd_opts)
       resp = send_message(msg.build)
       true
     end
@@ -396,7 +372,6 @@ module WinRM
 
     def send_get_output_message(message)
       send_message(message)
-      puts "get output sent"
     rescue WinRMWSManFault => e
       # If no output is available before the wsman:OperationTimeout expires,
       # the server MUST return a WSManFault with the Code attribute equal to
@@ -407,14 +382,11 @@ module WinRM
         logger.debug("[WinRM] retrying receive request after timeout")
         retry
       else
-        puts "yoyoyo"
         raise
       end
     end
 
     def send_message(message)
-      puts "sending"
-      puts message
       @xfer.send_request(message)
     end
   end # WinRMWebService
