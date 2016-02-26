@@ -36,7 +36,10 @@ module WinRM
       end
 
       def create_body(body)
-        body.tag!("#{NS_WIN_SHELL}:Receive") { |cl| cl << Gyoku.xml(cleanup_body) }
+        body.tag!(
+          "#{NS_WIN_SHELL}:Signal",
+          'CommandId' => @command_id
+        ) { |cl| cl << Gyoku.xml(cleanup_body) }
       end
 
       private
@@ -44,7 +47,7 @@ module WinRM
       def cleanup_header
         merge_headers(shared_headers(@session_opts),
                       resource_uri_shell(@shell_uri),
-                      action_receive,
+                      action_signal,
                       selector_shell_id(@shell_id))
       end
 
