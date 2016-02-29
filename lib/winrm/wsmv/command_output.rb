@@ -27,6 +27,7 @@ module WinRM
         @shell_id = command_out_opts[:shell_id]
         @command_id = command_out_opts[:command_id]
         @shell_uri = command_out_opts[:shell_uri] || RESOURCE_URI_CMD
+        @out_streams = command_out_opts[:out_streams] || %w(stdout stderr)
       end
 
       protected
@@ -64,7 +65,7 @@ module WinRM
       def output_body
         # body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout', #PSRP
         {
-          "#{NS_WIN_SHELL}:DesiredStream" => 'stdout stderr', :attributes! => {
+          "#{NS_WIN_SHELL}:DesiredStream" => @out_streams.join(' '), :attributes! => {
             "#{NS_WIN_SHELL}:DesiredStream" => {
               'CommandId' => @command_id
             }
