@@ -18,13 +18,15 @@ require 'nori'
 require 'rexml/document'
 require 'securerandom'
 require_relative 'command_executor'
-require_relative 'command_output_decoder'
+require_relative 'powershell_executor'
 require_relative 'helpers/powershell_script'
+require_relative 'wsmv/command_output_decoder'
 require_relative 'wsmv/soap'
 require_relative 'wsmv/header'
 require_relative 'wsmv/create_shell'
 require_relative 'wsmv/command'
 require_relative 'wsmv/command_output'
+require_relative 'wsmv/command_output_processor'
 require_relative 'wsmv/cleanup_command'
 require_relative 'wsmv/close_shell'
 require_relative 'wsmv/wql_query'
@@ -45,7 +47,7 @@ module WinRM
 
     attr_reader :retry_limit, :retry_delay, :output_decoder
 
-    attr_accessor :logger
+    attr_accessor :logger, :session_opts
 
     # @param [String,URI] endpoint the WinRM webservice endpoint
     # @param [Symbol] transport either :kerberos(default)/:ssl/:plaintext
@@ -62,7 +64,7 @@ module WinRM
         operation_timeout: DEFAULT_TIMEOUT,
         locale: DEFAULT_LOCALE
       }
-      @output_decoder = CommandOutputDecoder.new
+      @output_decoder = WinRM::WSMV::CommandOutputDecoder.new
       setup_logger
       configure_retries(opts)
       begin
@@ -312,8 +314,8 @@ module WinRM
     # The CommandExecutor is simply returned if no block is given.
     # @yieldparam [CommandExecutor] a CommandExecutor instance
     # @return [CommandExecutor] a CommandExecutor instance
-    def create_executor(&block)
-      executor = CommandExecutor.new(self)
+    def create_executor(shell = :cmd, &block)
+      executor = shell == :cmd ? CommandExecutor.new(self) : PowershellExecutor.new(self, @xfer)
       executor.open
 
       if block_given?
