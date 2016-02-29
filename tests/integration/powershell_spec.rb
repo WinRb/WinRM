@@ -10,7 +10,7 @@ describe 'winrm client powershell' do
       SecureRandom.uuid
       Benchmark.bm do | benchmark |
         benchmark.report do
-          @winrm.create_executor do |executor|
+          @winrm.create_executor(:powershell) do |executor|
             executor.run_cmd('Get-Process')
             executor.run_cmd('Get-Process')
             executor.run_cmd('Get-Process')
