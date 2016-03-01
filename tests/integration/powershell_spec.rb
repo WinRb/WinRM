@@ -1,4 +1,6 @@
 # encoding: UTF-8
+require_relative 'spec_helper'
+
 describe 'winrm client powershell' do
   before(:all) do
     @winrm = winrm_connection

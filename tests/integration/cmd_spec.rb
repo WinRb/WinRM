@@ -1,4 +1,6 @@
 # encoding: UTF-8
+require_relative 'spec_helper'
+
 describe 'winrm client cmd' do
   before(:all) do
     @cmd_shell = winrm_connection.shell(:cmd)

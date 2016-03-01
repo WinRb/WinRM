@@ -1,7 +1,9 @@
 # encoding: UTF-8
+require_relative 'spec_helper'
+
 describe 'issue 59' do
   before(:all) do
-    @winrm = winrm_connection
+    @cmd_shell = winrm_connection.shell(:cmd)
   end
 
   describe 'long running script without output' do

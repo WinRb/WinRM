@@ -1,4 +1,6 @@
 # encoding: UTF-8
+require_relative 'spec_helper'
+
 # This test may only be meaningful with kerberos auth
 # Against server 2012, a kerberos connection will require reauth (get a 401)
 # if there are no requests for >= 15 seconds
