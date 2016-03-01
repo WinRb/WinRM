@@ -1,20 +1,23 @@
 # encoding: UTF-8
+require_relative 'spec_helper'
+
 describe 'WinRM connection' do
-  let(:winrm_connection) do
-    endpoint = config[:endpoint].dup
+  let(:connection) do
+    endpoint = connection_opts[:endpoint].dup
     if auth_type == :ssl
       endpoint.sub!('5985', '5986')
       endpoint.sub!('http', 'https')
     end
-    winrm = WinRM::WinRMWebService.new(
-      endpoint, auth_type, options)
-    winrm.logger.level = :error
-    winrm
+    conn_options = {
+      transport: auth_type,
+      endpoint: endpoint
+    }.merge(options)
+    WinRM::Connection.new(conn_options)
   end
   let(:options) do
     opts = {}
-    opts[:user] = config[:options][:user]
-    opts[:pass] = config[:options][:pass]
+    opts[:user] = connection_opts[:user]
+    opts[:password] = connection_opts[:password]
     opts[:basic_auth_only] = basic_auth_only
     opts[:no_ssl_peer_verification] = no_ssl_peer_verification
     opts[:ssl_peer_fingerprint] = ssl_peer_fingerprint
@@ -28,10 +31,7 @@ describe 'WinRM connection' do
   let(:user_cert) { nil }
   let(:user_key) { nil }
 
-  subject(:output) do
-    executor = winrm_connection.create_executor
-    executor.run_cmd('ipconfig')
-  end
+  subject(:output) { connection.shell(:cmd).run('ipconfig') }
 
   shared_examples 'a valid_connection' do
     it 'has a 0 exit code' do
@@ -39,7 +39,7 @@ describe 'WinRM connection' do
     end
 
     it 'includes command output' do
-      expect(subject).to have_stdout_match(/Windows IP ConnectionOpts/)
+      expect(subject).to have_stdout_match(/Windows IP Configuration/)
     end
 
     it 'has no errors' do
