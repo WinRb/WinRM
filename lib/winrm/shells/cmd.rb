@@ -54,6 +54,13 @@ module WinRM
         cleanup_command(command_id) if command_id
       end
 
+      def close
+        return unless @shell_id
+        Cmd.close_shell(@connection_opts, @transport, @shell_id)
+        remove_finalizer
+        @shell_id = nil
+      end
+
       private
 
       def send_command(command, arguments)
@@ -88,13 +95,6 @@ module WinRM
         end
         add_finalizer
         @command_count = 0
-      end
-
-      def close
-        return unless @shell_id
-        Cmd.close_shell(@connection_opts, @transport, @shell_id)
-        remove_finalizer
-        @shell_id = nil
       end
 
       def add_finalizer

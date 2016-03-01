@@ -12,15 +12,16 @@ describe 'winrm client powershell' do
       SecureRandom.uuid
       Benchmark.bm do | benchmark |
         benchmark.report do
-          @winrm.create_executor do |executor|
-            executor.run_cmd('Get-Process')
-            executor.run_cmd('Get-Process')
-            executor.run_cmd('Get-Process')
-            executor.run_cmd('Get-Process')
+          @winrm.shell(:powershell) do |shell|
+            shell.run('Get-Process')
+            shell.run('Get-Process')
+            shell.run('Get-Process')
+            shell.run('Get-Process')
             # long_string="N"*300000
             # puts executor.run_cmd("Write-Output '#{long_string}'").stdout.unpack("C*")
             # .pack("U*").gsub('_x000D__x000A_',"\r\n")
-            puts executor.run_cmd('Get-Process').stdout.unpack('C*').pack('U*')
+            puts "yoyoyo"
+            puts shell.run('Get-Process').stdout.unpack('C*').pack('U*')
               .gsub('_x000D__x000A_', "\r\n")
           end
         end

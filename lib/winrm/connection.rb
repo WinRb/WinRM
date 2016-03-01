@@ -33,8 +33,17 @@ module WinRM
     # this connection.
     # @param shell_type [Symbol] The shell type :cmd or :powershell
     # @return [Shell|Cmd] PowerShell or Cmd shell instance.
-    def shell(shell_type)
-      shell_factory.create_shell(shell_type)
+    def shell(shell_type, &block)
+      shell = shell_factory.create_shell(shell_type)
+      if block_given?
+        begin
+          yield shell
+        ensure
+          shell.close
+        end
+      else
+        shell
+      end
     end
 
     def run_wql(wql)

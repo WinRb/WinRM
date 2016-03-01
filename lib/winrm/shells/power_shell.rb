@@ -58,6 +58,13 @@ module WinRM
         cleanup_command(command_id) if command_id
       end
 
+      def close
+        return unless @shell_id
+        PowerShell.close_shell(@connection_opts, @transport, @shell_id)
+        remove_finalizer
+        @shell_id = nil
+      end
+
       private
 
       def send_command(command, _arguments)
@@ -84,6 +91,15 @@ module WinRM
         @transport.send_request(cleanup_msg.build)
       end
 
+      def self.close_shell(connection_opts, transport, shell_id)
+        msg = WinRM::WSMV::CloseShell.new(
+          connection_opts,
+          shell_id: shell_id,
+          shell_uri: WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL
+        )
+        transport.send_request(msg.build)
+      end
+
       def open
         close
         retryable(@connection_opts[:retry_limit], @connection_opts[:retry_delay]) do
@@ -97,13 +113,6 @@ module WinRM
         @command_count = 0
       end
 
-      def close
-        return unless @shell_id
-        Cmd.close_shell(@connection_opts, @transport, @shell_id)
-        remove_finalizer
-        @shell_id = nil
-      end
-
       def add_finalizer
         ObjectSpace.define_finalizer(
           self,
@@ -114,13 +123,8 @@ module WinRM
         ObjectSpace.undefine_finalizer(self)
       end
 
-      def self.close_shell(connection_opts, transport, shell_id)
-        msg = WinRM::WSMV::CloseShell.new(connection_opts, shell_id: shell_id)
-        transport.send_request(msg.build)
-      end
-
       def self.finalize(connection_opts, transport, shell_id)
-        proc { Cmd.close_shell(connection_opts, transport, shell_id) }
+        proc { self.close_shell(connection_opts, transport, shell_id) }
       end
     end
   end
