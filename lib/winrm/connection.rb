@@ -17,6 +17,7 @@
 require_relative 'connection_opts'
 require_relative 'http/transport_factory'
 require_relative 'shells/shell_factory'
+require_relative 'wsmv/wql_query'
 
 module WinRM
   # WinRM connection used to establish a session with the remote WinRM service.
@@ -26,7 +27,6 @@ module WinRM
     def initialize(connection_opts)
       configure_connection_opts(connection_opts)
       configure_logger
-      create_shell_factory
     end
 
     # Creates a new shell on the remote Windows server associated with
@@ -34,7 +34,12 @@ module WinRM
     # @param shell_type [Symbol] The shell type :cmd or :powershell
     # @return [Shell|Cmd] PowerShell or Cmd shell instance.
     def shell(shell_type)
-      @shell_factory.create_shell(shell_type)
+      shell_factory.create_shell(shell_type)
+    end
+
+    def run_wql(wql)
+      query = WinRM::WSMV::WqlQuery.new(@connection_opts, wql)
+      query.process_response(transport.send_request(query.build))
     end
 
     private
@@ -49,10 +54,15 @@ module WinRM
       @logger.add_appenders(Logging.appenders.stdout)
     end
 
-    def create_shell_factory
-      transport_factory = WinRM::HTTP::TransportFactory.new
-      transport = transport_factory.create_transport(@connection_opts)
-      @shell_factory = WinRM::Shells::ShellFactory.new(@connection_opts, transport, @logger)
+    def shell_factory
+      @shell_factory ||= WinRM::Shells::ShellFactory.new(@connection_opts, transport, @logger)
+    end
+
+    def transport
+      @transport ||= begin
+        transport_factory = WinRM::HTTP::TransportFactory.new
+        transport_factory.create_transport(@connection_opts)
+      end
     end
   end
 end
