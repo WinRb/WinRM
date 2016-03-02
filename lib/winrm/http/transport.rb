@@ -43,7 +43,7 @@ module WinRM
         ssl_peer_fingerprint_verification!
         log_soap_message(message)
         hdr = { 'Content-Type' => 'application/soap+xml;charset=UTF-8',
-                'Content-Length' => message.length }
+                'Content-Length' => message.bytesize }
         resp = @httpcli.post(@endpoint, message, hdr)
         log_soap_message(resp.http_body.content)
         verify_ssl_fingerprint(resp.peer_cert)
@@ -165,7 +165,7 @@ module WinRM
         ssl_peer_fingerprint_verification!
         auth_header = init_auth if @ntlmcli.session.nil?
 
-        original_length = message.length
+        original_length = message.bytesize
 
         emessage = @ntlmcli.session.seal_message message
         signature = @ntlmcli.session.sign_message message
@@ -290,7 +290,7 @@ module WinRM
       # @returns [Object] The HTTP response object
       def send_kerberos_request(message)
         log_soap_message(message)
-        original_length = message.length
+        original_length = message.bytesize
         pad_len, emsg = winrm_encrypt(message)
         hdr = {
           'Connection' => 'Keep-Alive',
