@@ -132,7 +132,9 @@ module WinRM
     # Plain text, insecure, HTTP transport
     class HttpPlaintext < HttpTransport
       def initialize(endpoint, user, pass, opts)
+        puts endpoint
         super(endpoint)
+        puts endpoint
         @httpcli.set_auth(nil, user, pass)
         no_sspi_auth! if opts[:disable_sspi]
         basic_auth_only! if opts[:basic_auth_only]
@@ -243,7 +245,6 @@ module WinRM
     end
 
     # Uses Kerberos/GSSAPI to authenticate and encrypt messages
-    # rubocop:disable Metrics/ClassLength
     class HttpGSSAPI < HttpTransport
       # @param [String,URI] endpoint the WinRM webservice endpoint
       # @param [String] realm the Kerberos realm we are authenticating to
@@ -279,9 +280,6 @@ module WinRM
       end
 
       private
-
-      # rubocop:disable Metrics/MethodLength
-      # rubocop:disable Metrics/AbcSize
 
       # Sends the SOAP payload to the WinRM service and returns the service's
       # HTTP response.
@@ -413,9 +411,6 @@ module WinRM
 
         iov1[:buffer].value
       end
-      # rubocop:enable Metrics/MethodLength
-      # rubocop:enable Metrics/AbcSize
     end
-    # rubocop:enable Metrics/ClassLength
   end
 end # WinRM

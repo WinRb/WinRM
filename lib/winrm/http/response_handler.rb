@@ -15,6 +15,7 @@
 # limitations under the License.
 
 require 'rexml/document'
+require_relative '../wsmv/soap'
 
 module WinRM
   # Handles the raw WinRM HTTP response. Returns the body as an XML doc
@@ -58,20 +59,30 @@ module WinRM
     end
 
     def raise_if_wsman_fault
-      soap_errors = REXML::XPath.match(response_xml, "//#{NS_SOAP_ENV}:Body/#{NS_SOAP_ENV}:Fault/*")
+      soap_errors = REXML::XPath.match(
+        response_xml,
+        "//#{WinRM::WSMV::SOAP::NS_SOAP_ENV}:Body/#{WinRM::WSMV::SOAP::NS_SOAP_ENV}:Fault/*")
       return if soap_errors.empty?
-      fault = REXML::XPath.first(soap_errors, "//#{NS_WSMAN_FAULT}:WSManFault")
+      fault = REXML::XPath.first(
+        soap_errors,
+        "//#{WinRM::WSMV::SOAP::NS_WSMAN_FAULT}:WSManFault")
       fail WinRMWSManFault.new(fault.to_s, fault.attributes['Code']) unless fault.nil?
     end
 
     def raise_if_wmi_error
-      soap_errors = REXML::XPath.match(response_xml, "//#{NS_SOAP_ENV}:Body/#{NS_SOAP_ENV}:Fault/*")
+      soap_errors = REXML::XPath.match(
+        response_xml,
+        "//#{WinRM::WSMV::SOAP::NS_SOAP_ENV}:Body/#{WinRM::WSMV::SOAP::NS_SOAP_ENV}:Fault/*")
       return if soap_errors.empty?
 
-      error = REXML::XPath.first(soap_errors, "//#{NS_WSMAN_MSFT}:MSFT_WmiError")
+      error = REXML::XPath.first(
+        soap_errors,
+        "//#{WinRM::WSMV::SOAP::NS_WSMAN_MSFT}:MSFT_WmiError")
       return if error.nil?
 
-      error_code = REXML::XPath.first(error, "//#{NS_WSMAN_MSFT}:error_Code").text
+      error_code = REXML::XPath.first(
+        error,
+        "//#{WinRM::WSMV::SOAP::NS_WSMAN_MSFT}:error_Code").text
       fail WinRMWMIError.new(error.to_s, error_code)
     end
 

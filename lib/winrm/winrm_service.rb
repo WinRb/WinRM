@@ -18,20 +18,36 @@ require 'nori'
 require 'rexml/document'
 require 'securerandom'
 require_relative 'command_executor'
-require_relative 'command_output_decoder'
+require_relative 'powershell_executor'
 require_relative 'helpers/powershell_script'
+require_relative 'wsmv/command_output_decoder'
+require_relative 'wsmv/soap'
+require_relative 'wsmv/header'
+require_relative 'wsmv/create_shell'
+require_relative 'wsmv/command'
+require_relative 'wsmv/command_output'
+require_relative 'wsmv/command_output_processor'
+require_relative 'wsmv/cleanup_command'
+require_relative 'wsmv/close_shell'
+require_relative 'wsmv/wql_query'
+require_relative 'wsmv/init_runspace_pool'
+require_relative 'wsmv/keep_alive'
+require_relative 'wsmv/create_pipeline'
 
 module WinRM
   # This is the main class that does the SOAP request/response logic. There are a few helper
   # classes, but pretty much everything comes through here first.
   class WinRMWebService
-    DEFAULT_TIMEOUT = 'PT60S'
+    DEFAULT_TIMEOUT = 60
     DEFAULT_MAX_ENV_SIZE = 153600
     DEFAULT_LOCALE = 'en-US'
 
-    attr_reader :endpoint, :timeout, :retry_limit, :retry_delay, :output_decoder
+    include WinRM::WSMV::SOAP
+    include WinRM::WSMV::Header
 
-    attr_accessor :logger
+    attr_reader :retry_limit, :retry_delay, :output_decoder
+
+    attr_accessor :logger, :session_opts
 
     # @param [String,URI] endpoint the WinRM webservice endpoint
     # @param [Symbol] transport either :kerberos(default)/:ssl/:plaintext
@@ -41,11 +57,14 @@ module WinRM
     #   @see WinRM::HTTP::HttpNegotiate
     #   @see WinRM::HTTP::HttpSSL
     def initialize(endpoint, transport = :kerberos, opts = {})
-      @endpoint = endpoint
-      @timeout = DEFAULT_TIMEOUT
-      @max_env_sz = DEFAULT_MAX_ENV_SIZE
-      @locale = DEFAULT_LOCALE
-      @output_decoder = CommandOutputDecoder.new
+      @session_opts = {
+        endpoint: endpoint,
+        max_envelope_size: DEFAULT_MAX_ENV_SIZE,
+        session_id: SecureRandom.uuid.to_s.upcase,
+        operation_timeout: DEFAULT_TIMEOUT,
+        locale: DEFAULT_LOCALE
+      }
+      @output_decoder = WinRM::WSMV::CommandOutputDecoder.new
       setup_logger
       configure_retries(opts)
       begin
@@ -88,69 +107,56 @@ module WinRM
     # @param [Fixnum] The number of seconds to set the Ruby receive timeout
     # @return [String] The ISO 8601 formatted operation timeout
     def set_timeout(op_timeout_sec, receive_timeout_sec=nil)
-      @timeout = Iso8601Duration.sec_to_dur(op_timeout_sec)
+      @session_opts[:operation_timeout] = op_timeout_sec
       @xfer.receive_timeout = receive_timeout_sec || op_timeout_sec + 10
-      @timeout
+      Iso8601Duration.sec_to_dur(@session_opts[:operation_timeout])
     end
     alias :op_timeout :set_timeout
+
+    # The operation timeout
+    def timeout
+      Iso8601Duration.sec_to_dur(@session_opts[:operation_timeout])
+    end
+
+    # The WSMan http(s) endpoint
+    def endpoint
+      @session_opts[:endpoint]
+    end
 
     # Max envelope size
     # @see http://msdn.microsoft.com/en-us/library/ee916127(v=PROT.13).aspx
     # @param [Fixnum] byte_sz the max size in bytes to allow for the response
     def max_env_size(byte_sz)
-      @max_env_sz = byte_sz
+      @session_opts[:max_envelope_size] = byte_sz
     end
 
     # Set the locale
     # @see http://msdn.microsoft.com/en-us/library/gg567404(v=PROT.13).aspx
     # @param [String] locale the locale to set for future messages
     def locale(locale)
-      @locale = locale
+      @session_opts[:locale] = locale
     end
 
     # Create a Shell on the destination host
     # @param [Hash<optional>] shell_opts additional shell options you can pass
     # @option shell_opts [String] :i_stream Which input stream to open.  Leave this alone unless you know what you're doing (default: stdin)
     # @option shell_opts [String] :o_stream Which output stream to open.  Leave this alone unless you know what you're doing (default: stdout stderr)
-    # @option shell_opts [String] :working_directory the directory to create the shell in
+    # @option shell_opts [String] :working_directory The directory to create the shell in
+    # @option shell_opts [String] :codepage The shell code page, defaults to 65001 (UTF-8)
+    # @option shell_opts [String] :noprofile The WINRS_NOPROFILE setting, defaults to 'FALSE'
+    # @option shell_opts [Fixnum] :idle_timeout The shell IdleTimeOut in seconds
     # @option shell_opts [Hash] :env_vars environment variables to set for the shell. For instance;
     #   :env_vars => {:myvar1 => 'val1', :myvar2 => 'var2'}
-    # @return [String] The ShellId from the SOAP response.  This is our open shell instance on the remote machine.
+    # @return [String] The ShellId from the SOAP response. This is our open shell instance on the remote machine.
     def open_shell(shell_opts = {}, &block)
-      logger.debug("[WinRM] opening remote shell on #{@endpoint}")
-      i_stream = shell_opts.has_key?(:i_stream) ? shell_opts[:i_stream] : 'stdin'
-      o_stream = shell_opts.has_key?(:o_stream) ? shell_opts[:o_stream] : 'stdout stderr'
-      codepage = shell_opts.has_key?(:codepage) ? shell_opts[:codepage] : 65001 # utf8 as default codepage (from https://msdn.microsoft.com/en-us/library/dd317756(VS.85).aspx)
-      noprofile = shell_opts.has_key?(:noprofile) ? shell_opts[:noprofile] : 'FALSE'
-      h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => { "#{NS_WSMAN_DMTF}:Option" => [noprofile, codepage],
-        :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_NOPROFILE','WINRS_CODEPAGE']}}}}
-      shell_body = {
-        "#{NS_WIN_SHELL}:InputStreams" => i_stream,
-        "#{NS_WIN_SHELL}:OutputStreams" => o_stream
-      }
-      shell_body["#{NS_WIN_SHELL}:WorkingDirectory"] = shell_opts[:working_directory] if shell_opts.has_key?(:working_directory)
-      shell_body["#{NS_WIN_SHELL}:IdleTimeOut"] = shell_opts[:idle_timeout] if(shell_opts.has_key?(:idle_timeout) && shell_opts[:idle_timeout].is_a?(String))
-      if(shell_opts.has_key?(:env_vars) && shell_opts[:env_vars].is_a?(Hash))
-        keys = shell_opts[:env_vars].keys
-        vals = shell_opts[:env_vars].values
-        shell_body["#{NS_WIN_SHELL}:Environment"] = {
-          "#{NS_WIN_SHELL}:Variable" => vals,
-          :attributes! => {"#{NS_WIN_SHELL}:Variable" => {'Name' => keys}}
-        }
-      end
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-      builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_create,h_opts)) }
-        env.tag! :env, :Body do |body|
-          body.tag!("#{NS_WIN_SHELL}:Shell") { |s| s << Gyoku.xml(shell_body)}
-        end
-      end
-
-      resp_doc = send_message(builder.target!)
+      shell_id = SecureRandom.uuid.to_s.upcase
+      logger.debug("[WinRM] opening remote shell on #{@session_opts[:endpoint]}")
+      msg = WSMV::CreateShell.new(@session_opts, shell_opts)
+      resp_doc = send_message(msg.build)
+      # CMD shell returns a new shell_id
       shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
-      logger.debug("[WinRM] remote shell #{shell_id} is open on #{@endpoint}")
-
+      logger.debug("[WinRM] remote shell #{shell_id} is open on #{@session_opts[:endpoint]}")
+      
       if block_given?
         begin
           yield shell_id
@@ -168,30 +174,15 @@ module WinRM
     # @param [Array<String>] arguments An array of arguments for this command
     # @return [String] The CommandId from the SOAP response.  This is the ID we need to query in order to get output.
     def run_command(shell_id, command, arguments = [], cmd_opts = {}, &block)
-      consolemode = cmd_opts.has_key?(:console_mode_stdin) ? cmd_opts[:console_mode_stdin] : 'TRUE'
-      skipcmd     = cmd_opts.has_key?(:skip_cmd_shell) ? cmd_opts[:skip_cmd_shell] : 'FALSE'
+      command_opts = {
+        shell_id: shell_id,
+        command_id: SecureRandom.uuid.to_s.upcase,
+        command: command,
+        arguments: arguments
+      }.merge!(cmd_opts)
+      msg = WSMV::Command.new(@session_opts, command_opts)
 
-      h_opts = { "#{NS_WSMAN_DMTF}:OptionSet" => {
-        "#{NS_WSMAN_DMTF}:Option" => [consolemode, skipcmd],
-        :attributes! => {"#{NS_WSMAN_DMTF}:Option" => {'Name' => ['WINRS_CONSOLEMODE_STDIN','WINRS_SKIP_CMD_SHELL']}}}
-      }
-      body = { "#{NS_WIN_SHELL}:Command" => "\"#{command}\"", "#{NS_WIN_SHELL}:Arguments" => arguments}
-
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-      builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_command,h_opts,selector_shell_id(shell_id))) }
-        env.tag!(:env, :Body) do |env_body|
-          env_body.tag!("#{NS_WIN_SHELL}:CommandLine") { |cl| cl << Gyoku.xml(body) }
-        end
-      end
-
-      # Grab the command element and unescape any single quotes - issue 69
-      xml = builder.target!
-      escaped_cmd = /<#{NS_WIN_SHELL}:Command>(.+)<\/#{NS_WIN_SHELL}:Command>/m.match(xml)[1]
-      xml[escaped_cmd] = escaped_cmd.gsub(/&#39;/, "'")
-
-      resp_doc = send_message(xml)
+      resp_doc = send_message(msg.build)
       command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
 
       if block_given?
@@ -206,25 +197,13 @@ module WinRM
     end
 
     def write_stdin(shell_id, command_id, stdin)
-      # Signal the Command references to terminate (close stdout/stderr)
-      body = {
-        "#{NS_WIN_SHELL}:Send" => {
-          "#{NS_WIN_SHELL}:Stream" => {
-            "@Name" => 'stdin',
-            "@CommandId" => command_id,
-            :content! => Base64.encode64(stdin)
-          }
-        }
+      stdin_opts = {
+        shell_id: shell_id,
+        command_id: command_id,
+        stdin: stdin
       }
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-      builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_send,selector_shell_id(shell_id))) }
-        env.tag!(:env, :Body) do |env_body|
-          env_body << Gyoku.xml(body)
-        end
-      end
-      resp = send_message(builder.target!)
+      msg = WSMV::WriteStdin.new(@session_opts, stdin_opts)
+      resp = send_message(msg.build)
       true
     end
 
@@ -235,20 +214,13 @@ module WinRM
     #   is either :stdout or :stderr.  The reason it is in an Array so so we can get the output in the order it ocurrs on
     #   the console.
     def get_command_output(shell_id, command_id, &block)
-      body = { "#{NS_WIN_SHELL}:DesiredStream" => 'stdout stderr',
-        :attributes! => {"#{NS_WIN_SHELL}:DesiredStream" => {'CommandId' => command_id}}}
-
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-      builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_receive,selector_shell_id(shell_id))) }
-        env.tag!(:env, :Body) do |env_body|
-          env_body.tag!("#{NS_WIN_SHELL}:Receive") { |cl| cl << Gyoku.xml(body) }
-        end
-      end
+      cmd_out_opts = {
+        shell_id: shell_id,
+        command_id: command_id
+      }
 
       resp_doc = nil
-      request_msg = builder.target!
+      request_msg = WinRM::WSMV::CommandOutput.new(@session_opts, cmd_out_opts).build
       done_elems = []
       output = Output.new
 
@@ -280,23 +252,18 @@ module WinRM
       output
     end
 
-    # Clean-up after a command.
+    # Clean-up after a command. Signal the Command references to terminate (close stdout/stderr)
     # @see #run_command
     # @param [String] shell_id The shell id on the remote machine.  See #open_shell
     # @param [String] command_id The command id on the remote machine.  See #run_command
     # @return [true] This should have more error checking but it just returns true for now.
     def cleanup_command(shell_id, command_id)
-      # Signal the Command references to terminate (close stdout/stderr)
-      body = { "#{NS_WIN_SHELL}:Code" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/signal/terminate' }
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-      builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_signal,selector_shell_id(shell_id))) }
-        env.tag!(:env, :Body) do |env_body|
-          env_body.tag!("#{NS_WIN_SHELL}:Signal", {'CommandId' => command_id}) { |cl| cl << Gyoku.xml(body) }
-        end
-      end
-      resp = send_message(builder.target!)
+      cmd_opts = {
+        shell_id: shell_id,
+        command_id: command_id
+      }
+      msg = WinRM::WSMV::CleanupCommand.new(@session_opts, cmd_opts)
+      resp = send_message(msg.build)
       true
     end
 
@@ -304,16 +271,12 @@ module WinRM
     # @param [String] shell_id The shell id on the remote machine.  See #open_shell
     # @return [true] This should have more error checking but it just returns true for now.
     def close_shell(shell_id)
-      logger.debug("[WinRM] closing remote shell #{shell_id} on #{@endpoint}")
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-
-      builder.tag!('env:Envelope', namespaces) do |env|
-        env.tag!('env:Header') { |h| h << Gyoku.xml(merge_headers(header,resource_uri_cmd,action_delete,selector_shell_id(shell_id))) }
-        env.tag!('env:Body')
-      end
-
-      resp = send_message(builder.target!)
+      logger.debug("[WinRM] closing remote shell #{shell_id} on #{@session_opts[:endpoint]}")
+      cmd_opts = {
+        shell_id: shell_id
+      }
+      msg = WinRM::WSMV::CloseShell.new(@session_opts, cmd_opts)
+      resp = send_message(msg.build)
       logger.debug("[WinRM] remote shell #{shell_id} closed")
       true
     end
@@ -351,8 +314,8 @@ module WinRM
     # The CommandExecutor is simply returned if no block is given.
     # @yieldparam [CommandExecutor] a CommandExecutor instance
     # @return [CommandExecutor] a CommandExecutor instance
-    def create_executor(&block)
-      executor = CommandExecutor.new(self)
+    def create_executor(shell = :cmd, &block)
+      executor = shell == :cmd ? CommandExecutor.new(self) : PowershellExecutor.new(self, @xfer)
       executor.open
 
       if block_given?
@@ -371,23 +334,8 @@ module WinRM
     # @param [String] wql The WQL query
     # @return [Hash] Returns a Hash that contain the key/value pairs returned from the query.
     def run_wql(wql)
-
-      body = { "#{NS_WSMAN_DMTF}:OptimizeEnumeration" => nil,
-        "#{NS_WSMAN_DMTF}:MaxElements" => '32000',
-        "#{NS_WSMAN_DMTF}:Filter" => wql,
-        :attributes! => { "#{NS_WSMAN_DMTF}:Filter" => {'Dialect' => 'http://schemas.microsoft.com/wbem/wsman/1/WQL'}}
-      }
-
-      builder = Builder::XmlMarkup.new
-      builder.instruct!(:xml, :encoding => 'UTF-8')
-      builder.tag! :env, :Envelope, namespaces do |env|
-        env.tag!(:env, :Header) { |h| h << Gyoku.xml(merge_headers(header,resource_uri_wmi,action_enumerate)) }
-        env.tag!(:env, :Body) do |env_body|
-          env_body.tag!("#{NS_ENUM}:Enumerate") { |en| en << Gyoku.xml(body) }
-        end
-      end
-
-      resp = send_message(builder.target!)
+      msg = WinRM::WSMV::WqlQuery.new(@session_opts, wql)
+      resp = send_message(msg.build)
       parser = Nori.new(:parser => :rexml, :advanced_typecasting => false, :convert_tags_to => lambda { |tag| tag.snakecase.to_sym }, :strip_namespaces => true)
       hresp = parser.parse(resp.to_s)[:envelope][:body]
       
@@ -424,51 +372,6 @@ module WinRM
       @retry_limit = opts[:retry_limit] || 3
     end
 
-    def namespaces
-      {
-        'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema',
-        'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
-        'xmlns:env' => 'http://www.w3.org/2003/05/soap-envelope',
-        'xmlns:a' => 'http://schemas.xmlsoap.org/ws/2004/08/addressing',
-        'xmlns:b' => 'http://schemas.dmtf.org/wbem/wsman/1/cimbinding.xsd',
-        'xmlns:n' => 'http://schemas.xmlsoap.org/ws/2004/09/enumeration',
-        'xmlns:x' => 'http://schemas.xmlsoap.org/ws/2004/09/transfer',
-        'xmlns:w' => 'http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd',
-        'xmlns:p' => 'http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd',
-        'xmlns:rsp' => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell',
-        'xmlns:cfg' => 'http://schemas.microsoft.com/wbem/wsman/1/config',
-      }
-    end
-
-    def header
-      { "#{NS_ADDRESSING}:To" => "#{@xfer.endpoint.to_s}",
-        "#{NS_ADDRESSING}:ReplyTo" => {
-        "#{NS_ADDRESSING}:Address" => 'http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous',
-          :attributes! => {"#{NS_ADDRESSING}:Address" => {'mustUnderstand' => true}}},
-        "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => @max_env_sz,
-        "#{NS_ADDRESSING}:MessageID" => "uuid:#{SecureRandom.uuid.to_s.upcase}",
-        "#{NS_WSMAN_DMTF}:Locale/" => '',
-        "#{NS_WSMAN_MSFT}:DataLocale/" => '',
-        "#{NS_WSMAN_DMTF}:OperationTimeout" => @timeout,
-        :attributes! => {
-          "#{NS_WSMAN_DMTF}:MaxEnvelopeSize" => {'mustUnderstand' => true},
-          "#{NS_WSMAN_DMTF}:Locale/" => {'xml:lang' => @locale, 'mustUnderstand' => false},
-          "#{NS_WSMAN_MSFT}:DataLocale/" => {'xml:lang' => @locale, 'mustUnderstand' => false}
-        }}
-    end
-
-    # merge the various header hashes and make sure we carry all of the attributes
-    #   through instead of overwriting them.
-    def merge_headers(*headers)
-      hdr = {}
-      headers.each do |h|
-        hdr.merge!(h) do |k,v1,v2|
-          v1.merge!(v2) if k == :attributes!
-        end
-      end
-      hdr
-    end
-
     def send_get_output_message(message)
       send_message(message)
     rescue WinRMWSManFault => e
@@ -488,60 +391,5 @@ module WinRM
     def send_message(message)
       @xfer.send_request(message)
     end
-    
-
-    # Helper methods for SOAP Headers
-
-    def resource_uri_cmd
-      {"#{NS_WSMAN_DMTF}:ResourceURI" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd',
-        :attributes! => {"#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => true}}}
-    end
-
-    def resource_uri_wmi(namespace = 'root/cimv2/*')
-      {"#{NS_WSMAN_DMTF}:ResourceURI" => "http://schemas.microsoft.com/wbem/wsman/1/wmi/#{namespace}",
-        :attributes! => {"#{NS_WSMAN_DMTF}:ResourceURI" => {'mustUnderstand' => true}}}
-    end
-
-    def action_create
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Create',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def action_delete
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Delete',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def action_command
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Command',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def action_receive
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Receive',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def action_signal
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Signal',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def action_send
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Send',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def action_enumerate
-      {"#{NS_ADDRESSING}:Action" => 'http://schemas.xmlsoap.org/ws/2004/09/enumeration/Enumerate',
-        :attributes! => {"#{NS_ADDRESSING}:Action" => {'mustUnderstand' => true}}}
-    end
-
-    def selector_shell_id(shell_id)
-      {"#{NS_WSMAN_DMTF}:SelectorSet" =>
-        {"#{NS_WSMAN_DMTF}:Selector" => shell_id, :attributes! => {"#{NS_WSMAN_DMTF}:Selector" => {'Name' => 'ShellId'}}}
-      }
-    end
-
   end # WinRMWebService
 end # WinRM

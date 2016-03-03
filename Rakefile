@@ -17,16 +17,14 @@ task :console do
 end
 
 RSpec::Core::RakeTask.new(:spec) do |task|
-  task.pattern = 'spec/*_spec.rb'
-  task.rspec_opts = ['--color', '-f documentation']
-  task.rspec_opts << '-tunit'
+  task.pattern = 'tests/spec/**/*_spec.rb'
+  task.rspec_opts = ['--color', '-f documentation', '-r ./tests/spec/spec_helper']
 end
 
 # Run the integration test suite
 RSpec::Core::RakeTask.new(:integration) do |task|
-  task.pattern = 'spec/*_spec.rb'
-  task.rspec_opts = ['--color', '-f documentation']
-  task.rspec_opts << '-tintegration'
+  task.pattern = 'tests/integration/*_spec.rb'
+  task.rspec_opts = ['--color', '-f documentation', '-r ./tests/integration/spec_helper']
 end
 
 RuboCop::RakeTask.new

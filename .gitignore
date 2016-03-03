@@ -4,8 +4,7 @@ pkg/*
 .rvmrc
 .idea
 .bundle
-spec/spec/creds*.json
-spec/config.yml
+tests/integration/config.yml
 traces/
 Gemfile.lock
 .vagrant
