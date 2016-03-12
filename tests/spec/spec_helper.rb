@@ -32,6 +32,10 @@ class String
   def unindent
     gsub(/^#{self[/\A[ \t]*/]}/, '').gsub("\n", '')
   end
+
+  def to_byte_string
+    force_encoding(Encoding::ASCII_8BIT)
+  end
 end
 
 RSpec.configure do |config|
