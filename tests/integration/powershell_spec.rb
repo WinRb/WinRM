@@ -3,54 +3,32 @@ require_relative 'spec_helper'
 
 describe 'winrm client powershell' do
   before(:all) do
-    @winrm = winrm_connection
-  end
-
-  describe 'init runspace' do
-    require 'benchmark'
-    it 'starts runspace pool' do
-      SecureRandom.uuid
-      Benchmark.bm do | benchmark |
-        benchmark.report do
-          @winrm.shell(:powershell) do |shell|
-            shell.run('Get-Process')
-            shell.run('Get-Process')
-            shell.run('Get-Process')
-            shell.run('Get-Process')
-            # long_string="N"*300000
-            # puts executor.run_cmd("Write-Output '#{long_string}'").stdout.unpack("C*")
-            # .pack("U*").gsub('_x000D__x000A_',"\r\n")
-            puts shell.run('Get-Process').stdout.unpack('C*').pack('U*')
-              .gsub('_x000D__x000A_', "\r\n")
-          end
-        end
-      end
-    end
+    @powershell = winrm_connection.shell(:powershell)
   end
 
   describe 'ipconfig' do
-    subject(:output) { @winrm.powershell('ipconfig') }
+    subject(:output) { @powershell.run('ipconfig') }
     it { should have_exit_code 0 }
     it { should have_stdout_match(/Windows IP Configuration/) }
     it { should have_no_stderr }
   end
 
   describe 'echo \'hello world\' using apostrophes' do
-    subject(:output) { @winrm.powershell("echo 'hello world'") }
+    subject(:output) { @powershell.run("echo 'hello world'") }
     it { should have_exit_code 0 }
     it { should have_stdout_match(/hello world/) }
     it { should have_no_stderr }
   end
 
   describe 'dir with incorrect argument /z' do
-    subject(:output) { @winrm.powershell('dir /z') }
+    subject(:output) { @powershell.run('dir /z') }
     it { should have_exit_code 1 }
     it { should have_no_stdout }
   end
 
   describe 'Math area calculation' do
     subject(:output) do
-      @winrm.powershell(<<-EOH
+      @powershell.run(<<-EOH
         $diameter = 4.5
         $area = [Math]::pow([Math]::PI * ($diameter/2), 2)
         Write-Host $area
@@ -65,7 +43,7 @@ describe 'winrm client powershell' do
   describe 'ipconfig with a block' do
     subject(:stdout) do
       outvar = ''
-      @winrm.powershell('ipconfig') do |stdout, _stderr|
+      @powershell.run('ipconfig') do |stdout, _stderr|
         outvar << stdout
       end
       outvar
@@ -82,7 +60,7 @@ describe 'winrm client powershell' do
 
       @captured_stdout = ''
       @captured_stderr = ''
-      @winrm.powershell(script) do |stdout, stderr|
+      @powershell.run(script) do |stdout, stderr|
         @captured_stdout << stdout if stdout
         @captured_stderr << stderr if stderr
       end
@@ -114,7 +92,7 @@ describe 'winrm client powershell' do
   end
 
   describe 'it should handle utf-8 characters' do
-    subject(:output) { @winrm.powershell('echo "✓1234-äöü"') }
+    subject(:output) { @powershell.run('echo "✓1234-äöü"') }
     it { should have_exit_code 0 }
     it { should have_stdout_match(/✓1234-äöü/) }
   end
