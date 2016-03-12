@@ -7,12 +7,12 @@ require_relative 'spec_helper'
 
 describe 'Verify kerberos will reauth when necessary', kerberos: true do
   before(:all) do
-    @winrm = winrm_connection
+    @powershell = winrm_connection.shell(:powershell)
   end
 
   it 'work with a 18 second sleep' do
     ps_command = 'Start-Sleep -s 18'
-    output = @winrm.run_powershell_script(ps_command)
+    output = @powershell.run(ps_command)
     expect(output[:exitcode]).to eq(0)
   end
 end

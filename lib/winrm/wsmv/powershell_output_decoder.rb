@@ -31,7 +31,7 @@ module WinRM
         decoded_text = handle_invalid_encoding(message.data)
         decoded_text = remove_bom(decoded_text)
         decoded_text = extract_string(decoded_text)
-        decoded_text = replace_line_endings(decoded_text)
+        decoded_text = replace_line_endings(decoded_text) if decoded_text
         decoded_text
       end
 
