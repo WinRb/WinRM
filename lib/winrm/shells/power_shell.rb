@@ -124,7 +124,7 @@ module WinRM
       end
 
       def self.finalize(connection_opts, transport, shell_id)
-        proc { self.close_shell(connection_opts, transport, shell_id) }
+        proc { PowerShell.close_shell(connection_opts, transport, shell_id) }
       end
     end
   end

@@ -27,13 +27,18 @@ module WinRM
       end
 
       def process_response(response)
-        parser = Nori.new(:parser => :rexml, :advanced_typecasting => false, :convert_tags_to => lambda { |tag| tag.snakecase.to_sym }, :strip_namespaces => true)
+        parser = Nori.new(
+          parser: :rexml,
+          advanced_typecasting: false,
+          convert_tags_to: ->(tag) { tag.snakecase.to_sym },
+          strip_namespaces: true
+        )
         hresp = parser.parse(response.to_s)[:envelope][:body]
-        
+
         # Normalize items so the type always has an array even if it's just a single item.
         items = {}
         if hresp[:enumerate_response][:items]
-          hresp[:enumerate_response][:items].each_pair do |k,v|
+          hresp[:enumerate_response][:items].each_pair do |k, v|
             if v.is_a?(Array)
               items[k] = v
             else

@@ -33,7 +33,7 @@ module WinRM
     # this connection.
     # @param shell_type [Symbol] The shell type :cmd or :powershell
     # @return [Shell|Cmd] PowerShell or Cmd shell instance.
-    def shell(shell_type, &block)
+    def shell(shell_type)
       shell = shell_factory.create_shell(shell_type)
       if block_given?
         begin
