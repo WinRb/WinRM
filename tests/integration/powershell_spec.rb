@@ -20,7 +20,6 @@ describe 'winrm client powershell' do
             # long_string="N"*300000
             # puts executor.run_cmd("Write-Output '#{long_string}'").stdout.unpack("C*")
             # .pack("U*").gsub('_x000D__x000A_',"\r\n")
-            puts "yoyoyo"
             puts shell.run('Get-Process').stdout.unpack('C*').pack('U*')
               .gsub('_x000D__x000A_', "\r\n")
           end
