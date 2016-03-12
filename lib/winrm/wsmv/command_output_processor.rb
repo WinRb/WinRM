@@ -16,7 +16,6 @@
 
 require_relative 'soap'
 require_relative 'header'
-require_relative 'command_output_decoder'
 require_relative '../output'
 
 module WinRM
@@ -29,12 +28,13 @@ module WinRM
       # Creates a new command output processor
       # @param connection_opts [ConnectionOpts] The WinRM connection options
       # @param transport [HttpTransport] The WinRM SOAP transport
+      # @param decoder [OutputDecoder] The decoder for the output
       # @param out_opts [Hash] Additional output options
-      def initialize(connection_opts, transport, out_opts = {})
+      def initialize(connection_opts, transport, decoder, out_opts = {})
         @connection_opts = connection_opts
         @transport = transport
         @out_opts = out_opts
-        @output_decoder = CommandOutputDecoder.new
+        @output_decoder = decoder
       end
 
       # Gets the command output from the remote shell

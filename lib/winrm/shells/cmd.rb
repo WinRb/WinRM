@@ -20,6 +20,7 @@ require_relative '../wsmv/cleanup_command'
 require_relative '../wsmv/close_shell'
 require_relative '../wsmv/command'
 require_relative '../wsmv/command_output'
+require_relative '../wsmv/command_output_decoder'
 require_relative '../wsmv/command_output_processor'
 require_relative '../wsmv/create_shell'
 require_relative '../wsmv/soap'
@@ -38,6 +39,11 @@ module WinRM
         @connection_opts = connection_opts
         @transport = transport
         @logger = logger
+        @out_processor = WinRM::WSMV::CommandOutputProcessor.new(
+          @connection_opts,
+          @transport,
+          WinRM::WSMV::CommandOutputDecoder.new
+        )
         @command_count = 0
       end
 
@@ -74,8 +80,7 @@ module WinRM
       end
 
       def command_output(command_id, &block)
-        out_processor = WinRM::WSMV::CommandOutputProcessor.new(@connection_opts, @transport)
-        out_processor.command_output(@shell_id, command_id, &block)
+        @out_processor.command_output(@shell_id, command_id, &block)
       end
 
       def cleanup_command(command_id)

@@ -26,6 +26,7 @@ require_relative '../wsmv/create_shell'
 require_relative '../wsmv/create_pipeline'
 require_relative '../wsmv/init_runspace_pool'
 require_relative '../wsmv/keep_alive'
+require_relative '../wsmv/powershell_output_decoder'
 require_relative '../wsmv/soap'
 
 module WinRM
@@ -42,6 +43,13 @@ module WinRM
         @connection_opts = connection_opts
         @transport = transport
         @logger = logger
+        @out_processor = WinRM::WSMV::CommandOutputProcessor.new(
+          @connection_opts,
+          @transport,
+          WinRM::WSMV::PowershellOutputDecoder.new,
+          shell_uri: WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL,
+          out_streams: %w(stdout)
+        )
         @command_count = 0
       end
 
@@ -74,12 +82,7 @@ module WinRM
       end
 
       def command_output(command_id, &block)
-        out_processor = WinRM::WSMV::CommandOutputProcessor.new(
-          @connection_opts,
-          @transport,
-          shell_uri: WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL,
-          out_streams: %w(stdout))
-        out_processor.command_output(@shell_id, command_id, &block)
+        @out_processor.command_output(@shell_id, command_id, &block)
       end
 
       def cleanup_command(command_id)

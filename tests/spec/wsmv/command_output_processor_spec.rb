@@ -11,7 +11,10 @@ describe WinRM::WSMV::CommandOutputProcessor do
   let(:transport) do
     {}
   end
-  subject { described_class.new(default_connection_opts, transport) }
+
+  subject do
+    described_class.new(default_connection_opts, transport, WinRM::WSMV::CommandOutputDecoder.new)
+  end
 
   context 'response doc stdout with invalid UTF-8 characters, issue 184' do
     let(:test_data_stdout) { 'ffff' } # Base64-decodes to '}\xF7\xDF', an invalid sequence
