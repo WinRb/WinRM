@@ -53,6 +53,8 @@ module WinRM
           REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |n|
             next if n.text.nil? || n.text.empty?
             decoded_text = @output_decoder.decode(n.text)
+            next unless  decoded_text
+
             stream = { n.attributes['Name'].to_sym => decoded_text }
             output[:data] << stream
             block.call stream[:stdout], stream[:stderr] if block

@@ -58,10 +58,10 @@ module WinRM
       # @param command [String] The command or executable to run
       # @param arguments [Array] The optional command arguments
       # @param block [&block] The optional callback for any realtime output
-      def run(command, arguments = [], &block)
+      def run(command, &block)
         open if @command_count > @connection_opts[:max_commands] || !@shell_id
         @command_count += 1
-        command_id = send_command(command, arguments)
+        command_id = send_command(command)
         command_output(command_id, &block)
       ensure
         cleanup_command(command_id) if command_id
@@ -76,7 +76,7 @@ module WinRM
 
       private
 
-      def send_command(command, _arguments)
+      def send_command(command)
         pipeline_msg = WinRM::WSMV::CreatePipeline.new(@connection_opts, @shell_id, command)
         @transport.send_request(pipeline_msg.build)
         pipeline_msg.command_id
