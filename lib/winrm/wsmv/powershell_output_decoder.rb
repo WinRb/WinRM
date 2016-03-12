@@ -27,6 +27,7 @@ module WinRM
       def decode(raw_output)
         decoded_bytes = decode_raw_output(raw_output)
         message = WinRM::PSRP::MessageFactory.parse_bytes(decoded_bytes)
+        return nil if message.message_type == 266246
         decoded_text = handle_invalid_encoding(message.data)
         decoded_text = remove_bom(decoded_text)
         decoded_text = extract_string(decoded_text)
