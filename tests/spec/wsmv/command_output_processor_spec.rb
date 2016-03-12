@@ -13,7 +13,12 @@ describe WinRM::WSMV::CommandOutputProcessor do
   end
 
   subject do
-    described_class.new(default_connection_opts, transport, WinRM::WSMV::CommandOutputDecoder.new)
+    described_class.new(
+      default_connection_opts,
+      transport,
+      WinRM::WSMV::CommandOutputDecoder.new,
+      Logging.logger
+    )
   end
 
   context 'response doc stdout with invalid UTF-8 characters, issue 184' do

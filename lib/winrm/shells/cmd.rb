@@ -42,7 +42,8 @@ module WinRM
         @out_processor = WinRM::WSMV::CommandOutputProcessor.new(
           @connection_opts,
           @transport,
-          WinRM::WSMV::CommandOutputDecoder.new
+          WinRM::WSMV::CommandOutputDecoder.new,
+          logger
         )
         @command_count = 0
       end

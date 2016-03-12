@@ -47,6 +47,7 @@ module WinRM
           @connection_opts,
           @transport,
           WinRM::WSMV::PowershellOutputDecoder.new,
+          logger,
           shell_uri: WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL,
           out_streams: %w(stdout)
         )

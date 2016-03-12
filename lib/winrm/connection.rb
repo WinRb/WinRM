@@ -29,6 +29,8 @@ module WinRM
       configure_logger
     end
 
+    attr_accessor :logger
+
     # Creates a new shell on the remote Windows server associated with
     # this connection.
     # @param shell_type [Symbol] The shell type :cmd or :powershell
@@ -59,12 +61,12 @@ module WinRM
 
     def configure_logger
       @logger = Logging.logger[self]
-      @logger.level = :warn
-      @logger.add_appenders(Logging.appenders.stdout)
+      logger.level = :warn
+      logger.add_appenders(Logging.appenders.stdout)
     end
 
     def shell_factory
-      @shell_factory ||= WinRM::Shells::ShellFactory.new(@connection_opts, transport, @logger)
+      @shell_factory ||= WinRM::Shells::ShellFactory.new(@connection_opts, transport, logger)
     end
 
     def transport

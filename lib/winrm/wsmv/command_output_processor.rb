@@ -30,12 +30,15 @@ module WinRM
       # @param transport [HttpTransport] The WinRM SOAP transport
       # @param decoder [OutputDecoder] The decoder for the output
       # @param out_opts [Hash] Additional output options
-      def initialize(connection_opts, transport, decoder, out_opts = {})
+      def initialize(connection_opts, transport, decoder, logger, out_opts = {})
         @connection_opts = connection_opts
         @transport = transport
         @out_opts = out_opts
         @output_decoder = decoder
+        @logger = logger
       end
+
+      attr_reader :logger
 
       # Gets the command output from the remote shell
       # @param shell_id [UUID] The remote shell id running the command
@@ -78,6 +81,7 @@ module WinRM
         # another Receive request.
         # http://msdn.microsoft.com/en-us/library/cc251676.aspx
         if e.fault_code == '2150858793'
+          logger.debug('[WinRM] retrying receive request after timeout')
           retry
         else
           raise

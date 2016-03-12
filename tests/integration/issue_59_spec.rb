@@ -2,19 +2,20 @@
 require_relative 'spec_helper'
 
 describe 'issue 59' do
-  before(:all) do
-    @cmd_shell = winrm_connection.shell(:cmd)
-  end
-
   describe 'long running script without output' do
     let(:logged_output) { StringIO.new }
     let(:logger)        { Logging.logger(logged_output) }
 
-    it 'should not error' do
-      @winrm.set_timeout(1)
-      @winrm.logger = logger
+    before do
+      opts = connection_opts.dup
+      opts[:operation_timeout] = 1
+      conn = WinRM::Connection.new(opts)
+      conn.logger = logger
+      @powershell = conn.shell(:powershell)
+    end
 
-      out = @winrm.powershell('$ProgressPreference="SilentlyContinue";sleep 3; Write-Host "Hello"')
+    it 'should not error' do
+      out = @powershell.run('$ProgressPreference="SilentlyContinue";sleep 3; Write-Host "Hello"')
 
       expect(out).to have_exit_code 0
       expect(out).to have_stdout_match(/Hello/)
