@@ -26,7 +26,6 @@ require_relative '../wsmv/create_shell'
 require_relative '../wsmv/create_pipeline'
 require_relative '../wsmv/init_runspace_pool'
 require_relative '../wsmv/keep_alive'
-require_relative '../wsmv/powershell_output_decoder'
 require_relative '../wsmv/soap'
 
 module WinRM
@@ -46,7 +45,6 @@ module WinRM
         @out_processor = WinRM::WSMV::PowershellOutputProcessor.new(
           @connection_opts,
           @transport,
-          WinRM::WSMV::PowershellOutputDecoder.new,
           logger,
           shell_uri: WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL,
           out_streams: %w(stdout)

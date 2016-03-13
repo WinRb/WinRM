@@ -16,7 +16,6 @@ describe WinRM::WSMV::CommandOutputProcessor do
     described_class.new(
       default_connection_opts,
       transport,
-      WinRM::WSMV::CommandOutputDecoder.new,
       Logging.logger
     )
   end
