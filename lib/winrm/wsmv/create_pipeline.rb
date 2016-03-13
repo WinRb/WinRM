@@ -15,6 +15,7 @@
 # limitations under the License.
 
 require_relative 'base'
+require_relative '../psrp/message_factory'
 
 module WinRM
   module WSMV
