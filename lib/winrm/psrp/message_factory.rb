@@ -66,10 +66,12 @@ module WinRM
         # Creates a new PSRP message from raw bytes
         # @param bytes [String] string representing the bytes of a PSRP message
         def parse_bytes(bytes)
+          # Using "empty" guids for now because deserializing is painful
+          # and currently not needed
           Message.new(
             object_id: bytes[0..7].reverse.unpack('Q')[0],
-            runspace_pool_id: 'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
-            pipeline_id: 'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
+            runspace_pool_id: '00000000-0000-0000-0000-000000000000',
+            pipeline_id: '00000000-0000-0000-0000-000000000000',
             message_type: bytes[25..28].unpack('V')[0],
             data: bytes[61..(bytes.length - 1)],
             fragment_id: bytes[8..15].reverse.unpack('Q')[0],
