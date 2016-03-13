@@ -13,7 +13,7 @@ describe WinRM::WSMV::PowershellOutputDecoder do
 
   context 'valid UTF-8 raw output' do
     it 'decodes' do
-      expect(subject.decode(raw_output_with_bom)).to eq(expected)
+      expect(subject.decode(raw_output_with_bom).last).to eq(expected)
     end
   end
 end

@@ -30,9 +30,13 @@ module WinRM
         return nil if message.message_type == 266246
         decoded_text = handle_invalid_encoding(message.data)
         decoded_text = remove_bom(decoded_text)
-        decoded_text = extract_string(decoded_text)
+        if message.message_type == 266245
+          decoded_text = extract_err_string(decoded_text)
+        else
+          decoded_text = extract_out_string(decoded_text)
+        end
         decoded_text = replace_line_endings(decoded_text) if decoded_text
-        decoded_text
+        [message, decoded_text]
       end
 
       private
@@ -41,9 +45,18 @@ module WinRM
         Base64.decode64(raw_output)
       end
 
-      def extract_string(decoded_text)
+      def extract_out_string(decoded_text)
         doc = REXML::Document.new(decoded_text)
         REXML::XPath.first(doc, '//S').text
+      end
+
+      def extract_err_string(decoded_text)
+        doc = REXML::Document.new(decoded_text)
+        err = ''
+        REXML::XPath.each(doc, '//S') do |str|
+          err << "#{str.attributes['N']}: #{str.text}\n"
+        end
+        err
       end
 
       def handle_invalid_encoding(decoded_text)

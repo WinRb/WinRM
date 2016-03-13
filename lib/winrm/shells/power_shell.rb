@@ -21,7 +21,7 @@ require_relative '../wsmv/cleanup_command'
 require_relative '../wsmv/close_shell'
 require_relative '../wsmv/command'
 require_relative '../wsmv/command_output'
-require_relative '../wsmv/command_output_processor'
+require_relative '../wsmv/powershell_output_processor'
 require_relative '../wsmv/create_shell'
 require_relative '../wsmv/create_pipeline'
 require_relative '../wsmv/init_runspace_pool'
@@ -43,7 +43,7 @@ module WinRM
         @connection_opts = connection_opts
         @transport = transport
         @logger = logger
-        @out_processor = WinRM::WSMV::CommandOutputProcessor.new(
+        @out_processor = WinRM::WSMV::PowershellOutputProcessor.new(
           @connection_opts,
           @transport,
           WinRM::WSMV::PowershellOutputDecoder.new,

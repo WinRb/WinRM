@@ -22,7 +22,7 @@ describe 'winrm client powershell' do
 
   describe 'dir with incorrect argument /z' do
     subject(:output) { @powershell.run('dir /z') }
-    it { should have_exit_code 1 }
+    it { should have_stderr_match(/Cannot find path/) }
     it { should have_no_stdout }
   end
 
@@ -67,27 +67,17 @@ describe 'winrm client powershell' do
     end
 
     it 'should have stdout' do
-      expect(output.stdout).to eq("Hello\n")
+      expect(output.stdout).to eq("Hello")
       expect(output.stdout).to eq(@captured_stdout)
     end
 
     it 'should have stderr' do
-      # TODO: Option to parse CLIXML
-      # expect(output.output).to eq("Hello\n, world!")
-      # expect(output.stderr).to eq(", world!")
-      expect(output.stderr).to eq(
-        "#< CLIXML\r\n<Objs Version=\"1.1.0.1\" " \
-        "xmlns=\"http://schemas.microsoft.com/powershell/2004/04\">" \
-        "<S S=\"Error\">, world!_x000D__x000A_</S></Objs>")
+      expect(output.stderr).to eq(', world!')
       expect(output.stderr).to eq(@captured_stderr)
     end
 
     it 'should have output' do
-      # TODO: Option to parse CLIXML
-      # expect(output.output).to eq("Hello\n, world!")
-      expect(output.output).to eq("Hello\n#< CLIXML\r\n<Objs Version=\"1.1.0.1\" " \
-        "xmlns=\"http://schemas.microsoft.com/powershell/2004/04\">" \
-        "<S S=\"Error\">, world!_x000D__x000A_</S></Objs>")
+      expect(output.output).to eq('Hello, world!')
     end
   end
 
