@@ -21,7 +21,7 @@ branches:
     - master
 
 install:
-  - ps: net user /add $env:winrm_user $env:winrm_pass
+  - ps: net user /add $env:winrm_user $env:winrm_password
   - ps: net localgroup administrators $env:winrm_user /add
   - ps: $env:PATH="C:\OpenSSL-Win64\bin;$env:PATH"
   - ps: Import-Module c:\projects\winrm\WinrmAppveyor.psm1
