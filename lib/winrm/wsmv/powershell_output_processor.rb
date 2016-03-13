@@ -54,14 +54,7 @@ module WinRM
             next if n.text.nil? || n.text.empty?
             message, decoded_text = @output_decoder.decode(n.text)
             next unless  decoded_text
-            stream_type = :stdout
-            case message.message_type
-            when 266245
-              stream_type = :stderr
-            when 266496
-              stream_type = :stderr if message.data.include?('WriteError')
-            end
-            stream = { stream_type => decoded_text }
+            stream = { stream_type(message) => decoded_text }
             output[:data] << stream
 
             block.call stream[:stdout], stream[:stderr] if block
@@ -72,6 +65,17 @@ module WinRM
       end
 
       private
+
+      def stream_type(message)
+        type = :stdout
+        case message.message_type
+        when 266245
+          type = :stderr
+        when 266496
+          type = :stderr if message.data.include?('WriteError')
+        end
+        type
+      end
 
       def command_output_message(shell_id, command_id)
         cmd_out_opts = {
