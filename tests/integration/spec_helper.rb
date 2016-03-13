@@ -23,7 +23,7 @@ module ConnectionHelper
     merge_config_option_from_environment(config, 'password')
     merge_config_option_from_environment(config, 'no_ssl_peer_verification')
     if ENV['use_ssl_peer_fingerprint']
-      config[:options][:ssl_peer_fingerprint] = ENV['winrm_cert']
+      config[:ssl_peer_fingerprint] = ENV['winrm_cert']
     end
     config[:endpoint] = ENV['winrm_endpoint'] if ENV['winrm_endpoint']
     config
@@ -31,7 +31,7 @@ module ConnectionHelper
 
   def merge_config_option_from_environment(config, key)
     env_key = 'winrm_' + key
-    config[:options][key.to_sym] = ENV[env_key] if ENV[env_key]
+    config[key.to_sym] = ENV[env_key] if ENV[env_key]
   end
 
   def winrm_config_path
