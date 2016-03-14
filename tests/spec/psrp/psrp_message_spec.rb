@@ -58,7 +58,7 @@ describe WinRM::PSRP::Message do
         object_id: 1,
         runspace_pool_id: 'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
         pipeline_id: '4218a578-0f18-4b19-82c3-46b433319126',
-        message_type: 0x00010002,
+        message_type: WinRM::PSRP::Message::MESSAGE_TYPES[:session_capability],
         data: payload)
       msg.bytes
     end
@@ -107,7 +107,7 @@ describe WinRM::PSRP::Message do
         WinRM::PSRP::Message.new(
           object_id: 1,
           pipeline_id: '4218a578-0f18-4b19-82c3-46b433319126',
-          message_type: 0x00010002,
+          message_type: WinRM::PSRP::Message::MESSAGE_TYPES[:session_capability],
           data: %(<Obj RefId="0"/>))
       end.to raise_error(RuntimeError)
     end
@@ -127,7 +127,7 @@ describe WinRM::PSRP::Message do
           object_id: 1,
           runspace_pool_id: 'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
           pipeline_id: '4218a578-0f18-4b19-82c3-46b433319126',
-          message_type: 0x00010002)
+          message_type: WinRM::PSRP::Message::MESSAGE_TYPES[:session_capability])
       end.to raise_error(RuntimeError)
     end
   end
@@ -141,7 +141,7 @@ describe WinRM::PSRP::Message do
       WinRM::PSRP::Message.new(
         object_id: 1,
         runspace_pool_id: 'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
-        message_type: 0x00010002,
+        message_type: WinRM::PSRP::Message::MESSAGE_TYPES[:session_capability],
         data: payload)
     end
     it 'does not error' do

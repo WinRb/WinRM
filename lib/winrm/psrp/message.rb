@@ -36,39 +36,39 @@ module WinRM
       SERVER_DESTINATION = 2
 
       # All known PSRP message types
-      MESSAGE_TYPES = [
-        0x00010002,
-        0x00010004,
-        0x00010005,
-        0x00010006,
-        0x00010007,
-        0x00010008,
-        0x0002100B,
-        0x0002100C,
-        0x00021002,
-        0x00021003,
-        0x00021004,
-        0x00021005,
-        0x00021006,
-        0x00021007,
-        0x00021008,
-        0x00021009,
-        0x0002100A,
-        0x00021100,
-        0x00021101,
-        0x00041002,
-        0x00041003,
-        0x00041004,
-        0x00041005,
-        0x00041006,
-        0x00041007,
-        0x00041008,
-        0x00041009,
-        0x00041010,
-        0x00041011,
-        0x00041100,
-        0x00041101
-      ]
+      MESSAGE_TYPES = {
+        session_capability:         0x00010002,
+        init_runspacepool:          0x00010004,
+        public_key:                 0x00010005,
+        encrypted_session_key:      0x00010006,
+        public_key_request:         0x00010007,
+        connect_runspacepool:       0x00010008,
+        runspace_init_data:         0x0002100b,
+        reset_runspace_state:       0x0002100c,
+        set_max_runspaces:          0x00021002,
+        set_min_runspaces:          0x00021003,
+        runspace_availability:      0x00021004,
+        runspacepool_state:         0x00021005,
+        create_pipeline:            0x00021006,
+        get_available_runspaces:    0x00021007,
+        user_event:                 0x00021008,
+        application_private_data:   0x00021009,
+        get_command_metadata:       0x0002100a,
+        runspacepool_host_call:     0x00021100,
+        runspacepool_host_response: 0x00021101,
+        pipeline_input:             0x00041002,
+        end_of_pipeline_input:      0x00041003,
+        pipeline_output:            0x00041004,
+        error_record:               0x00041005,
+        pipeline_state:             0x00041006,
+        debug_record:               0x00041007,
+        verbose_record:             0x00041008,
+        warning_record:             0x00041009,
+        progress_record:            0x00041010,
+        information_record:         0x00041011,
+        pipeline_host_call:         0x00041100,
+        pipeline_host_response:     0x00041101
+      }
 
       # Creates a new PSRP message instance
       # @param message_parts [Hash]
@@ -86,7 +86,9 @@ module WinRM
         message_parts.merge!(default_parts)
 
         fail 'runspace_pool_id cannot be nil' unless message_parts[:runspace_pool_id]
-        fail 'invalid message type' unless MESSAGE_TYPES.include?(message_parts[:message_type])
+        unless MESSAGE_TYPES.values.include?(message_parts[:message_type])
+          fail 'invalid message type'
+        end
         fail 'data cannot be nil' unless message_parts[:data]
 
         @data = message_parts[:data]

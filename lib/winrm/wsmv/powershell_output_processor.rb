@@ -58,9 +58,9 @@ module WinRM
       def stream_type(message)
         type = :stdout
         case message.message_type
-        when 266245
+        when WinRM::PSRP::Message::MESSAGE_TYPES[:error_record]
           type = :stderr
-        when 266496
+        when WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_host_call]
           type = :stderr if message.data.include?('WriteError')
         end
         type

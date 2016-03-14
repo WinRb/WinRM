@@ -29,7 +29,7 @@ module WinRM
           Message.new(
             object_id: id,
             runspace_pool_id: runspace_pool_id,
-            message_type: 0x00010002,
+            message_type: Message::MESSAGE_TYPES[:session_capability],
             data: render('session_capability')
           )
         end
@@ -41,7 +41,7 @@ module WinRM
           Message.new(
             object_id: id,
             runspace_pool_id: runspace_pool_id,
-            message_type: 0x00010004,
+            message_type: Message::MESSAGE_TYPES[:init_runspacepool],
             data: render('init_runspace_pool')
           )
         end
@@ -57,7 +57,7 @@ module WinRM
             object_id: id,
             runspace_pool_id: runspace_pool_id,
             pipeline_id: pipeline_id,
-            message_type: 0x00021006,
+            message_type: Message::MESSAGE_TYPES[:create_pipeline],
             data: render('create_pipeline', command: command)
           )
         end
