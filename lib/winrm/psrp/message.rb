@@ -32,7 +32,10 @@ module WinRM
       # Maximum allowed length of the blob
       BLOB_MAX_LEN = 32_768 - BLOB_HEADER_LEN
 
+      # Value of message destination when sent to a client
       CLIENT_DESTINATION = 1
+
+      # Value of message destination when sent to a server
       SERVER_DESTINATION = 2
 
       # All known PSRP message types
@@ -83,7 +86,7 @@ module WinRM
       # @option destination [Fixnum] The destination for this message - client or server
       # @option fragment_id [Fixnum] The id of this fragment
       def initialize(message_parts)
-        message_parts.merge!(default_parts)
+        message_parts.merge!(default_parts) { |_key, v1, _v2| v1 }
 
         fail 'runspace_pool_id cannot be nil' unless message_parts[:runspace_pool_id]
         unless MESSAGE_TYPES.values.include?(message_parts[:message_type])
