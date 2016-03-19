@@ -30,12 +30,7 @@ module WinRM
         return nil if message.message_type == WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_state]
         decoded_text = handle_invalid_encoding(message.data)
         decoded_text = remove_bom(decoded_text)
-        if message.message_type == WinRM::PSRP::Message::MESSAGE_TYPES[:error_record]
-          decoded_text = extract_err_string(decoded_text)
-        else
-          decoded_text = extract_out_string(decoded_text)
-        end
-        decoded_text = replace_line_endings(decoded_text) if decoded_text
+        decoded_text = extract_out_string(decoded_text)
         [message, decoded_text]
       end
 
@@ -47,16 +42,11 @@ module WinRM
 
       def extract_out_string(decoded_text)
         doc = REXML::Document.new(decoded_text)
-        REXML::XPath.first(doc, '//S').text
-      end
-
-      def extract_err_string(decoded_text)
-        doc = REXML::Document.new(decoded_text)
-        err = ''
-        REXML::XPath.each(doc, '//S') do |str|
-          err << "#{str.attributes['N']}: #{str.text}\n"
+        text = doc.root.get_elements('//S').map(&:text).join
+        text.gsub(/_x(\h\h\h\h)_/) do
+          code = Regexp.last_match[1]
+          code.hex.chr
         end
-        err
       end
 
       def handle_invalid_encoding(decoded_text)
@@ -72,10 +62,6 @@ module WinRM
       def remove_bom(decoded_text)
         # remove BOM which 2008R2 applies
         decoded_text.sub("\xEF\xBB\xBF", '')
-      end
-
-      def replace_line_endings(decoded_text)
-        decoded_text.gsub('_x000D__x000A_', "\n").chomp
       end
     end
   end

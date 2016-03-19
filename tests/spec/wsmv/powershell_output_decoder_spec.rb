@@ -7,7 +7,7 @@ describe WinRM::WSMV::PowershellOutputDecoder do
     'AAAAAAAAAAQAAAAAAAAAAAMAAABJAQAAAAQQBABLay89WtMtRYF2oCs2sdOICu2QnGrnUEeforLJOXRvOe+7vzxTPnNv' \
     'bWUgZGF0YV94MDAwRF9feDAwMEFfPC9TPg=='
   end
-  let(:expected) { 'some data' }
+  let(:expected) { "some data\r\n" }
 
   subject { described_class.new }
 
