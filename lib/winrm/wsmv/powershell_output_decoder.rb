@@ -42,11 +42,15 @@ module WinRM
 
       def extract_out_string(decoded_text)
         doc = REXML::Document.new(decoded_text)
-        text = doc.root.get_elements('//S').map(&:text).join
-        text.gsub(/_x(\h\h\h\h)_/) do
-          code = Regexp.last_match[1]
-          code.hex.chr
-        end
+        doc.root.get_elements('//S').map do |node|
+          text = ''
+          text << "#{node.attributes['N']}: " if node.attributes['N']
+          next unless node.text
+          text << node.text.gsub(/_x(\h\h\h\h)_/) do
+            Regexp.last_match[1].hex.chr
+          end.chomp
+          text << "\r\n"
+        end.join
       end
 
       def handle_invalid_encoding(decoded_text)
@@ -60,7 +64,6 @@ module WinRM
       end
 
       def remove_bom(decoded_text)
-        # remove BOM which 2008R2 applies
         decoded_text.sub("\xEF\xBB\xBF", '')
       end
     end
