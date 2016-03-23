@@ -67,17 +67,17 @@ describe 'winrm client powershell' do
     end
 
     it 'should have stdout' do
-      expect(output.stdout).to eq('Hello')
+      expect(output.stdout).to eq("Hello\r\n")
       expect(output.stdout).to eq(@captured_stdout)
     end
 
     it 'should have stderr' do
-      expect(output.stderr).to eq(', world!')
+      expect(output.stderr).to eq(", world!\r\n")
       expect(output.stderr).to eq(@captured_stderr)
     end
 
     it 'should have output' do
-      expect(output.output).to eq('Hello, world!')
+      expect(output.output).to eq("Hello\r\n, world!\r\n")
     end
   end
 
