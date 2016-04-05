@@ -98,8 +98,12 @@ module WinRM
       end
       result
     rescue WinRMWSManFault => e
+      # Fault code 2150858843 may be raised if the shell id that the command is sent on
+      # has been closed. One might see this on a target windows machine that has just
+      # been provisioned and restarted the winrm service at the end of its provisioning
+      # routine. If this hapens, we should give the command one more try.
       if e.fault_code == '2150858843' && (tries -= 1) > 0
-        service.logger.debug('[WinRM] openning new shell since the current one was deleted')
+        service.logger.debug('[WinRM] opening new shell since the current one was deleted')
         @shell = nil
         open
         retry
