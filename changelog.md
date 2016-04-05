@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 1.7.3
+- Open a new shell if the current shell has been deleted
+
 # 1.7.2
 - Fix regression where BOM appears in 2008R2 output and is not stripped
 

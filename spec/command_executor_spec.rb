@@ -232,6 +232,35 @@ describe WinRM::CommandExecutor, unit: true do
         expect(io_err.string).to eq 'Psst\r\n'
         expect(output).to eq echo_output
       end
+
+      describe 'when shell is closed on server' do
+        before do
+          @times_called = 0
+
+          allow(service).to receive(:run_command) do
+            @times_called += 1
+            fail WinRM::WinRMWSManFault.new('oops', '2150858843') if @times_called == 1
+          end
+        end
+
+        it 'does not close the current shell' do
+          expect(service).not_to receive(:close_shell)
+
+          executor.run_cmd('echo', ['Hello'])
+        end
+
+        it 'opens a new shell once' do
+          expect(service).to receive(:open_shell).once
+
+          executor.run_cmd('echo', ['Hello'])
+        end
+
+        it 'retries the command once' do
+          expect(service).to receive(:run_command).exactly(2).times
+
+          executor.run_cmd('echo', ['Hello'])
+        end
+      end
     end
 
     describe 'when called many times over time' do
