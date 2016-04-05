@@ -86,6 +86,8 @@ module WinRM
     # @return [WinRM::Output] output object with stdout, stderr, and
     #   exit code
     def run_cmd(command, arguments = [], &block)
+      tries ||= 2
+
       reset if command_count > max_commands
       ensure_open_shell!
 
@@ -95,6 +97,15 @@ module WinRM
         result = service.get_command_output(shell, command_id, &block)
       end
       result
+    rescue WinRMWSManFault => e
+      if e.fault_code == '2150858843' && (tries -= 1) > 0
+        service.logger.debug('[WinRM] openning new shell since the current one was deleted')
+        @shell = nil
+        open
+        retry
+      else
+        raise
+      end
     end
 
     # Run a Powershell script that resides on the local box.
