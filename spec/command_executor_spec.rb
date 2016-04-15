@@ -233,16 +233,7 @@ describe WinRM::CommandExecutor, unit: true do
         expect(output).to eq echo_output
       end
 
-      describe 'when shell is closed on server' do
-        before do
-          @times_called = 0
-
-          allow(service).to receive(:run_command) do
-            @times_called += 1
-            fail WinRM::WinRMWSManFault.new('oops', '2150858843') if @times_called == 1
-          end
-        end
-
+      shared_examples 'retry shell command' do
         it 'does not close the current shell' do
           expect(service).not_to receive(:close_shell)
 
@@ -260,6 +251,32 @@ describe WinRM::CommandExecutor, unit: true do
 
           executor.run_cmd('echo', ['Hello'])
         end
+      end
+
+      describe 'when shell is closed on server' do
+        before do
+          @times_called = 0
+
+          allow(service).to receive(:run_command) do
+            @times_called += 1
+            fail WinRM::WinRMWSManFault.new('oops', '2150858843') if @times_called == 1
+          end
+        end
+
+        include_examples 'retry shell command'
+      end
+
+      describe 'when shell accesses a deleted registry key' do
+        before do
+          @times_called = 0
+
+          allow(service).to receive(:run_command) do
+            @times_called += 1
+            fail WinRM::WinRMWSManFault.new('oops', '2147943418') if @times_called == 1
+          end
+        end
+
+        include_examples 'retry shell command'
       end
     end
 
