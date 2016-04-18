@@ -102,8 +102,12 @@ module WinRM
       # has been closed. One might see this on a target windows machine that has just
       # been provisioned and restarted the winrm service at the end of its provisioning
       # routine. If this hapens, we should give the command one more try.
-      if e.fault_code == '2150858843' && (tries -= 1) > 0
-        service.logger.debug('[WinRM] opening new shell since the current one was deleted')
+
+      # Fault code 2147943418 may be raised if the shell is installing an msi and for
+      # some reason it tries to read a registry key that has been deleted. This sometimes
+      # happens for 2008r2 when installing the Chef omnibus msi.
+      if %w(2150858843 2147943418).include?(e.fault_code) && (tries -= 1) > 0
+        service.logger.debug('[WinRM] opening new shell since the current one failed')
         @shell = nil
         open
         retry
