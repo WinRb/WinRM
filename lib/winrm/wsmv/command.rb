@@ -58,13 +58,13 @@ module WinRM
       end
 
       def validate_opts(session_opts, cmd_opts)
-        fail 'session_opts is required' unless session_opts
-        fail 'cmd_opts[:shell_id] is required' unless cmd_opts[:shell_id]
-        fail 'cmd_opts[:command] is required' unless cmd_opts[:command]
+        raise 'session_opts is required' unless session_opts
+        raise 'cmd_opts[:shell_id] is required' unless cmd_opts[:shell_id]
+        raise 'cmd_opts[:command] is required' unless cmd_opts[:command]
       end
 
       def issue69_unescape_single_quotes(xml)
-        escaped_cmd = /<#{NS_WIN_SHELL}:Command>(.+)<\/#{NS_WIN_SHELL}:Command>/m.match(xml)[1]
+        escaped_cmd = %r{<#{NS_WIN_SHELL}:Command>(.+)<\/#{NS_WIN_SHELL}:Command>}m.match(xml)[1]
         xml[escaped_cmd] = escaped_cmd.gsub(/&#39;/, "'")
         xml
       end

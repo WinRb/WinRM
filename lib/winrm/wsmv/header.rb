@@ -24,10 +24,10 @@ module WinRM
     # SOAP header utility mixin
     module Header
       # WSMan URI of the regular Windows cmd shell
-      RESOURCE_URI_CMD = 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd'
+      RESOURCE_URI_CMD = 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd'.freeze
 
       # WSMan URI for PowerShell
-      RESOURCE_URI_POWERSHELL = 'http://schemas.microsoft.com/powershell/Microsoft.PowerShell'
+      RESOURCE_URI_POWERSHELL = 'http://schemas.microsoft.com/powershell/Microsoft.PowerShell'.freeze
 
       # Merge the various header hashes and make sure we carry all of the attributes
       # through instead of overwriting them.
@@ -43,7 +43,7 @@ module WinRM
 
       def shared_headers(session_opts)
         {
-          "#{SOAP::NS_ADDRESSING}:To" => "#{session_opts[:endpoint]}",
+          "#{SOAP::NS_ADDRESSING}:To" => session_opts[:endpoint],
           "#{SOAP::NS_ADDRESSING}:ReplyTo" => {
             "#{SOAP::NS_ADDRESSING}:Address" =>
               'http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous',

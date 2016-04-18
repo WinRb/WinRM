@@ -46,7 +46,7 @@ module WinRM
             stream = { stream_type(message) => decoded_text }
             output[:data] << stream
 
-            block.call stream[:stdout], stream[:stderr] if block
+            yield stream[:stdout], stream[:stderr] if block
           end
         end
         output[:exitcode] = exit_code(resp_doc)

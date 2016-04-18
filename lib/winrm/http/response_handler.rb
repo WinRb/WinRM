@@ -55,7 +55,7 @@ module WinRM
     end
 
     def raise_if_auth_error
-      fail WinRMAuthorizationError if @status_code == 401
+      raise WinRMAuthorizationError if @status_code == 401
     end
 
     def raise_if_wsman_fault
@@ -66,7 +66,7 @@ module WinRM
       fault = REXML::XPath.first(
         soap_errors,
         "//#{WinRM::WSMV::SOAP::NS_WSMAN_FAULT}:WSManFault")
-      fail WinRMWSManFault.new(fault.to_s, fault.attributes['Code']) unless fault.nil?
+      raise WinRMWSManFault.new(fault.to_s, fault.attributes['Code']) unless fault.nil?
     end
 
     def raise_if_wmi_error
@@ -83,11 +83,11 @@ module WinRM
       error_code = REXML::XPath.first(
         error,
         "//#{WinRM::WSMV::SOAP::NS_WSMAN_MSFT}:error_Code").text
-      fail WinRMWMIError.new(error.to_s, error_code)
+      raise WinRMWMIError.new(error.to_s, error_code)
     end
 
     def raise_transport_error
-      fail WinRMHTTPTransportError.new('Bad HTTP response returned from server', @status_code)
+      raise WinRMHTTPTransportError.new('Bad HTTP response returned from server', @status_code)
     end
   end
 end

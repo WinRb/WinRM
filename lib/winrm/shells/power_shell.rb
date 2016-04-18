@@ -34,6 +34,21 @@ module WinRM
     class PowerShell
       include Retryable
 
+      class << self
+        def finalize(connection_opts, transport, shell_id)
+          proc { PowerShell.close_shell(connection_opts, transport, shell_id) }
+        end
+
+        def close_shell(connection_opts, transport, shell_id)
+          msg = WinRM::WSMV::CloseShell.new(
+            connection_opts,
+            shell_id: shell_id,
+            shell_uri: WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL
+          )
+          transport.send_request(msg.build)
+        end
+      end
+
       # Create a new PowerShell shell
       # @param connection_opts [ConnectionOpts] The WinRM connection options
       # @param transport [HttpTransport] The WinRM SOAP transport
@@ -93,15 +108,6 @@ module WinRM
         @transport.send_request(cleanup_msg.build)
       end
 
-      def self.close_shell(connection_opts, transport, shell_id)
-        msg = WinRM::WSMV::CloseShell.new(
-          connection_opts,
-          shell_id: shell_id,
-          shell_uri: WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL
-        )
-        transport.send_request(msg.build)
-      end
-
       def open
         close
         retryable(@connection_opts[:retry_limit], @connection_opts[:retry_delay]) do
@@ -123,10 +129,6 @@ module WinRM
 
       def remove_finalizer
         ObjectSpace.undefine_finalizer(self)
-      end
-
-      def self.finalize(connection_opts, transport, shell_id)
-        proc { PowerShell.close_shell(connection_opts, transport, shell_id) }
       end
     end
   end

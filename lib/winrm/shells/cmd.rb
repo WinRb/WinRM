@@ -30,6 +30,17 @@ module WinRM
     class Cmd
       include Retryable
 
+      class << self
+        def finalize(connection_opts, transport, shell_id)
+          proc { Cmd.close_shell(connection_opts, transport, shell_id) }
+        end
+
+        def close_shell(connection_opts, transport, shell_id)
+          msg = WinRM::WSMV::CloseShell.new(connection_opts, shell_id: shell_id)
+          transport.send_request(msg.build)
+        end
+      end
+
       # Create a new Cmd shell
       # @param connection_opts [ConnectionOpts] The WinRM connection options
       # @param transport [HttpTransport] The WinRM SOAP transport
@@ -109,15 +120,6 @@ module WinRM
 
       def remove_finalizer
         ObjectSpace.undefine_finalizer(self)
-      end
-
-      def self.close_shell(connection_opts, transport, shell_id)
-        msg = WinRM::WSMV::CloseShell.new(connection_opts, shell_id: shell_id)
-        transport.send_request(msg.build)
-      end
-
-      def self.finalize(connection_opts, transport, shell_id)
-        proc { Cmd.close_shell(connection_opts, transport, shell_id) }
       end
     end
   end

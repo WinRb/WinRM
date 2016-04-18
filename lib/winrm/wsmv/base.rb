@@ -44,11 +44,11 @@ module WinRM
       protected
 
       def create_header
-        fail 'create_header must be implemented'
+        raise 'create_header must be implemented'
       end
 
       def create_body
-        fail 'create_body must be implemented'
+        raise 'create_body must be implemented'
       end
 
       def encode_bytes(bytes)

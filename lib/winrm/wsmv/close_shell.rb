@@ -21,7 +21,7 @@ module WinRM
     # WSMV message to close a remote shell
     class CloseShell < Base
       def initialize(session_opts, shell_opts)
-        fail 'shell_opts[:shell_id] is required' unless shell_opts[:shell_id]
+        raise 'shell_opts[:shell_id] is required' unless shell_opts[:shell_id]
         @session_opts = session_opts
         @shell_id = shell_opts[:shell_id]
         @shell_uri = shell_opts[:shell_uri] || RESOURCE_URI_CMD

@@ -71,7 +71,7 @@ module WinRM
         information_record:         0x00041011,
         pipeline_host_call:         0x00041100,
         pipeline_host_response:     0x00041101
-      }
+      }.freeze
 
       # Creates a new PSRP message instance
       # @param message_parts [Hash]
@@ -88,11 +88,11 @@ module WinRM
       def initialize(message_parts)
         message_parts.merge!(default_parts) { |_key, v1, _v2| v1 }
 
-        fail 'runspace_pool_id cannot be nil' unless message_parts[:runspace_pool_id]
+        raise 'runspace_pool_id cannot be nil' unless message_parts[:runspace_pool_id]
         unless MESSAGE_TYPES.values.include?(message_parts[:message_type])
-          fail 'invalid message type'
+          raise 'invalid message type'
         end
-        fail 'data cannot be nil' unless message_parts[:data]
+        raise 'data cannot be nil' unless message_parts[:data]
 
         @data = message_parts[:data]
         @destination = message_parts[:destination]
@@ -113,7 +113,7 @@ module WinRM
       # @return [Array<Byte>] Unencoded raw byte array of the PSRP message.
       def bytes
         if data_bytes.length > BLOB_MAX_LEN
-          fail "data cannot be greater than #{BLOB_MAX_LEN} bytes"
+          raise "data cannot be greater than #{BLOB_MAX_LEN} bytes"
         end
 
         [

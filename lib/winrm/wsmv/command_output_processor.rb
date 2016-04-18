@@ -57,7 +57,7 @@ module WinRM
 
             stream = { n.attributes['Name'].to_sym => decoded_text }
             output[:data] << stream
-            block.call stream[:stdout], stream[:stderr] if block
+            yield stream[:stdout], stream[:stderr] if block
           end
         end
         output[:exitcode] = exit_code(resp_doc)
@@ -82,12 +82,10 @@ module WinRM
         # 2150858793. When the client receives this fault, it SHOULD issue
         # another Receive request.
         # http://msdn.microsoft.com/en-us/library/cc251676.aspx
-        if e.fault_code == '2150858793'
-          logger.debug('[WinRM] retrying receive request after timeout')
-          retry
-        else
-          raise
-        end
+        raise unless e.fault_code == '2150858793'
+
+        logger.debug('[WinRM] retrying receive request after timeout')
+        retry
       end
 
       def exit_code(resp_doc)

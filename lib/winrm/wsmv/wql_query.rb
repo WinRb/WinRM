@@ -39,11 +39,7 @@ module WinRM
         items = {}
         if hresp[:enumerate_response][:items]
           hresp[:enumerate_response][:items].each_pair do |k, v|
-            if v.is_a?(Array)
-              items[k] = v
-            else
-              items[k] = [v]
-            end
+            items[k] = v.is_a?(Array) ? v : [v]
           end
         end
         items

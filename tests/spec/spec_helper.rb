@@ -30,7 +30,7 @@ end
 # and remove newlines.
 class String
   def unindent
-    gsub(/^#{self[/\A[ \t]*/]}/, '').gsub("\n", '')
+    gsub(/^#{self[/\A[ \t]*/]}/, '').delete("\n")
   end
 
   def to_byte_string

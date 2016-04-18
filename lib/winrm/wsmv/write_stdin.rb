@@ -47,10 +47,10 @@ module WinRM
       end
 
       def validate_opts(session_opts, stdin_opts)
-        fail 'session_opts is required' unless session_opts
-        fail 'stdin_opts[:shell_id] is required' unless stdin_opts[:shell_id]
-        fail 'stdin_opts[:command_id] is required' unless stdin_opts[:command_id]
-        fail 'stdin_opts[:stdin] is required' unless stdin_opts[:stdin]
+        raise 'session_opts is required' unless session_opts
+        raise 'stdin_opts[:shell_id] is required' unless stdin_opts[:shell_id]
+        raise 'stdin_opts[:command_id] is required' unless stdin_opts[:command_id]
+        raise 'stdin_opts[:stdin] is required' unless stdin_opts[:stdin]
       end
 
       def stdin_headers

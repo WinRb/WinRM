@@ -34,12 +34,9 @@ module WinRM
       def retryable(retries, delay)
         yield
       rescue *RETRYABLE_EXCEPTIONS.call
-        if (retries -= 1) > 0
-          sleep(delay)
-          retry
-        else
-          raise
-        end
+        raise unless (retries -= 1) > 0
+        sleep(delay)
+        retry
       end
     end
   end

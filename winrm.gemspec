@@ -36,6 +36,6 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'erubis', '~> 2.7'
   s.add_development_dependency 'rspec', '~> 3.2'
   s.add_development_dependency 'rake', '~> 10.3'
-  s.add_development_dependency 'rubocop', '~> 0.28'
+  s.add_development_dependency 'rubocop', '~> 0.39.0'
   s.add_development_dependency 'pry'
 end

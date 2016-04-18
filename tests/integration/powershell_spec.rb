@@ -28,12 +28,11 @@ describe 'winrm client powershell' do
 
   describe 'Math area calculation' do
     subject(:output) do
-      @powershell.run(<<-EOH
+      @powershell.run <<-EOH
         $diameter = 4.5
         $area = [Math]::pow([Math]::PI * ($diameter/2), 2)
         Write-Host $area
       EOH
-      )
     end
     it { should have_exit_code 0 }
     it { should have_stdout_match(/49.9648722805149/) }

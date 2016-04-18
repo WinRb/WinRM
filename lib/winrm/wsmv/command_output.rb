@@ -21,8 +21,8 @@ module WinRM
     # WSMV message to get output from a remote shell
     class CommandOutput < Base
       def initialize(session_opts, command_out_opts)
-        fail 'command_out_opts[:shell_id] is required' unless command_out_opts[:shell_id]
-        fail 'command_out_opts[:command_id] is required' unless command_out_opts[:command_id]
+        raise 'command_out_opts[:shell_id] is required' unless command_out_opts[:shell_id]
+        raise 'command_out_opts[:command_id] is required' unless command_out_opts[:command_id]
         @session_opts = session_opts
         @shell_id = command_out_opts[:shell_id]
         @command_id = command_out_opts[:command_id]

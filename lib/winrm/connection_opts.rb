@@ -22,16 +22,41 @@ module WinRM
     DEFAULT_OPERATION_TIMEOUT = 60
     DEFAULT_RECEIVE_TIMEOUT = DEFAULT_OPERATION_TIMEOUT + 10
     DEFAULT_MAX_ENV_SIZE = 153600
-    DEFAULT_LOCALE = 'en-US'
+    DEFAULT_LOCALE = 'en-US'.freeze
     DEFAULT_RETRY_DELAY = 10
     DEFAULT_RETRY_LIMIT = 3
     DEFAULT_MAX_COMMANDS = 1480 # TODO: interrogate remote OS version
 
-    def self.create_with_defaults(overrides)
-      config = default.merge(overrides)
-      config = ensure_receive_timeout_is_greater_than_operation_timeout(config)
-      config.validate
-      config
+    class << self
+      def create_with_defaults(overrides)
+        config = default.merge(overrides)
+        config = ensure_receive_timeout_is_greater_than_operation_timeout(config)
+        config.validate
+        config
+      end
+
+      private
+
+      def ensure_receive_timeout_is_greater_than_operation_timeout(config)
+        if config[:receive_timeout] < config[:operation_timeout]
+          config[:receive_timeout] = config[:operation_timeout] + 10
+        end
+        config
+      end
+
+      def default
+        config = ConnectionOpts.new
+        config[:session_id] = SecureRandom.uuid.to_s.upcase
+        config[:transport] = :negotiate
+        config[:locale] = DEFAULT_LOCALE
+        config[:max_envelope_size] = DEFAULT_MAX_ENV_SIZE
+        config[:max_commands] = DEFAULT_MAX_COMMANDS
+        config[:operation_timeout] = DEFAULT_OPERATION_TIMEOUT
+        config[:receive_timeout] = DEFAULT_RECEIVE_TIMEOUT
+        config[:retry_delay] = DEFAULT_RETRY_DELAY
+        config[:retry_limit] = DEFAULT_RETRY_LIMIT
+        config
+      end
     end
 
     def validate
@@ -42,9 +67,9 @@ module WinRM
     private
 
     def validate_required_fields
-      fail 'endpoint is a required option' unless self[:endpoint]
-      fail 'user is a required option' unless self[:user]
-      fail 'password is a required option' unless self[:password]
+      raise 'endpoint is a required option' unless self[:endpoint]
+      raise 'user is a required option' unless self[:user]
+      raise 'password is a required option' unless self[:password]
     end
 
     def validate_data_types
@@ -58,29 +83,8 @@ module WinRM
 
     def validate_fixnum(key, min = 0)
       value = self[key]
-      fail "#{key} must be a Fixnum" unless value && value.is_a?(Fixnum)
-      fail "#{key} must be greater than #{min}" unless value > min
-    end
-
-    def self.ensure_receive_timeout_is_greater_than_operation_timeout(config)
-      if config[:receive_timeout] < config[:operation_timeout]
-        config[:receive_timeout] = config[:operation_timeout] + 10
-      end
-      config
-    end
-
-    def self.default
-      config = ConnectionOpts.new
-      config[:session_id] = SecureRandom.uuid.to_s.upcase
-      config[:transport] = :negotiate
-      config[:locale] = DEFAULT_LOCALE
-      config[:max_envelope_size] = DEFAULT_MAX_ENV_SIZE
-      config[:max_commands] = DEFAULT_MAX_COMMANDS
-      config[:operation_timeout] = DEFAULT_OPERATION_TIMEOUT
-      config[:receive_timeout] = DEFAULT_RECEIVE_TIMEOUT
-      config[:retry_delay] = DEFAULT_RETRY_DELAY
-      config[:retry_limit] = DEFAULT_RETRY_LIMIT
-      config
+      raise "#{key} must be a Fixnum" unless value && value.is_a?(Fixnum)
+      raise "#{key} must be greater than #{min}" unless value > min
     end
   end
 end
