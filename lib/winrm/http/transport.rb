@@ -251,7 +251,7 @@ module WinRM
     class ClientCertAuthSSL < HttpTransport
       def initialize(endpoint, client_cert, client_key, key_pass,  opts)
         super(endpoint)
-        @httpcli.www_auth.instance_variable_get('@authenticator') = []
+        @httpcli.www_auth.instance_variable_set('@authenticator', [])
         @httpcli.ssl_config.set_client_cert_file("#{client_cert}","#{client_key}", "#{key_pass}")
         no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
         @ssl_peer_fingerprint = opts[:ssl_peer_fingerprint]
