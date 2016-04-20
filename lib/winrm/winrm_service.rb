@@ -70,10 +70,10 @@ module WinRM
     end
 
     def init_ssl_transport(opts)
-      case 
+      case opts
       when opts[:basic_auth_only]
         HTTP::BasicAuthSSL.new(opts[:endpoint], opts[:user], opts[:pass], opts)
-      when opts[:certificate]
+      when opts[:client_cert]
         HTTP::ClientCertAuthSSL.new(opts[:endpoint], opts[:client_cert], opts[:client_key], opts)
       else
         HTTP::HttpNegotiate.new(opts[:endpoint], opts[:user], opts[:pass], opts)
