@@ -74,7 +74,7 @@ WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :ba
 WinRM::WinRMWebService.new(endpoint, :ssl, :client_cert => '/path/to/cert.pem', :client_key => '/path/to/key.key', :key_pass => 'password', :no_ssl_peer_verification => true)
 
 #Specifying a Client Cert object, key object and (optional) key password for password-less authentication 
-WinRM::WinRMWebService.new(endpoint, :ssl, :client_cert => <X509::Certificate object>, :client_key => <PKey::Pkey object, :key_pass => 'password', :no_ssl_peer_verification => true)  
+WinRM::WinRMWebService.new(endpoint, :ssl, :client_cert => <X509::Certificate object>, :client_key => <PKey::Pkey object>, :key_pass => 'password', :no_ssl_peer_verification => true)  
 ```
 
 ##### Create a self signed cert for WinRM
