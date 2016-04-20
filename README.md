@@ -72,8 +72,11 @@ WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :ba
 ```
 
 #Specifying a Cert, key and key password
-WinRM::WinRMWebService.new(target, :ssl, :client_cert => '../winrm.pem', :client_key => '../winrm.key', :key_pass => 'password', :no_ssl_peer_verification => true)
+WinRM::WinRMWebService.new(target, :ssl, :client_cert => '/path/to/cert.pem', :client_key => '/path/to/key.key', :key_pass => 'password', :no_ssl_peer_verification => true)
 
+#Specifying a Cert object, key object and key password
+# the :client_cert and client_key can be an Openssl Objects
+WinRM::WinRMWebService.new(target, :ssl, :client_cert => <X509::Certificate object>, :client_key => <PKey::Pkey object, :key_pass => 'password', :no_ssl_peer_verification => true)  
 
 ##### Create a self signed cert for WinRM
 You may want to create a self signed certificate for servicing https WinRM connections. You can use the following PowerShell script to create a cert and enable the WinRM HTTPS listener. Unless you are running windows server 2012 R2 or later, you must install makecert.exe from the Windows SDK, otherwise use `New-SelfSignedCertificate`.
