@@ -70,7 +70,6 @@ WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :ba
 # Verify against a known fingerprint
 WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :basic_auth_only => true, :ssl_peer_fingerprint => '6C04B1A997BA19454B0CD31C65D7020A6FC2669D')
 
-
 #Specifying a Client Cert, key and (optional) key password for password-less authentication 
 WinRM::WinRMWebService.new(endpoint, :ssl, :client_cert => '/path/to/cert.pem', :client_key => '/path/to/key.key', :key_pass => 'password', :no_ssl_peer_verification => true)
 
