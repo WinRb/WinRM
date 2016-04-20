@@ -46,7 +46,7 @@ module WinRM
                 'Content-Length' => message.bytesize }
         # We need to add this header if using Client Certificate authentication
         unless @httpcli.ssl_config.client_cert.nil?
-          hdr.merge!({'Authorization' => 'http://schemas.dmtf.org/wbem/wsman/1/wsman/secprofile/https/mutual'})
+          hdr['Authorization'] = 'http://schemas.dmtf.org/wbem/wsman/1/wsman/secprofile/https/mutual'
         end
 
         resp = @httpcli.post(@endpoint, message, hdr)
@@ -249,9 +249,9 @@ module WinRM
 
     # Uses Client Certificate to authenticate and SSL to secure the transport
     class ClientCertAuthSSL < HttpTransport
-      def initialize(endpoint, client_cert, client_key, key_pass,  opts)
+      def initialize(endpoint, client_cert, client_key, key_pass, opts)
         super(endpoint)
-        @httpcli.ssl_config.set_client_cert_file("#{client_cert}","#{client_key}", "#{key_pass}")
+        @httpcli.ssl_config.set_client_cert_file(client_cert, client_key, key_pass)
         @httpcli.www_auth.instance_variable_set('@authenticator', [])
         no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
         @ssl_peer_fingerprint = opts[:ssl_peer_fingerprint]
