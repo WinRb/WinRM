@@ -244,13 +244,31 @@ module WinRM
 
     # Uses Certificate SSL to secure the transport
     class ClientCertAuthSSL < HttpTransport
-      def initialize(endpoint, ca_trust_path = nil, client_cert, client_key, opts)
+      def initialize(endpoint, client_cert, client_key, pass = nil, ca_trust_path = nil  opts)
         super(endpoint)
         @httpcli.ssl_config.set_trust_ca(ca_trust_path) unless ca_trust_path.nil?
-        @httpcli.ssl_config.set_client_cert_file("#{client_cert}","#{client_key}")
+        @httpcli.ssl_config.set_client_cert_file("#{client_cert}","#{client_key}", "#{pass}")
         no_sspi_auth! if opts[:basic_auth_only]
         no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
         @ssl_peer_fingerprint = opts[:ssl_peer_fingerprint] 
+      end
+
+    # Sends the SOAP payload to the WinRM service and returns the service's
+    # SOAP response. If an error occurrs an appropriate error is raised.
+    #
+    # @param [String] The XML SOAP message
+    # @returns [REXML::Document] The parsed response body
+      def send_request(message)
+        ssl_peer_fingerprint_verification!
+        log_soap_message(message)
+        hdr = { 'Content-Type' => 'application/soap+xml;charset=UTF-8',
+                'Content-Length' => message.length,
+                'Authorization' => 'http://schemas.dmtf.org/wbem/wsman/1/wsman/secprofile/https/mutual'}
+        resp = @httpcli.post(@endpoint, message, hdr)
+        log_soap_message(resp.http_body.content)
+        verify_ssl_fingerprint(resp.peer_cert)
+        handler = WinRM::ResponseHandler.new(resp.http_body.conent, resp.status)
+        handler.parse_to_xml
       end
     end
 
