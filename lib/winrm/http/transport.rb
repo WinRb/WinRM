@@ -244,10 +244,10 @@ module WinRM
 
     # Uses Certificate SSL to secure the transport
     class ClientCertAuthSSL < HttpTransport
-      def initialize(endpoint, ca_trust_path = nil, pem_file, key_file, opts)
+      def initialize(endpoint, ca_trust_path = nil, client_cert, client_key, opts)
         super(endpoint)
         @httpcli.ssl_config.set_trust_ca(ca_trust_path) unless ca_trust_path.nil?
-        @httpcli.ssl_config.set_client_cert_file("#{pem_file}","#{key_file}")
+        @httpcli.ssl_config.set_client_cert_file("#{client_cert}","#{client_key}")
         no_sspi_auth! if opts[:basic_auth_only]
         no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
         @ssl_peer_fingerprint = opts[:ssl_peer_fingerprint] 
