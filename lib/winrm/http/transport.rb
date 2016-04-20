@@ -242,6 +242,18 @@ module WinRM
       end
     end
 
+    # Uses Certificate SSL to secure the transport
+    class ClientCertAuthSSL < HttpTransport
+      def initialize(endpoint, ca_trust_path = nil, pem_file, key_file, opts)
+        super(endpoint)
+        @httpcli.ssl_config.set_trust_ca(ca_trust_path) unless ca_trust_path.nil?
+        @httpcli.ssl_config.set_client_cert_file("#{pem_file}","#{key_file}")
+        no_sspi_auth! if opts[:basic_auth_only]
+        no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
+        @ssl_peer_fingerprint = opts[:ssl_peer_fingerprint] 
+      end
+    end
+
     # Uses Kerberos/GSSAPI to authenticate and encrypt messages
     # rubocop:disable Metrics/ClassLength
     class HttpGSSAPI < HttpTransport
