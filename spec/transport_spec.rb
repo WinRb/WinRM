@@ -62,11 +62,15 @@ describe 'WinRM connection', integration: true do
     opts[:basic_auth_only] = basic_auth_only
     opts[:no_ssl_peer_verification] = no_ssl_peer_verification
     opts[:ssl_peer_fingerprint] = ssl_peer_fingerprint
+    opts[:client_cert] = user_cert
+    opts[:client_key] = user_key
     opts
   end
   let(:basic_auth_only) { false }
   let(:no_ssl_peer_verification) { false }
   let(:ssl_peer_fingerprint) { nil }
+  let(:user_cert) { nil }
+  let(:user_key) { nil }
 
   subject(:output) do
     executor = winrm_connection.create_executor
@@ -104,6 +108,17 @@ describe 'WinRM connection', integration: true do
     let(:basic_auth_only) { true }
     let(:auth_type) { :ssl }
     let(:no_ssl_peer_verification) { true }
+
+    it_behaves_like 'a valid_connection'
+  end
+
+  context 'ClientCertAuthSSL', skip: ENV['user_cert'].nil? do
+    let(:auth_type) { :ssl }
+    let(:no_ssl_peer_verification) { true }
+    let(:user_cert) { ENV['user_cert'] }
+    let(:user_key) { ENV['user_key'] }
+
+    before { options[:pass] = nil }
 
     it_behaves_like 'a valid_connection'
   end

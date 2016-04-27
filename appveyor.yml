@@ -7,6 +7,8 @@ platform:
 environment:
   winrm_user: test_user
   winrm_pass: Pass@word1
+  user_cert: c:\projects\winrm\user.pem
+  user_key: c:\projects\winrm\key.pem
 
   matrix:
     - ruby_version: "21"
@@ -21,12 +23,19 @@ branches:
 install:
   - ps: net user /add $env:winrm_user $env:winrm_pass
   - ps: net localgroup administrators $env:winrm_user /add
+  - ps: $env:PATH="C:\OpenSSL-Win64\bin;$env:PATH"
+  - ps: Import-Module c:\projects\winrm\WinrmAppveyor.psm1
+  - ps: New-ClientCertificate $env:winrm_user c:\projects\winrm
+  - ps: $env:user_cert_thumb = (Import-pfxCertificate -FilePath c:\projects\winrm\user.pfx -CertStoreLocation Cert:\LocalMachine\root).Thumbprint
+  - ps: Import-pfxCertificate -FilePath c:\projects\winrm\user.pfx -CertStoreLocation Cert:\LocalMachine\TrustedPeople
   - ps: $env:winrm_cert = (New-SelfSignedCertificate -DnsName localhost -CertStoreLocation cert:\localmachine\my).Thumbprint
   - ps: winrm create winrm/config/Listener?Address=*+Transport=HTTPS "@{Hostname=`"localhost`";CertificateThumbprint=`"$($env:winrm_cert)`"}"
   - ps: winrm set winrm/config/client/auth '@{Basic="true"}'
   - ps: winrm set winrm/config/service/auth '@{Basic="true"}'
+  - ps: winrm set winrm/config/service/auth '@{Certificate="true"}'
   - ps: winrm set winrm/config/service/auth '@{CbtHardeningLevel="Strict"}'
   - ps: winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+  - ps: New-WinrmUserCertificateMapping $env:user_cert_thumb
   - ps: $env:PATH="C:\Ruby$env:ruby_version\bin;$env:PATH"
   - ps: Write-Host $env:PATH
   - ps: ruby --version
