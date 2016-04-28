@@ -96,10 +96,15 @@ iex $cmd
 
 ##### Setting up Certificate based authentication
 Perform the following steps to authenticate with a certificate instead of a username and password:
+
 1. Generate a certificate with an Extended Key Usage of Client Authentication and a Subject Alternative Name with the UPN of the user. See this [powershell function](https://github.com/WinRb/WinRM/blob/master/WinrmAppveyor.psm1#L1) as an example of using `openssl` to create a self signed user certificate in `.pem` and `.pfx` formats along with the private key file.
+
 2. Import the pfx file into the `TrustedPeople` directory of the `LocalMachine` certificate store on the windows endpoint.
+
 3. Import the issuing certificate authority certificate in the endpoint's `Root` certificates. If your client certificate is self signed, this will be the client certificate.
+
 4. Enable certificate authentication on the endpoint: `Set-Item -Path WSMan:\localhost\Service\Auth\Certificate -Value $true`
+
 5. Add a winrm user mapping for the issuing certificate: `New-Item -Path WSMan:\localhost\ClientCertificate -Subject <user UPN> -URI * -Issuer <issuing certificate thumbprint> -Credential (Get-Credential) -Force`
 
 #### Kerberos
