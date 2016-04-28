@@ -44,6 +44,11 @@ module WinRM
         log_soap_message(message)
         hdr = { 'Content-Type' => 'application/soap+xml;charset=UTF-8',
                 'Content-Length' => message.bytesize }
+        # We need to add this header if using Client Certificate authentication
+        unless @httpcli.ssl_config.client_cert.nil?
+          hdr['Authorization'] = 'http://schemas.dmtf.org/wbem/wsman/1/wsman/secprofile/https/mutual'
+        end
+
         resp = @httpcli.post(@endpoint, message, hdr)
         log_soap_message(resp.http_body.content)
         verify_ssl_fingerprint(resp.peer_cert)
@@ -236,6 +241,18 @@ module WinRM
         super(endpoint)
         @httpcli.set_auth(endpoint, user, pass)
         basic_auth_only!
+        no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
+        @ssl_peer_fingerprint = opts[:ssl_peer_fingerprint]
+        @httpcli.ssl_config.set_trust_ca(opts[:ca_trust_path]) if opts[:ca_trust_path]
+      end
+    end
+
+    # Uses Client Certificate to authenticate and SSL to secure the transport
+    class ClientCertAuthSSL < HttpTransport
+      def initialize(endpoint, client_cert, client_key, key_pass, opts)
+        super(endpoint)
+        @httpcli.ssl_config.set_client_cert_file(client_cert, client_key, key_pass)
+        @httpcli.www_auth.instance_variable_set('@authenticator', [])
         no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
         @ssl_peer_fingerprint = opts[:ssl_peer_fingerprint]
         @httpcli.ssl_config.set_trust_ca(opts[:ca_trust_path]) if opts[:ca_trust_path]

@@ -69,6 +69,12 @@ WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :ba
 
 # Verify against a known fingerprint
 WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :basic_auth_only => true, :ssl_peer_fingerprint => '6C04B1A997BA19454B0CD31C65D7020A6FC2669D')
+
+# Specifying a Client Cert, key and (optional) key password for password-less authentication 
+WinRM::WinRMWebService.new(endpoint, :ssl, :client_cert => '/path/to/cert.pem', :client_key => '/path/to/key.key', :key_pass => 'password', :no_ssl_peer_verification => true)
+
+# Specifying a Client Cert object, key object and (optional) key password for password-less authentication 
+WinRM::WinRMWebService.new(endpoint, :ssl, :client_cert => <X509::Certificate object>, :client_key => <PKey::Pkey object>, :key_pass => 'password', :no_ssl_peer_verification => true)  
 ```
 
 ##### Create a self signed cert for WinRM
@@ -87,6 +93,19 @@ $thumbprint = (New-SelfSignedCertificate -DnsName $hostname -CertStoreLocation c
 $cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$hostname`";CertificateThumbprint=`"$thumbprint`"}'"
 iex $cmd
 ```
+
+##### Setting up Certificate based authentication
+Perform the following steps to authenticate with a certificate instead of a username and password:
+
+1. Generate a certificate with an Extended Key Usage of Client Authentication and a Subject Alternative Name with the UPN of the user. See this [powershell function](https://github.com/WinRb/WinRM/blob/master/WinrmAppveyor.psm1#L1) as an example of using `openssl` to create a self signed user certificate in `.pem` and `.pfx` formats along with the private key file.
+
+2. Import the pfx file into the `TrustedPeople` directory of the `LocalMachine` certificate store on the windows endpoint.
+
+3. Import the issuing certificate authority certificate in the endpoint's `Root` certificates. If your client certificate is self signed, this will be the client certificate.
+
+4. Enable certificate authentication on the endpoint: `Set-Item -Path WSMan:\localhost\Service\Auth\Certificate -Value $true`
+
+5. Add a winrm user mapping for the issuing certificate: `New-Item -Path WSMan:\localhost\ClientCertificate -Subject <user UPN> -URI * -Issuer <issuing certificate thumbprint> -Credential (Get-Credential) -Force`
 
 #### Kerberos
 ```ruby
