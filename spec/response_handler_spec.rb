@@ -2,42 +2,44 @@
 require 'winrm/http/response_handler'
 
 describe 'response handler', unit: true do
-  %w(v1, v2).each do |winrm_version|
-    let(:soap_fault) { File.read("spec/stubs/responses/soap_fault_#{winrm_version}.xml") }
-    let(:open_shell) { File.read("spec/stubs/responses/open_shell_#{winrm_version}.xml") }
+  %w(v1 v2).each do |winrm_version|
+    context "winrm_version #{winrm_version}" do
+      let(:soap_fault) { File.read("spec/stubs/responses/soap_fault_#{winrm_version}.xml") }
+      let(:open_shell) { File.read("spec/stubs/responses/open_shell_#{winrm_version}.xml") }
 
-    describe "successful 200 #{winrm_version} response" do
-      it 'returns an xml doc' do
-        handler = WinRM::ResponseHandler.new(open_shell, 200)
-        xml_doc = handler.parse_to_xml
-        expect(xml_doc).to be_instance_of(REXML::Document)
-        expect(xml_doc.to_s).to eq(REXML::Document.new(open_shell).to_s)
+      describe "successful 200 #{winrm_version} response" do
+        it 'returns an xml doc' do
+          handler = WinRM::ResponseHandler.new(open_shell, 200)
+          xml_doc = handler.parse_to_xml
+          expect(xml_doc).to be_instance_of(REXML::Document)
+          expect(xml_doc.to_s).to eq(REXML::Document.new(open_shell).to_s)
+        end
       end
-    end
 
-    describe "failed 500 #{winrm_version} response" do
-      it 'raises a WinRMHTTPTransportError' do
-        handler = WinRM::ResponseHandler.new('', 500)
-        expect { handler.parse_to_xml }.to raise_error(WinRM::WinRMHTTPTransportError)
+      describe "failed 500 #{winrm_version} response" do
+        it 'raises a WinRMHTTPTransportError' do
+          handler = WinRM::ResponseHandler.new('', 500)
+          expect { handler.parse_to_xml }.to raise_error(WinRM::WinRMHTTPTransportError)
+        end
       end
-    end
 
-    describe "failed 401 #{winrm_version} response" do
-      it 'raises a WinRMAuthorizationError' do
-        handler = WinRM::ResponseHandler.new('', 401)
-        expect { handler.parse_to_xml }.to raise_error(WinRM::WinRMAuthorizationError)
+      describe "failed 401 #{winrm_version} response" do
+        it 'raises a WinRMAuthorizationError' do
+          handler = WinRM::ResponseHandler.new('', 401)
+          expect { handler.parse_to_xml }.to raise_error(WinRM::WinRMAuthorizationError)
+        end
       end
-    end
 
-    describe "failed 400 #{winrm_version} response" do
-      it 'raises a WinRMWSManFault' do
-        handler = WinRM::ResponseHandler.new(soap_fault, 400)
-        begin
-          handler.parse_to_xml
-        rescue WinRM::WinRMWSManFault => e
-          expect(e.fault_code).to eq('2150858778')
-          expect(e.fault_description).to include(
-            'The specified class does not exist in the given namespace')
+      describe "failed 400 #{winrm_version} response" do
+        it 'raises a WinRMWSManFault' do
+          handler = WinRM::ResponseHandler.new(soap_fault, 400)
+          begin
+            handler.parse_to_xml
+          rescue WinRM::WinRMWSManFault => e
+            expect(e.fault_code).to eq('2150858778')
+            expect(e.fault_description).to include(
+              'The specified class does not exist in the given namespace')
+          end
         end
       end
     end

@@ -50,7 +50,7 @@ module WinRM
       configure_retries(opts)
       begin
         @xfer = send "init_#{transport}_transport", opts.merge({endpoint: endpoint})
-      rescue NoMethodError => e
+      rescue NoMethodError
         raise "Invalid transport '#{transport}' specified, expected: negotiate, kerberos, plaintext, ssl."
       end
     end
@@ -227,7 +227,7 @@ module WinRM
           env_body << Gyoku.xml(body)
         end
       end
-      resp = send_message(builder.target!)
+      send_message(builder.target!)
       true
     end
 
@@ -299,7 +299,7 @@ module WinRM
           env_body.tag!("#{NS_WIN_SHELL}:Signal", {'CommandId' => command_id}) { |cl| cl << Gyoku.xml(body) }
         end
       end
-      resp = send_message(builder.target!)
+      send_message(builder.target!)
       true
     end
 
@@ -316,7 +316,7 @@ module WinRM
         env.tag!('env:Body')
       end
 
-      resp = send_message(builder.target!)
+      send_message(builder.target!)
       logger.debug("[WinRM] remote shell #{shell_id} closed")
       true
     end
