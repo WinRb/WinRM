@@ -107,6 +107,8 @@ Perform the following steps to authenticate with a certificate instead of a user
 
 5. Add a winrm user mapping for the issuing certificate: `New-Item -Path WSMan:\localhost\ClientCertificate -Subject <user UPN> -URI * -Issuer <issuing certificate thumbprint> -Credential (Get-Credential) -Force`
 
+See [this post](http://www.hurryupandwait.io/blog/certificate-password-less-based-authentication-in-winrm) for more details on certificate authentication.
+
 #### Kerberos
 ```ruby
 WinRM::WinRMWebService.new(endpoint, :kerberos, :realm => 'MYREALM.COM')
