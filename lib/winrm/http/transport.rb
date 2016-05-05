@@ -22,15 +22,12 @@ module WinRM
     # This backend will maintain state for every WinRMWebService instance that is instantiated so it
     # is possible to use GSSAPI with Keep-Alive.
     class HttpTransport
-      # Set this to an unreasonable amount because WinRM has its own timeouts
-      DEFAULT_RECEIVE_TIMEOUT = 3600
 
       attr_reader :endpoint
 
       def initialize(endpoint)
         @endpoint = endpoint.is_a?(String) ? URI.parse(endpoint) : endpoint
         @httpcli = HTTPClient.new(agent_name: 'Ruby WinRM Client')
-        @httpcli.receive_timeout = DEFAULT_RECEIVE_TIMEOUT
         @logger = Logging.logger[self]
       end
 

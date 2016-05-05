@@ -52,9 +52,9 @@ describe 'WinRM options', unit: true do
 
   context 'default' do
     describe '#receive_timeout' do
-      it 'should be 3600ms' do
+      it 'should be 70s' do
         transportclass = subject.instance_variable_get(:@xfer)
-        expect(transportclass.receive_timeout).to eql(3600)
+        expect(transportclass.receive_timeout).to eql(70)
       end
     end
     describe '#timeout' do
