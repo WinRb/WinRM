@@ -25,7 +25,7 @@ module WinRM
   # This is the main class that does the SOAP request/response logic. There are a few helper
   # classes, but pretty much everything comes through here first.
   class WinRMWebService
-    DEFAULT_TIMEOUT = 'PT60S'
+    DEFAULT_TIMEOUT = 60
     DEFAULT_MAX_ENV_SIZE = 153600
     DEFAULT_LOCALE = 'en-US'
 
@@ -42,7 +42,6 @@ module WinRM
     #   @see WinRM::HTTP::HttpSSL
     def initialize(endpoint, transport = :kerberos, opts = {})
       @endpoint = endpoint
-      @timeout = DEFAULT_TIMEOUT
       @max_env_sz = DEFAULT_MAX_ENV_SIZE
       @locale = DEFAULT_LOCALE
       @output_decoder = CommandOutputDecoder.new
@@ -50,6 +49,7 @@ module WinRM
       configure_retries(opts)
       begin
         @xfer = send "init_#{transport}_transport", opts.merge({endpoint: endpoint})
+        set_timeout(DEFAULT_TIMEOUT)
       rescue NoMethodError
         raise "Invalid transport '#{transport}' specified, expected: negotiate, kerberos, plaintext, ssl."
       end
