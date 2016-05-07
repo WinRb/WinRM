@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 1.8.1
+- Http receive timeout should always be equal to 10 seconds greater than the winrm operation timeout and not default to one hour
+
 # 1.8.0
 - Add certificate authentication
 
