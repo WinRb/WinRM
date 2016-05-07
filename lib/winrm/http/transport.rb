@@ -26,10 +26,11 @@ module WinRM
 
       attr_reader :endpoint
 
-      def initialize(endpoint)
+      def initialize(endpoint, options)
         @endpoint = endpoint.is_a?(String) ? URI.parse(endpoint) : endpoint
         @httpcli = HTTPClient.new(agent_name: 'Ruby WinRM Client')
         @logger = Logging.logger[self]
+        @httpcli.receive_timeout = options[:receive_timeout]
       end
 
       # Sends the SOAP payload to the WinRM service and returns the service's
@@ -106,16 +107,6 @@ module WinRM
         fail "ssl fingerprint mismatch!!!!\n"
       end
 
-      # HTTP Client receive timeout. How long should a remote call wait for a
-      # for a response from WinRM?
-      def receive_timeout=(sec)
-        @httpcli.receive_timeout = sec
-      end
-
-      def receive_timeout
-        @httpcli.receive_timeout
-      end
-
       protected
 
       def log_soap_message(message)
@@ -135,7 +126,7 @@ module WinRM
     # Plain text, insecure, HTTP transport
     class HttpPlaintext < HttpTransport
       def initialize(endpoint, user, pass, opts)
-        super(endpoint)
+        super(endpoint, opts)
         @httpcli.set_auth(nil, user, pass)
         no_sspi_auth! if opts[:disable_sspi]
         basic_auth_only! if opts[:basic_auth_only]
@@ -147,7 +138,7 @@ module WinRM
     # NTLM/Negotiate, secure, HTTP transport
     class HttpNegotiate < HttpTransport
       def initialize(endpoint, user, pass, opts)
-        super(endpoint)
+        super(endpoint, opts)
         require 'rubyntlm'
         no_sspi_auth!
 
@@ -238,7 +229,7 @@ module WinRM
     # Uses SSL to secure the transport
     class BasicAuthSSL < HttpTransport
       def initialize(endpoint, user, pass, opts)
-        super(endpoint)
+        super(endpoint, opts)
         @httpcli.set_auth(endpoint, user, pass)
         basic_auth_only!
         no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
@@ -250,7 +241,7 @@ module WinRM
     # Uses Client Certificate to authenticate and SSL to secure the transport
     class ClientCertAuthSSL < HttpTransport
       def initialize(endpoint, client_cert, client_key, key_pass, opts)
-        super(endpoint)
+        super(endpoint, opts)
         @httpcli.ssl_config.set_client_cert_file(client_cert, client_key, key_pass)
         @httpcli.www_auth.instance_variable_set('@authenticator', [])
         no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
@@ -268,7 +259,7 @@ module WinRM
       # rubocop:disable Lint/UnusedMethodArgument
       def initialize(endpoint, realm, service = nil, keytab = nil, opts)
         # rubocop:enable Lint/UnusedMethodArgument
-        super(endpoint)
+        super(endpoint, opts)
         # Remove the GSSAPI auth from HTTPClient because we are doing our own thing
         no_sspi_auth!
         service ||= 'HTTP'
