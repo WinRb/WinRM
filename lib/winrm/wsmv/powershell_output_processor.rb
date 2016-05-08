@@ -29,33 +29,10 @@ module WinRM
         @output_decoder = PowershellOutputDecoder.new
       end
 
-      # Gets the command output from the remote shell
-      # @param shell_id [UUID] The remote shell id running the command
-      # @param command_id [UUID] The command id to get output for
-      # @param block Optional callback for any output
-      def command_output(shell_id, command_id, &block)
-        resp_doc = nil
-        output = WinRM::Output.new
-        out_message = command_output_message(shell_id, command_id)
-        until command_done?(resp_doc)
-          resp_doc = send_get_output_message(out_message)
-          REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |n|
-            next if n.text.nil? || n.text.empty?
-            message, decoded_text = @output_decoder.decode(n.text)
-            next unless  decoded_text
-            stream = { stream_type(message) => decoded_text }
-            output[:data] << stream
-
-            yield stream[:stdout], stream[:stderr] if block
-          end
-        end
-        output[:exitcode] = exit_code(resp_doc)
-        output
-      end
-
       private
 
-      def stream_type(message)
+      def stream_type(_stream)
+        message = @output_decoder.message
         type = :stdout
         case message.message_type
         when WinRM::PSRP::Message::MESSAGE_TYPES[:error_record]

@@ -14,7 +14,7 @@ describe WinRM::WSMV::PowershellOutputDecoder do
   end
   let(:encoded) { Base64.strict_encode64(message.bytes.pack('C*')) }
 
-  subject { described_class.new.decode(encoded).last }
+  subject { described_class.new.decode(encoded) }
 
   context 'receiving output with BOM and no new line' do
     let(:data) { "\xEF\xBB\xBF<obj><S>some data</S></obj>" }

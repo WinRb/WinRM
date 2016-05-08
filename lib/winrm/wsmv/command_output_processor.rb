@@ -50,14 +50,14 @@ module WinRM
         out_message = command_output_message(shell_id, command_id)
         until command_done?(resp_doc)
           resp_doc = send_get_output_message(out_message)
-          REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |n|
-            next if n.text.nil? || n.text.empty?
-            decoded_text = @output_decoder.decode(n.text)
+          REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |stream|
+            next if stream.text.nil? || stream.text.empty?
+            decoded_text = @output_decoder.decode(stream.text)
             next unless  decoded_text
 
-            stream = { n.attributes['Name'].to_sym => decoded_text }
-            output[:data] << stream
-            yield stream[:stdout], stream[:stderr] if block
+            out = { stream_type(stream) => decoded_text }
+            output[:data] << out
+            yield out[:stdout], out[:stderr] if block
           end
         end
         output[:exitcode] = exit_code(resp_doc)
@@ -65,6 +65,10 @@ module WinRM
       end
 
       protected
+
+      def stream_type(stream)
+        stream.attributes['Name'].to_sym
+      end
 
       def command_output_message(shell_id, command_id)
         cmd_out_opts = {

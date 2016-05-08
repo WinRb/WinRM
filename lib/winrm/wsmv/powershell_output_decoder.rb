@@ -20,18 +20,20 @@ module WinRM
   module WSMV
     # Handles decoding a raw powershell output response
     class PowershellOutputDecoder
+      attr_reader :message
+
       # Decode the raw SOAP output into decoded PSRP message,
       # Removes BOM and replaces encoded line endings
       # @param raw_output [String] The raw encoded output
       # @return [String] The decoded output
       def decode(raw_output)
         decoded_bytes = decode_raw_output(raw_output)
-        message = WinRM::PSRP::MessageFactory.parse_bytes(decoded_bytes)
+        @message = WinRM::PSRP::MessageFactory.parse_bytes(decoded_bytes)
         return nil if message.message_type == WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_state]
         decoded_text = handle_invalid_encoding(message.data)
         decoded_text = remove_bom(decoded_text)
         decoded_text = extract_out_string(decoded_text)
-        [message, decoded_text]
+        decoded_text
       end
 
       private
