@@ -1,8 +1,8 @@
 # encoding: UTF-8
 
-require 'winrm/wsmv/powershell_output_decoder'
+require 'winrm/psrp/powershell_output_decoder'
 
-describe WinRM::WSMV::PowershellOutputDecoder do
+describe WinRM::PSRP::PowershellOutputDecoder do
   let(:message) do
     WinRM::PSRP::Message.new(
       object_id: 1,

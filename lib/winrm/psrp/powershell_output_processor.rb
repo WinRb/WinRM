@@ -17,9 +17,9 @@
 require_relative 'powershell_output_decoder'
 
 module WinRM
-  module WSMV
+  module PSRP
     # Class to handle getting all the output of a command until it completes
-    class PowershellOutputProcessor < CommandOutputProcessor
+    class PowershellOutputProcessor < WSMV::CommandOutputProcessor
       # Creates a new command output processor
       # @param connection_opts [ConnectionOpts] The WinRM connection options
       # @param transport [HttpTransport] The WinRM SOAP transport

@@ -1,8 +1,8 @@
 # encoding: UTF-8
 
-require 'winrm/wsmv/powershell_output_processor'
+require 'winrm/psrp/powershell_output_processor'
 
-describe WinRM::WSMV::PowershellOutputProcessor do
+describe WinRM::PSRP::PowershellOutputProcessor do
   let(:shell_id) { 'F4A2622B-B842-4EB8-8A78-0225C8A993DF' }
   let(:command_id) { 'A2A2622B-B842-4EB8-8A78-0225C8A993DF' }
   let(:test_data_xml_template) do

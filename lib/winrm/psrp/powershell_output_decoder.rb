@@ -17,7 +17,7 @@
 require 'base64'
 
 module WinRM
-  module WSMV
+  module PSRP
     # Handles decoding a raw powershell output response
     class PowershellOutputDecoder
       attr_reader :message
