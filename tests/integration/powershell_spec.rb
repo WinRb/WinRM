@@ -80,6 +80,30 @@ describe 'winrm client powershell' do
     end
   end
 
+  describe 'capturing output from pipeline followed by Host' do
+    subject(:output) do
+      script = <<-eos
+      Write-Output 'output'
+      $host.UI.Writeline('host')
+      eos
+
+      @captured_stdout = ''
+      @captured_stderr = ''
+      @powershell.run(script) do |stdout, stderr|
+        @captured_stdout << stdout if stdout
+        @captured_stderr << stderr if stderr
+      end
+    end
+
+    it 'should print from the pipeline first' do
+      expect(output.stdout).to start_with("output\r\n")
+    end
+
+    it 'should write to host last' do
+      expect(output.stdout).to end_with("host\r\n")
+    end
+  end
+
   describe 'it should handle utf-8 characters' do
     subject(:output) { @powershell.run('echo "✓1234-äöü"') }
     it { should have_exit_code 0 }
