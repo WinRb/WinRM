@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require_relative 'base'
 require_relative 'cmd'
 require_relative 'power_shell'
 
