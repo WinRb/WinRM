@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require_relative '../exceptions'
+
 module WinRM
   module Shells
     # Shell mixin for retrying an operation
