@@ -15,6 +15,7 @@
 # limitations under the License.
 
 require 'securerandom'
+require_relative 'base'
 require_relative '../psrp/powershell_output_processor'
 require_relative '../wsmv/create_pipeline'
 require_relative '../wsmv/init_runspace_pool'
