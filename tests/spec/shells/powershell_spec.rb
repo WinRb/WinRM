@@ -67,12 +67,27 @@ describe WinRM::Shells::PowerShell do
       expect(transport).to receive(:send_request).with(cleanup_payload)
       subject.run(command, arguments)
     end
+
+    it 'output processor sets powershell uri and streams' do
+      allow(WinRM::PSRP::PowershellOutputProcessor).to receive(:new) do |_, _, _, opts|
+        expect(opts[:shell_uri]).to be WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL
+        expect(opts[:out_streams]).to eq %w(stdout)
+      end.and_call_original
+      subject.run(command, arguments)
+    end
   end
 
   describe '#close' do
     it 'sends close shell through transport' do
       subject.run(command, arguments)
       expect(transport).to receive(:send_request).with(close_shell_payload)
+      subject.close
+    end
+
+    it 'creates a shell closer with powershell uri' do
+      allow(WinRM::WSMV::CloseShell).to receive(:new) do |_, opts|
+        expect(opts[:shell_uri]).to be WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL
+      end.and_call_original
       subject.close
     end
   end

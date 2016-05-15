@@ -58,12 +58,27 @@ describe WinRM::Shells::Cmd do
       expect(transport).to receive(:send_request).with(cleanup_payload)
       subject.run(command, arguments)
     end
+
+    it 'output processor keeps default shell uri and streams' do
+      allow(WinRM::WSMV::CommandOutputProcessor).to receive(:new) do |_, _, _, opts|
+        expect(opts[:shell_uri]).to be nil
+        expect(opts[:out_streams]).to be nil
+      end.and_call_original
+      subject.run(command, arguments)
+    end
   end
 
   describe '#close' do
     it 'sends close shell through transport' do
       subject.run(command, arguments)
       expect(transport).to receive(:send_request).with(close_shell_payload)
+      subject.close
+    end
+
+    it 'creates a shell closer with default shell uri' do
+      allow(WinRM::WSMV::CloseShell).to receive(:new) do |_, opts|
+        expect(opts[:shell_uri]).to be nil
+      end.and_call_original
       subject.close
     end
   end

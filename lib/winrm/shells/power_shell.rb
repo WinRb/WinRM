@@ -52,7 +52,7 @@ module WinRM
           connection_opts,
           transport,
           logger,
-          shell_uri: WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL,
+          shell_uri: shell_uri,
           out_streams: %w(stdout)
         )
       end
