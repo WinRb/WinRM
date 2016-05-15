@@ -41,12 +41,26 @@ module WinRM
         @command_count = 0
       end
 
-      attr_reader :shell_id, :shell_uri, :connection_opts, :transport, :logger
+      # @return [String] shell id of the currently opn shell or nil if shell is closed
+      attr_reader :shell_id
+
+      # @return [String] uri that SOAP calls use to identify shell type
+      attr_reader :shell_uri
+
+      # @return [ConnectionOpts] connection options of the shell
+      attr_reader :connection_opts
+
+      # @return [WinRM::HTTP::HttpTransport] transport used to talk with endpoint
+      attr_reader :transport
+
+      # @return [Logger] logger used for diagnostic messages
+      attr_reader :logger
 
       # Runs the specified command with optional arguments
       # @param command [String] The command or executable to run
       # @param arguments [Array] The optional command arguments
       # @param block [&block] The optional callback for any realtime output
+      # @return [WinRM::Output] The command output
       def run(command, arguments = [], &block)
         open if @command_count > connection_opts[:max_commands] || !shell_id
         @command_count += 1
@@ -56,6 +70,7 @@ module WinRM
         cleanup_command(command_id) if command_id
       end
 
+      # Closes the shell if oneis open
       def close
         return unless shell_id
         self.class.close_shell(connection_opts, transport, shell_id)
