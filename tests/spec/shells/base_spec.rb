@@ -102,46 +102,34 @@ describe DummyShell do
       subject.run(command, arguments)
     end
 
-    context 'when shell is closed on server' do
+    describe 'connection resets' do
       before do
         @times_called = 0
 
         allow(subject).to receive(:send_command) do
           @times_called += 1
-          raise WinRM::WinRMWSManFault.new('oops', '2150858843') if @times_called == 1
+          raise WinRM::WinRMWSManFault.new('oops', fault) if @times_called == 1
           command_id
         end
       end
 
-      include_examples 'retry shell command'
-    end
+      context 'when shell is closed on server' do
+        let(:fault) { '2150858843' }
 
-    context 'when shell accesses a deleted registry key' do
-      before do
-        @times_called = 0
-
-        allow(subject).to receive(:send_command) do
-          @times_called += 1
-          raise WinRM::WinRMWSManFault.new('oops', '2147943418') if @times_called == 1
-          command_id
-        end
+        include_examples 'retry shell command'
       end
 
-      include_examples 'retry shell command'
-    end
+      context 'when shell accesses a deleted registry key' do
+        let(:fault) { '2147943418' }
 
-    context 'when maximum number of concurrent shells is exceeded' do
-      before do
-        @times_called = 0
-
-        allow(subject).to receive(:send_command) do
-          @times_called += 1
-          raise WinRM::WinRMWSManFault.new('oops', '2150859174') if @times_called == 1
-          command_id
-        end
+        include_examples 'retry shell command'
       end
 
-      include_examples 'retry shell command'
+      context 'when maximum number of concurrent shells is exceeded' do
+        let(:fault) { '2150859174' }
+
+        include_examples 'retry shell command'
+      end
     end
 
     context 'open_shell fails' do
