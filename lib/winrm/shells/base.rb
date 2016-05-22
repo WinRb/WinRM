@@ -38,7 +38,6 @@ module WinRM
         @connection_opts = connection_opts
         @transport = transport
         @logger = logger
-        @command_count = 0
       end
 
       # @return [String] shell id of the currently opn shell or nil if shell is closed
@@ -64,8 +63,7 @@ module WinRM
       def run(command, arguments = [], &block)
         tries ||= 2
 
-        open if @command_count > connection_opts[:max_commands] || !shell_id
-        @command_count += 1
+        open unless shell_id
         command_id = send_command(command, arguments)
         command_output(command_id, &block)
       rescue WinRMWSManFault => e
@@ -126,7 +124,6 @@ module WinRM
           @shell_id = open_shell
         end
         add_finalizer
-        @command_count = 0
       end
 
       def add_finalizer
