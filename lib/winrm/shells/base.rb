@@ -62,10 +62,17 @@ module WinRM
       # @param block [&block] The optional callback for any realtime output
       # @return [WinRM::Output] The command output
       def run(command, arguments = [], &block)
+        tries ||= 2
+
         open if @command_count > connection_opts[:max_commands] || !shell_id
         @command_count += 1
         command_id = send_command(command, arguments)
         command_output(command_id, &block)
+      rescue WinRMWSManFault => e
+        raise unless %w(2150858843 2147943418 2150859174).include?(e.fault_code) && (tries -= 1) > 0
+        logger.debug('[WinRM] opening new shell since the current one was deleted')
+        @shell_id = nil
+        retry
       ensure
         cleanup_command(command_id) if command_id
       end

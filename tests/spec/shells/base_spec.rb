@@ -45,7 +45,27 @@ describe DummyShell do
     allow(transport).to receive(:send_request)
   end
 
-  subject { described_class.new(connection_options, transport, nil) }
+  subject { described_class.new(connection_options, transport, Logging.logger['test']) }
+
+  shared_examples 'retry shell command' do
+    it 'does not close the current shell' do
+      expect(DummyShell).not_to receive(:close_shell)
+
+      subject.run(command, arguments)
+    end
+
+    it 'opens a new shell' do
+      expect(subject).to receive(:open).and_call_original.twice
+
+      subject.run(command, arguments)
+    end
+
+    it 'retries the command once' do
+      expect(subject).to receive(:send_command).twice
+
+      subject.run(command, arguments)
+    end
+  end
 
   describe '#run' do
     it 'opens a shell' do
@@ -80,6 +100,48 @@ describe DummyShell do
       expect(subject).to receive(:open_shell).and_call_original.once
       subject.run(command, arguments)
       subject.run(command, arguments)
+    end
+
+    context 'when shell is closed on server' do
+      before do
+        @times_called = 0
+
+        allow(subject).to receive(:send_command) do
+          @times_called += 1
+          raise WinRM::WinRMWSManFault.new('oops', '2150858843') if @times_called == 1
+          command_id
+        end
+      end
+
+      include_examples 'retry shell command'
+    end
+
+    context 'when shell accesses a deleted registry key' do
+      before do
+        @times_called = 0
+
+        allow(subject).to receive(:send_command) do
+          @times_called += 1
+          raise WinRM::WinRMWSManFault.new('oops', '2147943418') if @times_called == 1
+          command_id
+        end
+      end
+
+      include_examples 'retry shell command'
+    end
+
+    context 'when maximum number of concurrent shells is exceeded' do
+      before do
+        @times_called = 0
+
+        allow(subject).to receive(:send_command) do
+          @times_called += 1
+          raise WinRM::WinRMWSManFault.new('oops', '2150859174') if @times_called == 1
+          command_id
+        end
+      end
+
+      include_examples 'retry shell command'
     end
 
     context 'open_shell fails' do
