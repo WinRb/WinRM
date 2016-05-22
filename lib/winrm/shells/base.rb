@@ -28,6 +28,12 @@ module WinRM
   module Shells
     # Base class for remote shell
     class Base
+      FAULTS_FOR_RESET = [
+        '2150858843', # Shell has been closed
+        '2147943418', # Error reading registry key
+        '2150859174', # Maximum commands per user exceeded
+      ].freeze
+
       include Retryable
 
       # Create a new Cmd shell
@@ -67,7 +73,7 @@ module WinRM
         command_id = send_command(command, arguments)
         command_output(command_id, &block)
       rescue WinRMWSManFault => e
-        raise unless %w(2150858843 2147943418 2150859174).include?(e.fault_code) && (tries -= 1) > 0
+        raise unless FAULTS_FOR_RESET.include?(e.fault_code) && (tries -= 1) > 0
         logger.debug('[WinRM] opening new shell since the current one was deleted')
         @shell_id = nil
         retry
