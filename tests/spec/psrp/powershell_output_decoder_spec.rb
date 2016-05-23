@@ -3,18 +3,36 @@
 require 'winrm/psrp/powershell_output_decoder'
 
 describe WinRM::PSRP::PowershellOutputDecoder do
+  let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:error_record] }
+  let(:data) { 'blah' }
   let(:message) do
     WinRM::PSRP::Message.new(
       object_id: 1,
       runspace_pool_id: 'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
       pipeline_id: '4218a578-0f18-4b19-82c3-46b433319126',
-      message_type: WinRM::PSRP::Message::MESSAGE_TYPES[:error_record],
+      message_type: message_type,
       data: data
     )
   end
   let(:encoded) { Base64.strict_encode64(message.bytes.pack('C*')) }
 
   subject { described_class.new.decode(encoded) }
+
+  context 'receiving pipeline state' do
+    let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_state] }
+
+    it 'ignores message' do
+      expect(subject).to be nil
+    end
+  end
+
+  context 'receiving information record' do
+    let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:information_record] }
+
+    it 'ignores message' do
+      expect(subject).to be nil
+    end
+  end
 
   context 'receiving output with BOM and no new line' do
     let(:data) { "\xEF\xBB\xBF<obj><S>some data</S></obj>" }

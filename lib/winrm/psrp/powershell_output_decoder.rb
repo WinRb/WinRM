@@ -15,11 +15,17 @@
 # limitations under the License.
 
 require 'base64'
+require_relative 'message'
 
 module WinRM
   module PSRP
     # Handles decoding a raw powershell output response
     class PowershellOutputDecoder
+      MESSAGE_TYPES_TO_IGNORE = [
+        WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_state],
+        WinRM::PSRP::Message::MESSAGE_TYPES[:information_record]
+      ].freeze
+
       attr_reader :message
 
       # Decode the raw SOAP output into decoded PSRP message,
@@ -29,7 +35,7 @@ module WinRM
       def decode(raw_output)
         decoded_bytes = decode_raw_output(raw_output)
         @message = WinRM::PSRP::MessageFactory.parse_bytes(decoded_bytes)
-        return nil if message.message_type == WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_state]
+        return nil if MESSAGE_TYPES_TO_IGNORE.include?(message.message_type)
         decoded_text = handle_invalid_encoding(message.data)
         decoded_text = remove_bom(decoded_text)
         decoded_text = extract_out_string(decoded_text)
