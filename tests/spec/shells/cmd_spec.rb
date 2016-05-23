@@ -32,7 +32,7 @@ describe WinRM::Shells::Cmd do
       .and_return(REXML::Document.new("<blah Name='ShellId'>#{shell_id}</blah>"))
   end
 
-  subject { described_class.new(connection_options, transport, nil) }
+  subject { described_class.new(connection_options, transport, Logging.logger['test']) }
 
   describe '#run' do
     it 'opens a shell and gets shell id' do

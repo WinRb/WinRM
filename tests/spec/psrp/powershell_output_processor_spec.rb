@@ -32,7 +32,7 @@ describe WinRM::PSRP::PowershellOutputProcessor do
     described_class.new(
       default_connection_opts,
       transport,
-      Logging.logger
+      Logging.logger['test']
     )
   end
 

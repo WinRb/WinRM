@@ -49,7 +49,9 @@ module WinRM
         output = WinRM::Output.new
         out_message = command_output_message(shell_id, command_id)
         until command_done?(resp_doc)
+          logger.debug("[WinRM] Waiting for output for command id: #{command_id}")
           resp_doc = send_get_output_message(out_message)
+          logger.debug("[WinRM] Processing output for command id: #{command_id}")
           REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |stream|
             next if stream.text.nil? || stream.text.empty?
             decoded_text = @output_decoder.decode(stream.text)

@@ -94,6 +94,7 @@ module WinRM
       def send_command(command, arguments)
         cmd_msg = command_message(shell_id, command, arguments)
         transport.send_request(cmd_msg.build)
+        logger.debug("[WinRM] Command created for #{command} with id: #{cmd_msg.command_id}")
         cmd_msg.command_id
       end
 
@@ -127,8 +128,10 @@ module WinRM
       def open
         close
         retryable(connection_opts[:retry_limit], connection_opts[:retry_delay]) do
+          logger.debug("[WinRM] opening remote shell on #{connection_opts[:endpoint]}")
           @shell_id = open_shell
         end
+        logger.debug("[WinRM] remote shell created with shell_id: #{shell_id}")
         add_finalizer
       end
 
