@@ -16,6 +16,20 @@ describe WinRM::Shells::PowerShell do
   let(:arguments) { ['args'] }
   let(:connection_options) { { max_commands: 100, retry_limit: retry_limit, retry_delay: 0 } }
   let(:transport) { double('transport') }
+  let(:test_data_xml_template) do
+    ERB.new(stubbed_response('get_powershell_output_response.xml.erb'))
+  end
+  let(:test_data) { '<I32 N="RunspaceState">2</I32>' }
+  let(:message) do
+    WinRM::PSRP::Message.new(
+      object_id: 1,
+      runspace_pool_id: 'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
+      pipeline_id: '4218a578-0f18-4b19-82c3-46b433319126',
+      message_type: WinRM::PSRP::Message::MESSAGE_TYPES[:runspacepool_state],
+      data: test_data
+    )
+  end
+  let(:test_data_stdout) { Base64.strict_encode64(message.bytes.pack('C*')) }
 
   before do
     allow_any_instance_of(WinRM::WSMV::CreatePipeline).to receive(:command_id)
@@ -34,6 +48,8 @@ describe WinRM::Shells::PowerShell do
     allow(transport).to receive(:send_request)
     allow(transport).to receive(:send_request).with(create_shell_payload)
       .and_return(REXML::Document.new("<blah Name='ShellId'>#{shell_id}</blah>"))
+    allow(transport).to receive(:send_request).with(keepalive_payload)
+      .and_return(REXML::Document.new(test_data_xml_template.result(binding)))
   end
 
   subject { described_class.new(connection_options, transport, Logging.logger['test']) }

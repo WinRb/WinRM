@@ -25,6 +25,8 @@ module WinRM
   module Shells
     # Proxy to a remote PowerShell instance
     class PowerShell < Base
+      include WinRM::WSMV::ResponseStreamReader
+
       class << self
         def finalize(connection_opts, transport, shell_id)
           proc { PowerShell.close_shell(connection_opts, transport, shell_id) }
@@ -69,19 +71,24 @@ module WinRM
         runspace_msg = WinRM::WSMV::InitRunspacePool.new(connection_opts)
         resp_doc = transport.send_request(runspace_msg.build)
         shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
-        # temporary hack to make things work in nano
-        # It seems that if a command is created on a runspace that has not yet
-        # opened, the entire shell is corrupted and commands will hang.
-        # Nano is still in the "openning" state after the first keepalive so we
-        # are adding another which seems to end in the "openned" state. Obviously
-        # we need to simply poll the runspace state and return the shell_id only
-        # when it is openned.
-        keepalive_msg = WinRM::WSMV::KeepAlive.new(connection_opts, shell_id)
-        transport.send_request(keepalive_msg.build)
-        sleep 1
-        keepalive_msg = WinRM::WSMV::KeepAlive.new(connection_opts, shell_id)
-        transport.send_request(keepalive_msg.build)
+        wait_for_running(shell_id)
         shell_id
+      end
+
+      private
+
+      def wait_for_running(shell_id)
+        state = ''
+        keepalive_msg = WinRM::WSMV::KeepAlive.new(connection_opts, shell_id)
+
+        until state.include?('<I32 N="RunspaceState">2</I32>')
+          doc = transport.send_request(keepalive_msg.build)
+          read_streams(doc) do |stream|
+            message = WinRM::PSRP::MessageFactory.parse_bytes(Base64.decode64(stream[:text]))
+            logger.debug("[WinRM] polling for pipeline state. message: #{message.inspect}")
+            state = message.data
+          end
+        end
       end
     end
   end

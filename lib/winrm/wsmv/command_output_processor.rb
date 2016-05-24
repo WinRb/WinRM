@@ -16,6 +16,7 @@
 
 require_relative 'soap'
 require_relative 'header'
+require_relative 'response_stream_reader'
 require_relative 'command_output_decoder'
 require_relative '../output'
 
@@ -25,6 +26,7 @@ module WinRM
     class CommandOutputProcessor
       include WinRM::WSMV::SOAP
       include WinRM::WSMV::Header
+      include WinRM::WSMV::ResponseStreamReader
 
       # Creates a new command output processor
       # @param connection_opts [ConnectionOpts] The WinRM connection options
@@ -52,9 +54,8 @@ module WinRM
           logger.debug("[WinRM] Waiting for output for command id: #{command_id}")
           resp_doc = send_get_output_message(out_message)
           logger.debug("[WinRM] Processing output for command id: #{command_id}")
-          REXML::XPath.match(resp_doc, "//#{NS_WIN_SHELL}:Stream").each do |stream|
-            next if stream.text.nil? || stream.text.empty?
-            decoded_text = @output_decoder.decode(stream.text)
+          read_streams(resp_doc) do |stream|
+            decoded_text = @output_decoder.decode(stream[:text])
             next unless  decoded_text
 
             out = { stream_type(stream) => decoded_text }
@@ -69,7 +70,7 @@ module WinRM
       protected
 
       def stream_type(stream)
-        stream.attributes['Name'].to_sym
+        stream[:type]
       end
 
       def command_output_message(shell_id, command_id)
