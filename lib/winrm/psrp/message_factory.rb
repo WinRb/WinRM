@@ -58,7 +58,7 @@ module WinRM
             runspace_pool_id: runspace_pool_id,
             pipeline_id: pipeline_id,
             message_type: Message::MESSAGE_TYPES[:create_pipeline],
-            data: render('create_pipeline', command: command)
+            data: render('create_pipeline', command: command.encode(xml: :text))
           )
         end
 

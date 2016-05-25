@@ -20,6 +20,13 @@ describe 'winrm client powershell' do
     it { should have_no_stderr }
   end
 
+  describe 'handling special XML characters' do
+    subject(:output) { @powershell.run("echo 'hello & <world>'") }
+    it { should have_exit_code 0 }
+    it { should have_stdout_match(/hello & <world>/) }
+    it { should have_no_stderr }
+  end
+
   describe 'dir with incorrect argument /z' do
     subject(:output) { @powershell.run('dir /z') }
     it { should have_stderr_match(/Cannot find path/) }
