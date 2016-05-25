@@ -81,6 +81,8 @@ module WinRM
         state = ''
         keepalive_msg = WinRM::WSMV::KeepAlive.new(connection_opts, shell_id)
 
+        # 2 is "openned". if we start issuing commands while in "openning" the runspace
+        # seems to hang
         until state.include?('<I32 N="RunspaceState">2</I32>')
           doc = transport.send_request(keepalive_msg.build)
           read_streams(doc) do |stream|
