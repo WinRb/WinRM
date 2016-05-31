@@ -29,9 +29,6 @@ module WinRM
       # BOM, pipeline_id, runspace_pool_id, message_type, blob_destination
       BLOB_HEADER_LEN = 43
 
-      # Maximum allowed length of the blob
-      BLOB_MAX_LEN = 32_768 - BLOB_HEADER_LEN
-
       # Value of message destination when sent to a client
       CLIENT_DESTINATION = 1
 
@@ -112,10 +109,6 @@ module WinRM
       # WinRM message.
       # @return [Array<Byte>] Unencoded raw byte array of the PSRP message.
       def bytes
-        if data_bytes.length > BLOB_MAX_LEN
-          raise "data cannot be greater than #{BLOB_MAX_LEN} bytes"
-        end
-
         [
           int64be(object_id),
           int64be(fragment_id),
