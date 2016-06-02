@@ -54,4 +54,13 @@ module WinRM
       super(msg + " (#{status_code}).")
     end
   end
+
+  # Error decrypting message
+  class WinRMWebServiceError < WinRMError
+    attr_reader :status_code
+
+    def initialize(msg)
+      super(msg)
+    end
+  end
 end
