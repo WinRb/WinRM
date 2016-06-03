@@ -91,18 +91,11 @@ module WinRM
 
       protected
 
-      def send_command(command, arguments)
-        cmd_msg = command_message(shell_id, command, arguments)
-        transport.send_request(cmd_msg.build)
-        logger.debug("[WinRM] Command created for #{command} with id: #{cmd_msg.command_id}")
-        cmd_msg.command_id
-      end
-
-      def output_processor
+      def send_command(_command, _arguments)
         raise NotImplementedError
       end
 
-      def command_message(_shell_id, _command, _arguments)
+      def output_processor
         raise NotImplementedError
       end
 

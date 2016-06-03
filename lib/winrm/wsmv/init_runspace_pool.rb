@@ -22,9 +22,10 @@ module WinRM
     class InitRunspacePool < Base
       attr_accessor :shell_id
 
-      def initialize(session_opts)
+      def initialize(session_opts, shell_id, payload)
         @session_opts = session_opts
-        @shell_id = SecureRandom.uuid.to_s.upcase
+        @shell_id = shell_id
+        @payload = payload
       end
 
       protected
@@ -44,9 +45,7 @@ module WinRM
           "#{NS_WIN_SHELL}:InputStreams" => 'stdin pr',
           "#{NS_WIN_SHELL}:OutputStreams" => 'stdout'
         }
-        session_capabilities = WinRM::PSRP::MessageFactory.session_capability_message(1, shell_id)
-        runspace_init = WinRM::PSRP::MessageFactory.init_runspace_pool_message(1, shell_id)
-        body['creationXml'] = encode_bytes(session_capabilities.bytes + runspace_init.bytes)
+        body['creationXml'] = encode_bytes(@payload)
         body[:attributes!] = {
           'creationXml' => {
             'xmlns' => 'http://schemas.microsoft.com/powershell'

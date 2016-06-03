@@ -12,14 +12,14 @@ describe WinRM::PSRP::PowershellOutputProcessor do
   let(:test_data) { "<obj><S>#{test_data_text}</S></obj>" }
   let(:message) do
     WinRM::PSRP::Message.new(
-      object_id: 1,
-      runspace_pool_id: 'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
-      pipeline_id: '4218a578-0f18-4b19-82c3-46b433319126',
-      message_type: message_type,
-      data: test_data
+      shell_id,
+      message_type,
+      test_data,
+      command_id
     )
   end
-  let(:test_data_stdout) { Base64.strict_encode64(message.bytes.pack('C*')) }
+  let(:fragment) { WinRM::PSRP::Fragment.new(1, message.bytes) }
+  let(:test_data_stdout) { Base64.strict_encode64(fragment.bytes.pack('C*')) }
   let(:transport) { {} }
 
   before do

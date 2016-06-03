@@ -55,12 +55,11 @@ describe WinRM::PSRP::Message do
         <B N="_useRunspaceHost">false</B></MS></Obj></MS></Obj>
       HERE
       msg = WinRM::PSRP::Message.new(
-        object_id: 1,
-        runspace_pool_id: 'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
-        pipeline_id: '4218a578-0f18-4b19-82c3-46b433319126',
-        message_type: WinRM::PSRP::Message::MESSAGE_TYPES[:session_capability],
-        data: payload)
-      msg.bytes
+        'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
+        WinRM::PSRP::Message::MESSAGE_TYPES[:session_capability],
+        payload,
+        '4218a578-0f18-4b19-82c3-46b433319126')
+      WinRM::PSRP::Fragment.new(1, msg.bytes).bytes
     end
     it 'sets the message id to 1' do
       expect(bytes[0..7]).to eq([0, 0, 0, 0, 0, 0, 0, 1])
@@ -102,32 +101,13 @@ describe WinRM::PSRP::Message do
     end
   end
   context 'create' do
-    it 'raises error when shell id is nil' do
-      expect do
-        WinRM::PSRP::Message.new(
-          object_id: 1,
-          pipeline_id: '4218a578-0f18-4b19-82c3-46b433319126',
-          message_type: WinRM::PSRP::Message::MESSAGE_TYPES[:session_capability],
-          data: %(<Obj RefId="0"/>))
-      end.to raise_error(RuntimeError)
-    end
     it 'raises error when message type is not valid' do
       expect do
         WinRM::PSRP::Message.new(
-          object_id: 1,
-          runspace_pool_id: 'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
-          pipeline_id: '4218a578-0f18-4b19-82c3-46b433319126',
-          message_type: 0x00000000,
-          data: %(<Obj RefId="0"/>))
-      end.to raise_error(RuntimeError)
-    end
-    it 'raises error when payload is nil' do
-      expect do
-        WinRM::PSRP::Message.new(
-          object_id: 1,
-          runspace_pool_id: 'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
-          pipeline_id: '4218a578-0f18-4b19-82c3-46b433319126',
-          message_type: WinRM::PSRP::Message::MESSAGE_TYPES[:session_capability])
+          'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
+          0x00000000,
+          %(<Obj RefId="0"/>),
+          '4218a578-0f18-4b19-82c3-46b433319126')
       end.to raise_error(RuntimeError)
     end
   end
@@ -139,16 +119,15 @@ describe WinRM::PSRP::Message do
         </Obj>
       HERE
       WinRM::PSRP::Message.new(
-        object_id: 1,
-        runspace_pool_id: 'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
-        message_type: WinRM::PSRP::Message::MESSAGE_TYPES[:session_capability],
-        data: payload)
+        'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
+        WinRM::PSRP::Message::MESSAGE_TYPES[:session_capability],
+        payload)
     end
     it 'does not error' do
       expect { msg.bytes }.to_not raise_error
     end
     it 'sets the pipeline id to empty' do
-      expect(msg.bytes[45..60]).to eq([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+      expect(msg.bytes[24..39]).to eq([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     end
   end
   context 'parse from bytes' do
@@ -157,7 +136,7 @@ describe WinRM::PSRP::Message do
       "\x00\x00\x00\x04\x10\x04\x00Kk/=Z\xD3-E\x81v\xA0+6\xB1\xD3\x88\n\xED\x90\x9Cj\xE7PG"\
       "\x9F\xA2\xB2\xC99to9\xEF\xBB\xBF<S>some data_x000D__x000A_</S>".to_byte_string
     end
-    subject { WinRM::PSRP::MessageFactory.parse_bytes(bytes) }
+    subject { WinRM::PSRP::MessageDefragmenter.new.defragment(Base64.encode64(bytes)) }
 
     it 'parses the data' do
       expect(subject.data).to eq("\xEF\xBB\xBF<S>some data_x000D__x000A_</S>".to_byte_string)
@@ -167,24 +146,36 @@ describe WinRM::PSRP::Message do
       expect(subject.destination).to eq(1)
     end
 
-    it 'parses the end_fragment' do
-      expect(subject.end_fragment).to eq(true)
-    end
-
-    it 'parses the start_fragment' do
-      expect(subject.start_fragment).to eq(true)
-    end
-
-    it 'parses the fragment id' do
-      expect(subject.fragment_id).to eq(1)
-    end
-
-    it 'parses the object id' do
-      expect(subject.object_id).to eq(4)
-    end
-
     it 'parses the message type' do
-      expect(subject.message_type).to eq(WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_output])
+      expect(subject.type).to eq(WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_output])
+    end
+
+    context 'parse fragment bytes' do
+      subject do
+        WinRM::PSRP::Fragment.new(
+          bytes[0..7].reverse.unpack('Q')[0],
+          bytes[21..-1],
+          bytes[8..15].reverse.unpack('Q')[0],
+          bytes[16].unpack('C')[0][0] == 1,
+          bytes[16].unpack('C')[0][1] == 1
+        )
+      end
+
+      it 'parses the end_fragment' do
+        expect(subject.end_fragment).to eq(true)
+      end
+
+      it 'parses the start_fragment' do
+        expect(subject.start_fragment).to eq(true)
+      end
+
+      it 'parses the fragment id' do
+        expect(subject.fragment_id).to eq(1)
+      end
+
+      it 'parses the object id' do
+        expect(subject.object_id).to eq(4)
+      end
     end
   end
 end

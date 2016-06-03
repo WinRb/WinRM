@@ -32,10 +32,8 @@ module WinRM
       # Removes BOM and replaces encoded line endings
       # @param raw_output [String] The raw encoded output
       # @return [String] The decoded output
-      def decode(raw_output)
-        decoded_bytes = decode_raw_output(raw_output)
-        @message = WinRM::PSRP::MessageFactory.parse_bytes(decoded_bytes)
-        return nil if MESSAGE_TYPES_TO_IGNORE.include?(message.message_type)
+      def decode(message)
+        return nil if MESSAGE_TYPES_TO_IGNORE.include?(message.type)
         decoded_text = handle_invalid_encoding(message.data)
         decoded_text = remove_bom(decoded_text)
         decoded_text = extract_out_string(decoded_text)

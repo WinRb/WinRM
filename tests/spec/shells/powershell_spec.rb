@@ -4,9 +4,9 @@ require 'winrm/shells/power_shell'
 
 describe WinRM::Shells::PowerShell do
   let(:retry_limit) { 1 }
-  let(:shell_id) { 'shell_id' }
+  let(:shell_id) { 'bc1bfbba-8215-4a04-b2df-7a3ac0310e16' }
   let(:output) { 'output' }
-  let(:command_id) { 'command_id' }
+  let(:command_id) { '4218A578-0F18-4B19-82C3-46B433319126' }
   let(:keepalive_payload) { 'keepalive_payload' }
   let(:command_payload) { 'command_payload' }
   let(:create_shell_payload) { 'create_shell_payload' }
@@ -22,16 +22,17 @@ describe WinRM::Shells::PowerShell do
   let(:test_data) { '<I32 N="RunspaceState">2</I32>' }
   let(:message) do
     WinRM::PSRP::Message.new(
-      object_id: 1,
-      runspace_pool_id: 'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
-      pipeline_id: '4218a578-0f18-4b19-82c3-46b433319126',
-      message_type: WinRM::PSRP::Message::MESSAGE_TYPES[:runspacepool_state],
-      data: test_data
+      shell_id,
+      WinRM::PSRP::Message::MESSAGE_TYPES[:runspacepool_state],
+      test_data,
+      command_id
     )
   end
-  let(:test_data_stdout) { Base64.strict_encode64(message.bytes.pack('C*')) }
+  let(:fragment) { WinRM::PSRP::Fragment.new(1, message.bytes) }
+  let(:test_data_stdout) { Base64.strict_encode64(fragment.bytes.pack('C*')) }
 
   before do
+    allow(SecureRandom).to receive(:uuid).and_return(command_id)
     allow_any_instance_of(WinRM::WSMV::CreatePipeline).to receive(:command_id)
       .and_return(command_id)
     allow_any_instance_of(WinRM::WSMV::CreatePipeline).to receive(:build)

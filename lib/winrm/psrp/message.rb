@@ -25,10 +25,6 @@ module WinRM
     class Message
       include UUID
 
-      # Length of all the blob header fields:
-      # BOM, pipeline_id, runspace_pool_id, message_type, blob_destination
-      BLOB_HEADER_LEN = 43
-
       # Value of message destination when sent to a client
       CLIENT_DESTINATION = 1
 
@@ -71,78 +67,42 @@ module WinRM
       }.freeze
 
       # Creates a new PSRP message instance
-      # @param message_parts [Hash]
-      # @option object_id [Fixnum] The incrementing fragment id.
-      # @option runspace_pool_id [String] The UUID of the remote shell/runspace pool.
-      # @option pipeline_id [String] The UUID to correlate the command/pipeline response
-      # @option message_type [Fixnum] The PSRP MessageType. This is most commonly
+      # @param runspace_pool_id [String] The UUID of the remote shell/runspace pool.
+      # @param pipeline_id [String] The UUID to correlate the command/pipeline response
+      # @param type [Fixnum] The PSRP MessageType. This is most commonly
       # specified in hex, e.g. 0x00010002.
-      # @option data [String] The PSRP payload as serialized XML
-      # @option end_fragment [Boolean] If the fragment is the last fragment
-      # @option start_fragment [Boolean] If the fragment is the first fragment
-      # @option destination [Fixnum] The destination for this message - client or server
-      # @option fragment_id [Fixnum] The id of this fragment
-      def initialize(message_parts)
-        message_parts.merge!(default_parts) { |_key, v1, _v2| v1 }
+      # @param data [String] The PSRP payload as serialized XML
+      # @param destination [Fixnum] The destination for this message - client or server
+      def initialize(
+        runspace_pool_id,
+        type,
+        data,
+        pipeline_id = nil,
+        destination = SERVER_DESTINATION
+      )
+        raise 'invalid message type' unless MESSAGE_TYPES.values.include?(type)
 
-        raise 'runspace_pool_id cannot be nil' unless message_parts[:runspace_pool_id]
-        unless MESSAGE_TYPES.values.include?(message_parts[:message_type])
-          raise 'invalid message type'
-        end
-        raise 'data cannot be nil' unless message_parts[:data]
-
-        @data = message_parts[:data]
-        @destination = message_parts[:destination]
-        @end_fragment = message_parts[:end_fragment]
-        @fragment_id = message_parts[:fragment_id]
-        @message_type = message_parts[:message_type]
-        @object_id = message_parts[:object_id]
-        @pipeline_id = message_parts[:pipeline_id]
-        @runspace_pool_id = message_parts[:runspace_pool_id]
-        @start_fragment = message_parts[:start_fragment]
+        @data = data
+        @destination = destination
+        @type = type
+        @pipeline_id = pipeline_id
+        @runspace_pool_id = runspace_pool_id
       end
 
-      attr_reader :object_id, :fragment_id, :end_fragment, :start_fragment
-      attr_reader :destination, :message_type, :runspace_pool_id, :pipeline_id, :data
+      attr_reader :destination, :type, :runspace_pool_id, :pipeline_id, :data
 
       # Returns the raw PSRP message bytes ready for transfer to Windows inside a
       # WinRM message.
       # @return [Array<Byte>] Unencoded raw byte array of the PSRP message.
       def bytes
         [
-          int64be(object_id),
-          int64be(fragment_id),
-          end_start_fragment,
-          blob_length,
           int16le(destination),
-          int16le(message_type),
+          int16le(type),
           uuid_to_windows_guid_bytes(runspace_pool_id),
           uuid_to_windows_guid_bytes(pipeline_id),
           byte_order_mark,
           data_bytes
         ].flatten
-      end
-
-      private
-
-      def default_parts
-        {
-          fragment_id: 0,
-          end_fragment: true,
-          start_fragment: true,
-          destination: SERVER_DESTINATION
-        }
-      end
-
-      def end_start_fragment
-        end_start = 0
-        end_start += 0b10 if end_fragment
-        end_start += 0b1 if start_fragment
-        [end_start]
-      end
-
-      def blob_length
-        int16be(data_bytes.length + BLOB_HEADER_LEN)
       end
 
       def byte_order_mark
@@ -151,14 +111,6 @@ module WinRM
 
       def data_bytes
         @data_bytes ||= data.force_encoding('utf-8').bytes
-      end
-
-      def int64be(int64)
-        [int64 >> 32, int64 & 0x00000000ffffffff].pack('N2').unpack('C8')
-      end
-
-      def int16be(int16)
-        [int16].pack('N').unpack('C4')
       end
 
       def int16le(int16)

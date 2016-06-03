@@ -33,20 +33,24 @@ module WinRM
 
       protected
 
+      def send_command(command, arguments)
+        cmd_msg = WinRM::WSMV::Command.new(
+          connection_opts,
+          shell_id: shell_id,
+          command: command,
+          arguments: arguments
+        )
+        transport.send_request(cmd_msg.build)
+        logger.debug("[WinRM] Command created for #{command} with id: #{cmd_msg.command_id}")
+        cmd_msg.command_id
+      end
+
       def output_processor
         @output_processor ||= WinRM::WSMV::CommandOutputProcessor.new(
           connection_opts,
           transport,
           logger
         )
-      end
-
-      def command_message(shell_id, command, arguments)
-        WinRM::WSMV::Command.new(
-          connection_opts,
-          shell_id: shell_id,
-          command: command,
-          arguments: arguments)
       end
 
       def open_shell

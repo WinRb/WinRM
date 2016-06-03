@@ -4,14 +4,10 @@ require 'winrm/wsmv/init_runspace_pool'
 
 describe WinRM::WSMV::InitRunspacePool do
   context 'default session options' do
-    let(:creation_xml) do
-      session_capabilities = WinRM::PSRP::MessageFactory.session_capability_message(
-        1, subject.shell_id)
-      runspace_init = WinRM::PSRP::MessageFactory.init_runspace_pool_message(1, subject.shell_id)
-      Base64.strict_encode64((session_capabilities.bytes + runspace_init.bytes).pack('C*'))
-    end
+    let(:shell_id) { SecureRandom.uuid.to_s.upcase }
+    let(:payload) { 'blah'.bytes }
 
-    subject { described_class.new(default_connection_opts) }
+    subject { described_class.new(default_connection_opts, shell_id, payload) }
 
     it 'creates a well formed message' do
       xml = subject.build
@@ -34,7 +30,7 @@ describe WinRM::WSMV::InitRunspacePool do
         'http://schemas.microsoft.com/powershell/Microsoft.PowerShell')
       expect(xml).to include(
         '<creationXml xmlns="http://schemas.microsoft.com/powershell">' \
-        "#{creation_xml}</creationXml>")
+        "#{Base64.strict_encode64(payload.pack('C*'))}</creationXml>")
     end
   end
 end

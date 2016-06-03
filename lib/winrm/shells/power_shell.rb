@@ -16,6 +16,8 @@
 
 require 'securerandom'
 require_relative 'base'
+require_relative '../psrp/message_defragmenter'
+require_relative '../psrp/message_fragmenter'
 require_relative '../psrp/powershell_output_processor'
 require_relative '../wsmv/create_pipeline'
 require_relative '../wsmv/init_runspace_pool'
@@ -48,13 +50,14 @@ module WinRM
       # @param logger [Logger] The logger to log diagnostic messages to
       def initialize(connection_opts, transport, logger)
         super
+        @fragmenter = WinRM::PSRP::MessageFragmenter.new
         @shell_uri = WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL
       end
 
       protected
 
       def output_processor
-        @output_processor ||= WinRM::PSRP::PowershellOutputProcessor.new(
+        WinRM::PSRP::PowershellOutputProcessor.new(
           connection_opts,
           transport,
           logger,
@@ -63,12 +66,32 @@ module WinRM
         )
       end
 
-      def command_message(shell_id, command, _arguments)
-        WinRM::WSMV::CreatePipeline.new(connection_opts, shell_id, command)
+      def send_command(command, _arguments)
+        command_id = SecureRandom.uuid.to_s.upcase
+        message = PSRP::MessageFactory.create_pipeline_message(shell_id, command_id, command)
+        @fragmenter.fragment(message).each_with_index do |fragment, idx|
+          next if idx > 0 # we'll care about non zero indexes later
+
+          transport.send_request(
+            WinRM::WSMV::CreatePipeline.new(
+              connection_opts,
+              shell_id,
+              command_id,
+              fragment
+            ).build
+          )
+        end
+        logger.debug("[WinRM] Command created for #{command} with id: #{command_id}")
+        command_id
       end
 
       def open_shell
-        runspace_msg = WinRM::WSMV::InitRunspacePool.new(connection_opts)
+        shell_id = SecureRandom.uuid.to_s.upcase
+        runspace_msg = WinRM::WSMV::InitRunspacePool.new(
+          connection_opts,
+          shell_id,
+          open_shell_payload(shell_id)
+        )
         resp_doc = transport.send_request(runspace_msg.build)
         shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
         wait_for_running(shell_id)
@@ -76,6 +99,15 @@ module WinRM
       end
 
       private
+
+      def open_shell_payload(shell_id)
+        [
+          WinRM::PSRP::MessageFactory.session_capability_message(shell_id),
+          WinRM::PSRP::MessageFactory.init_runspace_pool_message(shell_id)
+        ].map do |message|
+          @fragmenter.fragment(message).first.bytes
+        end.flatten
+      end
 
       def wait_for_running(shell_id)
         state = ''
@@ -86,7 +118,7 @@ module WinRM
         until state.include?('<I32 N="RunspaceState">2</I32>')
           doc = transport.send_request(keepalive_msg.build)
           read_streams(doc) do |stream|
-            message = WinRM::PSRP::MessageFactory.parse_bytes(Base64.decode64(stream[:text]))
+            message = WinRM::PSRP::MessageDefragmenter.new.defragment(stream[:text])
             logger.debug("[WinRM] polling for pipeline state. message: #{message.inspect}")
             state = message.data
           end

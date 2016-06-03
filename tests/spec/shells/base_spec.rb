@@ -22,6 +22,10 @@ class DummyShell < WinRM::Shells::Base
     @closed = false
     'shell_id'
   end
+
+  def send_command(_command, _arguments)
+    'command_id'
+  end
 end
 
 describe DummyShell do
@@ -75,11 +79,6 @@ describe DummyShell do
 
     it 'returns output from generated command' do
       expect(subject.run(command, arguments)).to eq output
-    end
-
-    it 'sends command through transport' do
-      expect(transport).to receive(:send_request).with(payload)
-      subject.run(command, arguments)
     end
 
     it 'sends cleanup message through transport' do

@@ -55,12 +55,8 @@ module WinRM
           resp_doc = send_get_output_message(out_message)
           logger.debug("[WinRM] Processing output for command id: #{command_id}")
           read_streams(resp_doc) do |stream|
-            decoded_text = @output_decoder.decode(stream[:text])
-            next unless  decoded_text
-
-            out = { stream_type(stream) => decoded_text }
-            output[:data] << out
-            yield out[:stdout], out[:stderr] if block
+            handled_out = handle_stream(stream, output)
+            yield handled_out if handled_out && block
           end
         end
         output[:exitcode] = exit_code(resp_doc)
@@ -69,8 +65,13 @@ module WinRM
 
       protected
 
-      def stream_type(stream)
-        stream[:type]
+      def handle_stream(stream, output)
+        decoded_text = @output_decoder.decode(stream[:text])
+        return unless decoded_text
+
+        out = { stream[:type] => decoded_text }
+        output[:data] << out
+        [out[:stdout], out[:stderr]]
       end
 
       def command_output_message(shell_id, command_id)

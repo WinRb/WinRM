@@ -21,13 +21,13 @@ module WinRM
   module WSMV
     # WSMV message to execute a command via psrp
     class CreatePipeline < Base
-      attr_accessor :shell_id, :command_id, :command
+      attr_accessor :shell_id, :command_id, :fragment
 
-      def initialize(session_opts, shell_id, command)
-        @command_id = SecureRandom.uuid.to_s.upcase
+      def initialize(session_opts, shell_id, command_id, fragment)
+        @command_id = command_id
         @session_opts = session_opts
         @shell_id = shell_id
-        @command = command
+        @fragment = fragment
       end
 
       protected
@@ -45,10 +45,9 @@ module WinRM
       private
 
       def command_body
-        pipeline = PSRP::MessageFactory.create_pipeline_message(3, shell_id, command_id, command)
         {
           "#{NS_WIN_SHELL}:Command" => 'Invoke-Expression',
-          "#{NS_WIN_SHELL}:Arguments" => encode_bytes(pipeline.bytes)
+          "#{NS_WIN_SHELL}:Arguments" => encode_bytes(fragment.bytes)
         }
       end
 

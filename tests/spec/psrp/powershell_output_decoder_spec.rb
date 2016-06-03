@@ -7,16 +7,14 @@ describe WinRM::PSRP::PowershellOutputDecoder do
   let(:data) { 'blah' }
   let(:message) do
     WinRM::PSRP::Message.new(
-      object_id: 1,
-      runspace_pool_id: 'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
-      pipeline_id: '4218a578-0f18-4b19-82c3-46b433319126',
-      message_type: message_type,
-      data: data
+      'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
+      message_type,
+      data,
+      '4218a578-0f18-4b19-82c3-46b433319126'
     )
   end
-  let(:encoded) { Base64.strict_encode64(message.bytes.pack('C*')) }
 
-  subject { described_class.new.decode(encoded) }
+  subject { described_class.new.decode(message) }
 
   context 'receiving pipeline state' do
     let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_state] }

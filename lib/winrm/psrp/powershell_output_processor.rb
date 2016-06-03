@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require_relative 'message_defragmenter'
 require_relative 'powershell_output_decoder'
 
 module WinRM
@@ -27,14 +28,25 @@ module WinRM
       def initialize(connection_opts, transport, logger, out_opts = {})
         super
         @output_decoder = PowershellOutputDecoder.new
+        @message_defragmenter = MessageDefragmenter.new
       end
 
-      private
+      protected
 
-      def stream_type(_stream)
-        message = @output_decoder.message
+      def handle_stream(stream, output)
+        message = @message_defragmenter.defragment(stream[:text])
+        return unless message
+        decoded_text = @output_decoder.decode(message)
+        return unless decoded_text
+
+        out = { stream_type(message) => decoded_text }
+        output[:data] << out
+        [out[:stdout], out[:stderr]]
+      end
+
+      def stream_type(message)
         type = :stdout
-        case message.message_type
+        case message.type
         when WinRM::PSRP::Message::MESSAGE_TYPES[:error_record]
           type = :stderr
         when WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_host_call]
