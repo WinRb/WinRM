@@ -13,9 +13,8 @@ describe WinRM::Shells::PowerShell do
   let(:close_shell_payload) { 'close_shell_payload' }
   let(:cleanup_payload) { 'cleanup_payload' }
   let(:command) { 'command' }
-  let(:arguments) { ['args'] }
   let(:connection_options) { { max_commands: 100, retry_limit: retry_limit, retry_delay: 0 } }
-  let(:transport) { double('transport') }
+  let(:transport) { double('transport', send_request: nil) }
   let(:test_data_xml_template) do
     ERB.new(stubbed_response('get_powershell_output_response.xml.erb'))
   end
@@ -33,8 +32,6 @@ describe WinRM::Shells::PowerShell do
 
   before do
     allow(SecureRandom).to receive(:uuid).and_return(command_id)
-    allow_any_instance_of(WinRM::WSMV::CreatePipeline).to receive(:command_id)
-      .and_return(command_id)
     allow_any_instance_of(WinRM::WSMV::CreatePipeline).to receive(:build)
       .and_return(command_payload)
     allow_any_instance_of(WinRM::WSMV::CloseShell).to receive(:build)
@@ -46,7 +43,6 @@ describe WinRM::Shells::PowerShell do
     allow_any_instance_of(WinRM::WSMV::KeepAlive).to receive(:build).and_return(keepalive_payload)
     allow_any_instance_of(WinRM::PSRP::PowershellOutputProcessor).to receive(:command_output)
       .with(shell_id, command_id).and_return(output)
-    allow(transport).to receive(:send_request)
     allow(transport).to receive(:send_request).with(create_shell_payload)
       .and_return(REXML::Document.new("<blah Name='ShellId'>#{shell_id}</blah>"))
     allow(transport).to receive(:send_request).with(keepalive_payload)
@@ -57,32 +53,32 @@ describe WinRM::Shells::PowerShell do
 
   describe '#run' do
     it 'opens a shell and gets shell id' do
-      subject.run(command, arguments)
+      subject.run(command)
       expect(subject.shell_id).to eq shell_id
     end
 
     it 'sends create shell through transport' do
       expect(transport).to receive(:send_request).with(create_shell_payload)
-      subject.run(command, arguments)
+      subject.run(command)
     end
 
     it 'sends keepalive shell through transport' do
       expect(transport).to receive(:send_request).with(keepalive_payload)
-      subject.run(command, arguments)
+      subject.run(command)
     end
 
     it 'returns output from generated command' do
-      expect(subject.run(command, arguments)).to eq output
+      expect(subject.run(command)).to eq output
     end
 
     it 'sends command through transport' do
       expect(transport).to receive(:send_request).with(command_payload)
-      subject.run(command, arguments)
+      subject.run(command)
     end
 
     it 'sends cleanup message through transport' do
       expect(transport).to receive(:send_request).with(cleanup_payload)
-      subject.run(command, arguments)
+      subject.run(command)
     end
 
     it 'output processor sets powershell uri and streams' do
@@ -90,13 +86,13 @@ describe WinRM::Shells::PowerShell do
         expect(opts[:shell_uri]).to be WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL
         expect(opts[:out_streams]).to eq %w(stdout)
       end.and_call_original
-      subject.run(command, arguments)
+      subject.run(command)
     end
   end
 
   describe '#close' do
     it 'sends close shell through transport' do
-      subject.run(command, arguments)
+      subject.run(command)
       expect(transport).to receive(:send_request).with(close_shell_payload)
       subject.close
     end
