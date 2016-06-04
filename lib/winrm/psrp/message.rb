@@ -105,6 +105,8 @@ module WinRM
         ].flatten
       end
 
+      private
+
       def byte_order_mark
         [239, 187, 191]
       end
