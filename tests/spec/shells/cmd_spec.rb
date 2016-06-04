@@ -6,19 +6,15 @@ describe WinRM::Shells::Cmd do
   let(:retry_limit) { 1 }
   let(:shell_id) { 'shell_id' }
   let(:output) { 'output' }
-  let(:command_id) { 'command_id' }
-  let(:command_payload) { 'command_payload' }
   let(:create_shell_payload) { 'create_shell_payload' }
   let(:close_shell_payload) { 'close_shell_payload' }
   let(:cleanup_payload) { 'cleanup_payload' }
-  let(:command) { 'command' }
+  let(:command) { 'run this command' }
   let(:arguments) { ['args'] }
   let(:connection_options) { { max_commands: 100, retry_limit: retry_limit, retry_delay: 0 } }
-  let(:transport) { double('transport') }
+  let(:transport) { double('transport', send_request: nil) }
 
   before do
-    allow_any_instance_of(WinRM::WSMV::Command).to receive(:command_id).and_return(command_id)
-    allow_any_instance_of(WinRM::WSMV::Command).to receive(:build).and_return(command_payload)
     allow_any_instance_of(WinRM::WSMV::CloseShell).to receive(:build)
       .and_return(close_shell_payload)
     allow_any_instance_of(WinRM::WSMV::CreateShell).to receive(:build)
@@ -26,8 +22,7 @@ describe WinRM::Shells::Cmd do
     allow_any_instance_of(WinRM::WSMV::CleanupCommand).to receive(:build)
       .and_return(cleanup_payload)
     allow_any_instance_of(WinRM::WSMV::CommandOutputProcessor).to receive(:command_output)
-      .with(shell_id, command_id).and_return(output)
-    allow(transport).to receive(:send_request)
+      .and_return(output)
     allow(transport).to receive(:send_request).with(create_shell_payload)
       .and_return(REXML::Document.new("<blah Name='ShellId'>#{shell_id}</blah>"))
   end
@@ -50,7 +45,7 @@ describe WinRM::Shells::Cmd do
     end
 
     it 'sends command through transport' do
-      expect(transport).to receive(:send_request).with(command_payload)
+      expect(transport).to receive(:send_request).with(/#{command}/)
       subject.run(command, arguments)
     end
 
