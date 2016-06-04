@@ -71,7 +71,7 @@ module WinRM
 
         open unless shell_id
         command_id = send_command(command, arguments)
-        command_output(command_id, &block)
+        output_processor.command_output(shell_id, command_id, &block)
       rescue WinRMWSManFault => e
         raise unless FAULTS_FOR_RESET.include?(e.fault_code) && (tries -= 1) > 0
         logger.debug('[WinRM] opening new shell since the current one was deleted')
@@ -104,10 +104,6 @@ module WinRM
       end
 
       private
-
-      def command_output(command_id, &block)
-        output_processor.command_output(shell_id, command_id, &block)
-      end
 
       def cleanup_command(command_id)
         cleanup_msg = WinRM::WSMV::CleanupCommand.new(
