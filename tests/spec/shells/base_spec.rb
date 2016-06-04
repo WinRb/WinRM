@@ -34,7 +34,6 @@ describe DummyShell do
   let(:output) { 'output' }
   let(:command_id) { 'command_id' }
   let(:payload) { 'message_payload' }
-  let(:message) { double('message', build: payload, command_id: command_id) }
   let(:command) { 'command' }
   let(:arguments) { ['args'] }
   let(:connection_options) { { max_commands: 100, retry_limit: retry_limit, retry_delay: 0 } }
@@ -42,8 +41,6 @@ describe DummyShell do
   let(:processor) { double('processor') }
 
   before do
-    allow(subject).to receive(:command_message)
-      .with(shell_id, command, arguments).and_return(message)
     allow(subject).to receive(:output_processor).and_return(processor)
     allow(processor).to receive(:command_output).with(shell_id, command_id).and_return(output)
     allow(transport).to receive(:send_request)
@@ -142,8 +139,6 @@ describe DummyShell do
 
       it 'retries and returns shell on success' do
         @times = 0
-        allow(subject).to receive(:command_message)
-          .with('shell_id 2', command, arguments).and_return(message)
         allow(processor).to receive(:command_output)
           .with('shell_id 2', command_id).and_return(output)
         allow(subject).to receive(:open_shell) do
