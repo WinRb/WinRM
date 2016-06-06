@@ -52,7 +52,7 @@ module WinRM
         out_message = command_output_message(shell_id, command_id)
         until command_done?(resp_doc)
           logger.debug("[WinRM] Waiting for output for command id: #{command_id}")
-          resp_doc = send_get_output_message(out_message)
+          resp_doc = send_get_output_message(out_message.build)
           logger.debug("[WinRM] Processing output for command id: #{command_id}")
           read_streams(resp_doc) do |stream|
             handled_out = handle_stream(stream, output)
@@ -79,7 +79,7 @@ module WinRM
           shell_id: shell_id,
           command_id: command_id
         }.merge(@out_opts)
-        WinRM::WSMV::CommandOutput.new(@connection_opts, cmd_out_opts).build
+        WinRM::WSMV::CommandOutput.new(@connection_opts, cmd_out_opts)
       end
 
       def send_get_output_message(message)
