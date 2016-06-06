@@ -116,4 +116,12 @@ describe 'winrm client powershell' do
     it { should have_exit_code 0 }
     it { should have_stdout_match(/✓1234-äöü/) }
   end
+
+  describe 'output exceeds a single fragment' do
+    subject(:output) { @powershell.run('Write-Output $("a"*600000)') }
+    it { should have_exit_code 0 }
+    it 'has assebled the output' do
+      expect(output.stdout).to eq('a' * 600000 + "\r\n")
+    end
+  end
 end
