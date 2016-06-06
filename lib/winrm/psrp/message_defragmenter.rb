@@ -26,21 +26,35 @@ module WinRM
       end
 
       def defragment(base64_bytes)
-        # fragment = Fragment.new (
-        #   bytes[0..7].reverse.unpack('Q')[0],
-        #   message.bytes,
-        #   bytes[21..-1],
-        #   bytes[16].unpack('C')[0][0] == 1,
-        #   bytes[16].unpack('C')[0][1] == 1,
-        # )
-        bytes = Base64.decode64(base64_bytes)
+        fragment = fragment_from(Base64.decode64(base64_bytes))
 
+        @messages[fragment.object_id] ||= []
+        @messages[fragment.object_id].push fragment
+
+        if fragment.end_fragment
+          blob = []
+          @messages.delete(fragment.object_id).each { |frag| blob += frag.blob }
+          return message_from(blob.pack('C*'))
+        end
+      end
+
+      def fragment_from(byte_string)
+        Fragment.new(
+          byte_string[0..7].reverse.unpack('Q')[0],
+          byte_string[21..-1].bytes,
+          byte_string[8..15].reverse.unpack('Q')[0],
+          byte_string[16].unpack('C')[0][0] == 1,
+          byte_string[16].unpack('C')[0][1] == 1
+        )
+      end
+
+      def message_from(byte_string)
         Message.new(
           '00000000-0000-0000-0000-000000000000',
-          bytes[25..28].unpack('V')[0],
-          bytes[61..(bytes.length - 1)],
+          byte_string[4..7].unpack('V')[0],
+          byte_string[40..-1],
           '00000000-0000-0000-0000-000000000000',
-          bytes[21..24].unpack('V')[0]
+          byte_string[0..3].unpack('V')[0]
         )
       end
     end
