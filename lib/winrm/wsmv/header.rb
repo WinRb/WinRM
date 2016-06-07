@@ -137,6 +137,18 @@ module WinRM
         }
       end
 
+      def action_send
+        {
+          "#{SOAP::NS_ADDRESSING}:Action" =>
+          'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Send',
+          :attributes! => {
+            "#{SOAP::NS_ADDRESSING}:Action" => {
+              'mustUnderstand' => true
+            }
+          }
+        }
+      end
+
       def action_signal
         {
           "#{SOAP::NS_ADDRESSING}:Action" =>

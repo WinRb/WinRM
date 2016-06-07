@@ -20,6 +20,7 @@ require_relative '../psrp/message_defragmenter'
 require_relative '../psrp/message_fragmenter'
 require_relative '../psrp/powershell_output_processor'
 require_relative '../wsmv/create_pipeline'
+require_relative '../wsmv/send_data'
 require_relative '../wsmv/init_runspace_pool'
 require_relative '../wsmv/keep_alive'
 
@@ -70,16 +71,12 @@ module WinRM
         command_id = SecureRandom.uuid.to_s.upcase
         message = PSRP::MessageFactory.create_pipeline_message(shell_id, command_id, command)
         @fragmenter.fragment(message) do |fragment|
-          next unless fragment.start_fragment # we'll care about non zero indexes later
-
-          transport.send_request(
-            WinRM::WSMV::CreatePipeline.new(
-              connection_opts,
-              shell_id,
-              command_id,
-              fragment
-            ).build
-          )
+          command_args = [connection_opts, shell_id, command_id, fragment]
+          if fragment.start_fragment
+            transport.send_request(WinRM::WSMV::CreatePipeline.new(*command_args).build)
+          else
+            transport.send_request(WinRM::WSMV::SendData.new(*command_args).build)
+          end
         end
         logger.debug("[WinRM] Command created for #{command} with id: #{command_id}")
         command_id

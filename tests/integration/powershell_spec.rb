@@ -124,4 +124,12 @@ describe 'winrm client powershell' do
       expect(output.stdout).to eq('a' * 600000 + "\r\n")
     end
   end
+
+  describe 'command exceeds a single fragment' do
+    subject(:output) { @powershell.run("$var='#{'a' * 600000}';Write-Output 'long var'") }
+    it { should have_exit_code 0 }
+    it 'has sent the output' do
+      expect(output.stdout).to eq("long var\r\n")
+    end
+  end
 end
