@@ -30,7 +30,27 @@ module WinRM
 
       def fragment(message)
         @object_id += 1
-        [Fragment.new(object_id, message.bytes)]
+        message_bytes = message.bytes
+        bytes_fragmented = 0
+        fragment_id = 0
+        fragment = nil
+
+        while bytes_fragmented < message_bytes.length
+          last_byte = bytes_fragmented + @max_blob_length
+          last_byte = message_bytes.length if last_byte > message_bytes.length
+          fragment = Fragment.new(
+            object_id,
+            message.bytes[bytes_fragmented..last_byte - 1],
+            fragment_id,
+            bytes_fragmented == 0,
+            last_byte == message_bytes.length
+          )
+          fragment_id += 1
+          bytes_fragmented = last_byte
+          yield fragment if block_given?
+        end
+
+        fragment
       end
     end
   end

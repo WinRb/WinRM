@@ -69,8 +69,8 @@ module WinRM
       def send_command(command, _arguments)
         command_id = SecureRandom.uuid.to_s.upcase
         message = PSRP::MessageFactory.create_pipeline_message(shell_id, command_id, command)
-        @fragmenter.fragment(message).each_with_index do |fragment, idx|
-          next if idx > 0 # we'll care about non zero indexes later
+        @fragmenter.fragment(message) do |fragment|
+          next unless fragment.start_fragment # we'll care about non zero indexes later
 
           transport.send_request(
             WinRM::WSMV::CreatePipeline.new(
@@ -105,7 +105,7 @@ module WinRM
           WinRM::PSRP::MessageFactory.session_capability_message(shell_id),
           WinRM::PSRP::MessageFactory.init_runspace_pool_message(shell_id)
         ].map do |message|
-          @fragmenter.fragment(message).first.bytes
+          @fragmenter.fragment(message).bytes
         end.flatten
       end
 
