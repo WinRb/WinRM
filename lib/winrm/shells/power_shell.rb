@@ -19,6 +19,7 @@ require_relative 'base'
 require_relative '../psrp/message_defragmenter'
 require_relative '../psrp/message_fragmenter'
 require_relative '../psrp/powershell_output_processor'
+require_relative '../wsmv/configuration'
 require_relative '../wsmv/create_pipeline'
 require_relative '../wsmv/send_data'
 require_relative '../wsmv/init_runspace_pool'
@@ -96,6 +97,14 @@ module WinRM
       end
 
       private
+
+      def max_envelope_size_kb
+        @max_envelope_size_kb ||= begin
+          config_msg = WinRM::WSMV::Configuration.new(connection_opts)
+          resp_doc = transport.send_request(config_msg.build)
+          REXML::XPath.first(resp_doc, "//#{NS_WSMAN_CONF}:MaxEnvelopeSizekb").text.to_i
+        end
+      end
 
       def open_shell_payload(shell_id)
         [

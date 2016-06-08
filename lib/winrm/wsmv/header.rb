@@ -101,6 +101,18 @@ module WinRM
         }
       end
 
+      def action_get
+        {
+          "#{SOAP::NS_ADDRESSING}:Action" =>
+          'http://schemas.xmlsoap.org/ws/2004/09/transfer/Get',
+          :attributes! => {
+            "#{SOAP::NS_ADDRESSING}:Action" => {
+              'mustUnderstand' => true
+            }
+          }
+        }
+      end
+
       def action_delete
         {
           "#{SOAP::NS_ADDRESSING}:Action" =>
