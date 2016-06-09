@@ -4,15 +4,20 @@ require 'winrm/shells/power_shell'
 
 describe WinRM::Shells::PowerShell do
   let(:retry_limit) { 1 }
+  let(:max_envelope_size_kb) { 150 }
   let(:shell_id) { 'bc1bfbba-8215-4a04-b2df-7a3ac0310e16' }
   let(:output) { 'output' }
   let(:command_id) { '4218A578-0F18-4B19-82C3-46B433319126' }
   let(:keepalive_payload) { 'keepalive_payload' }
+  let(:configuration_payload) { 'configuration_payload' }
   let(:command_payload) { 'command_payload' }
   let(:create_shell_payload) { 'create_shell_payload' }
   let(:close_shell_payload) { 'close_shell_payload' }
   let(:cleanup_payload) { 'cleanup_payload' }
   let(:command) { 'command' }
+  let(:configuration_response) do
+    "<a xmlns:cfg='foo'><cfg:MaxEnvelopeSizekb>#{max_envelope_size_kb}</cfg:MaxEnvelopeSizekb></a>"
+  end
   let(:connection_options) { { max_commands: 100, retry_limit: retry_limit, retry_delay: 0 } }
   let(:transport) { double('transport', send_request: nil) }
   let(:test_data_xml_template) do
@@ -38,11 +43,15 @@ describe WinRM::Shells::PowerShell do
       .and_return(close_shell_payload)
     allow_any_instance_of(WinRM::WSMV::InitRunspacePool).to receive(:build)
       .and_return(create_shell_payload)
+    allow_any_instance_of(WinRM::WSMV::Configuration).to receive(:build)
+      .and_return(configuration_payload)
     allow_any_instance_of(WinRM::WSMV::CleanupCommand).to receive(:build)
       .and_return(cleanup_payload)
     allow_any_instance_of(WinRM::WSMV::KeepAlive).to receive(:build).and_return(keepalive_payload)
     allow_any_instance_of(WinRM::PSRP::PowershellOutputProcessor).to receive(:command_output)
       .with(shell_id, command_id).and_return(output)
+    allow(transport).to receive(:send_request).with(configuration_payload).and_return(
+      REXML::Document.new(configuration_response))
     allow(transport).to receive(:send_request).with(create_shell_payload)
       .and_return(REXML::Document.new("<blah Name='ShellId'>#{shell_id}</blah>"))
     allow(transport).to receive(:send_request).with(keepalive_payload)
@@ -87,6 +96,18 @@ describe WinRM::Shells::PowerShell do
         expect(opts[:out_streams]).to eq %w(stdout)
       end.and_call_original
       subject.run(command)
+    end
+
+    context 'fragment large command' do
+      let(:command) { 'c' * 200000 }
+
+      it 'fragments messages as large as max envelope size' do
+        allow_any_instance_of(WinRM::WSMV::CreatePipeline).to receive(:build).and_call_original
+        allow(transport).to receive(:send_request).with(/CommandLine/) do |payload|
+          expect(payload.length).to be max_envelope_size_kb * 1024
+        end
+        subject.run(command)
+      end
     end
   end
 

@@ -52,7 +52,6 @@ module WinRM
       # @param logger [Logger] The logger to log diagnostic messages to
       def initialize(connection_opts, transport, logger)
         super
-        @fragmenter = WinRM::PSRP::MessageFragmenter.new
         @shell_uri = WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL
       end
 
@@ -71,7 +70,7 @@ module WinRM
       def send_command(command, _arguments)
         command_id = SecureRandom.uuid.to_s.upcase
         message = PSRP::MessageFactory.create_pipeline_message(shell_id, command_id, command)
-        @fragmenter.fragment(message) do |fragment|
+        fragmenter.fragment(message) do |fragment|
           command_args = [connection_opts, shell_id, command_id, fragment]
           if fragment.start_fragment
             transport.send_request(WinRM::WSMV::CreatePipeline.new(*command_args).build)
@@ -98,10 +97,37 @@ module WinRM
 
       private
 
+      # calculate the maimum fragment size so that they will be as large as possible yet
+      # no greater than the max_envelope_size_kb on the end point. To calculate this
+      # threshold, we:
+      # - determine the maximum number of bytes accepted on the endpoint
+      # - subtract the non-fragment characters in the SOAP envelope
+      # - determine the number of bytes that could be base64 encded to the above length
+      # - subtract the fragment header bytes (ids, length, etc)
+      def max_fragment_blob_size
+        fragment_header_length = 21
+
+        max_fragment_bytes = (max_envelope_size_kb * 1024) - empty_pipeline_envelope.length
+        base64_deflated(max_fragment_bytes) - fragment_header_length
+      end
+
+      def base64_deflated(inflated_length)
+        inflated_length / 4 * 3
+      end
+
+      def empty_pipeline_envelope
+        WinRM::WSMV::CreatePipeline.new(
+          connection_opts,
+          '00000000-0000-0000-0000-000000000000',
+          '00000000-0000-0000-0000-000000000000'
+        ).build
+      end
+
       def max_envelope_size_kb
         @max_envelope_size_kb ||= begin
           config_msg = WinRM::WSMV::Configuration.new(connection_opts)
-          resp_doc = transport.send_request(config_msg.build)
+          msg = config_msg.build
+          resp_doc = transport.send_request(msg)
           REXML::XPath.first(resp_doc, "//#{NS_WSMAN_CONF}:MaxEnvelopeSizekb").text.to_i
         end
       end
@@ -111,7 +137,7 @@ module WinRM
           WinRM::PSRP::MessageFactory.session_capability_message(shell_id),
           WinRM::PSRP::MessageFactory.init_runspace_pool_message(shell_id)
         ].map do |message|
-          @fragmenter.fragment(message).bytes
+          fragmenter.fragment(message).bytes
         end.flatten
       end
 
@@ -129,6 +155,10 @@ module WinRM
             state = message.data
           end
         end
+      end
+
+      def fragmenter
+        @fragmenter ||= WinRM::PSRP::MessageFragmenter.new(max_fragment_blob_size)
       end
     end
   end

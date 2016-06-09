@@ -23,7 +23,7 @@ module WinRM
     class CreatePipeline < Base
       attr_accessor :shell_id, :command_id, :fragment
 
-      def initialize(session_opts, shell_id, command_id, fragment)
+      def initialize(session_opts, shell_id, command_id, fragment = nil)
         @command_id = command_id
         @session_opts = session_opts
         @shell_id = shell_id
@@ -47,7 +47,7 @@ module WinRM
       def command_body
         {
           "#{NS_WIN_SHELL}:Command" => 'Invoke-Expression',
-          "#{NS_WIN_SHELL}:Arguments" => encode_bytes(fragment.bytes)
+          "#{NS_WIN_SHELL}:Arguments" => arguments
         }
       end
 
@@ -56,6 +56,10 @@ module WinRM
                       resource_uri_shell(RESOURCE_URI_POWERSHELL),
                       action_command,
                       selector_shell_id(shell_id))
+      end
+
+      def arguments
+        encode_bytes(fragment.bytes) if fragment
       end
     end
   end
