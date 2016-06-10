@@ -63,7 +63,7 @@ WinRM::Connection.new(
 )
 ```
 
-The `:negotiate` transport uses the rubyntlm gem to authenticate with the endpoint using the NTLM protocol. This uses an HTTP based connection but the SOAP message payloads are encrypted. If using HTTP (as opposed to HTTPS) this is the recommended transport. This is also the default transport used if none is specified in the connection options.
+The `:negotiate` transport uses the [rubyntlm gem](https://github.com/WinRb/rubyntlm) to authenticate with the endpoint using the NTLM protocol. This uses an HTTP based connection but the SOAP message payloads are encrypted. If using HTTP (as opposed to HTTPS) this is the recommended transport. This is also the default transport used if none is specified in the connection options.
 
 ### `:ssl`
 ```ruby
