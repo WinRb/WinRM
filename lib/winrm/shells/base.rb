@@ -74,8 +74,7 @@ module WinRM
         output_processor.command_output(shell_id, command_id, &block)
       rescue WinRMWSManFault => e
         raise unless FAULTS_FOR_RESET.include?(e.fault_code) && (tries -= 1) > 0
-        logger.debug('[WinRM] opening new shell since the current one was deleted')
-        @shell_id = nil
+        reset_on_error(e)
         retry
       ensure
         cleanup_command(command_id) if command_id
@@ -105,6 +104,12 @@ module WinRM
 
       private
 
+      def reset_on_error(error)
+        close if error.fault_code == '2150859174'
+        logger.debug('[WinRM] opening new shell since the current one was deleted')
+        @shell_id = nil
+      end
+
       def cleanup_command(command_id)
         cleanup_msg = WinRM::WSMV::CleanupCommand.new(
           connection_opts,
@@ -112,6 +117,8 @@ module WinRM
           shell_id: shell_id,
           command_id: command_id)
         transport.send_request(cleanup_msg.build)
+      rescue WinRMWSManFault => e
+        raise unless e.fault_code == '995'
       end
 
       def open

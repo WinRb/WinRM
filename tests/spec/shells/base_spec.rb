@@ -49,8 +49,12 @@ describe DummyShell do
   subject { described_class.new(connection_options, transport, Logging.logger['test']) }
 
   shared_examples 'retry shell command' do
-    it 'does not close the current shell' do
-      expect(DummyShell).not_to receive(:close_shell)
+    it 'only closes the shell if there are too many' do
+      if fault == '2150859174'
+        expect(DummyShell).to receive(:close_shell)
+      else
+        expect(DummyShell).not_to receive(:close_shell)
+      end
 
       subject.run(command, arguments)
     end
