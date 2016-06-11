@@ -50,7 +50,7 @@ describe DummyShell do
 
   shared_examples 'retry shell command' do
     it 'only closes the shell if there are too many' do
-      if fault == '2150859174'
+      if fault == WinRM::Shells::Base::TOO_MANY_COMMANDS
         expect(DummyShell).to receive(:close_shell)
       else
         expect(DummyShell).not_to receive(:close_shell)
@@ -93,6 +93,20 @@ describe DummyShell do
             command_id: command_id
           ).build
         )
+      subject.run(command, arguments)
+    end
+
+    it 'does not error if cleanup is aborted' do
+      allow(SecureRandom).to receive(:uuid).and_return('uuid')
+      expect(transport).to receive(:send_request)
+        .with(
+          WinRM::WSMV::CleanupCommand.new(
+            connection_options,
+            shell_uri: nil,
+            shell_id: shell_id,
+            command_id: command_id
+          ).build
+        ).and_raise(WinRM::WinRMWSManFault.new('oops', '995'))
       subject.run(command, arguments)
     end
 
