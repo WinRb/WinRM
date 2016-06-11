@@ -28,10 +28,13 @@ module WinRM
   module Shells
     # Base class for remote shell
     class Base
+      TOO_MANY_COMMANDS = '2150859174'.freeze
+      ERROR_OPERATION_ABORTED = '995'.freeze
+
       FAULTS_FOR_RESET = [
         '2150858843', # Shell has been closed
         '2147943418', # Error reading registry key
-        '2150859174', # Maximum commands per user exceeded
+        TOO_MANY_COMMANDS, # Maximum commands per user exceeded
       ].freeze
 
       include Retryable
@@ -105,7 +108,7 @@ module WinRM
       private
 
       def reset_on_error(error)
-        close if error.fault_code == '2150859174'
+        close if error.fault_code == TOO_MANY_COMMANDS
         logger.debug('[WinRM] opening new shell since the current one was deleted')
         @shell_id = nil
       end
@@ -118,7 +121,7 @@ module WinRM
           command_id: command_id)
         transport.send_request(cleanup_msg.build)
       rescue WinRMWSManFault => e
-        raise unless e.fault_code == '995'
+        raise unless e.fault_code == ERROR_OPERATION_ABORTED
       end
 
       def open
