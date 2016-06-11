@@ -12,7 +12,7 @@ describe 'WinRM connection' do
       transport: auth_type,
       endpoint: endpoint
     }.merge(options)
-    WinRM::Connection.new(conn_options)
+    WinRM::Connection.new(conn_options).shell(:cmd)
   end
   let(:options) do
     opts = {}
@@ -31,7 +31,11 @@ describe 'WinRM connection' do
   let(:user_cert) { nil }
   let(:user_key) { nil }
 
-  subject(:output) { connection.shell(:cmd).run('ipconfig') }
+  subject(:output) { connection.run('ipconfig') }
+
+  after(:each) do
+    connection.close
+  end
 
   shared_examples 'a valid_connection' do
     it 'has a 0 exit code' do
