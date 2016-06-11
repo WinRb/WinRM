@@ -15,6 +15,7 @@ describe WinRM::Shells::PowerShell do
   let(:close_shell_payload) { 'close_shell_payload' }
   let(:cleanup_payload) { 'cleanup_payload' }
   let(:command) { 'command' }
+  let(:command_response) { "<a xmlns:rsp='foo'><rsp:CommandId>#{command_id}</rsp:CommandId></a>" }
   let(:configuration_response) do
     "<a xmlns:cfg='foo'><cfg:MaxEnvelopeSizekb>#{max_envelope_size_kb}</cfg:MaxEnvelopeSizekb></a>"
   end
@@ -54,6 +55,8 @@ describe WinRM::Shells::PowerShell do
       REXML::Document.new(configuration_response))
     allow(transport).to receive(:send_request).with(create_shell_payload)
       .and_return(REXML::Document.new("<blah Name='ShellId'>#{shell_id}</blah>"))
+    allow(transport).to receive(:send_request).with(command_payload)
+      .and_return(REXML::Document.new(command_response))
     allow(transport).to receive(:send_request).with(keepalive_payload)
       .and_return(REXML::Document.new(test_data_xml_template.result(binding)))
   end
@@ -105,7 +108,7 @@ describe WinRM::Shells::PowerShell do
         allow_any_instance_of(WinRM::WSMV::CreatePipeline).to receive(:build).and_call_original
         allow(transport).to receive(:send_request).with(/CommandLine/) do |payload|
           expect(payload.length).to be max_envelope_size_kb * 1024
-        end
+        end.and_return(REXML::Document.new(command_response))
         subject.run(command)
       end
     end

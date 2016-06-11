@@ -20,6 +20,7 @@ module WinRM
   module Shells
     # Proxy to a remote cmd.exe shell
     class Cmd < Base
+      include WinRM::WSMV::SOAP
       class << self
         def finalize(connection_opts, transport, shell_id)
           proc { Cmd.close_shell(connection_opts, transport, shell_id) }
@@ -40,9 +41,10 @@ module WinRM
           command: command,
           arguments: arguments
         )
-        transport.send_request(cmd_msg.build)
-        logger.debug("[WinRM] Command created for #{command} with id: #{cmd_msg.command_id}")
-        cmd_msg.command_id
+        resp_doc = transport.send_request(cmd_msg.build)
+        command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
+        logger.debug("[WinRM] Command created for #{command} with id: #{command_id}")
+        command_id
       end
 
       def output_processor

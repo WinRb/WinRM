@@ -11,6 +11,7 @@ describe WinRM::Shells::Cmd do
   let(:cleanup_payload) { 'cleanup_payload' }
   let(:command) { 'run this command' }
   let(:arguments) { ['args'] }
+  let(:command_response) { "<a xmlns:rsp='foo'><rsp:CommandId>command_id</rsp:CommandId></a>" }
   let(:connection_options) { { max_commands: 100, retry_limit: retry_limit, retry_delay: 0 } }
   let(:transport) { double('transport', send_request: nil) }
 
@@ -25,6 +26,8 @@ describe WinRM::Shells::Cmd do
       .and_return(output)
     allow(transport).to receive(:send_request).with(create_shell_payload)
       .and_return(REXML::Document.new("<blah Name='ShellId'>#{shell_id}</blah>"))
+    allow(transport).to receive(:send_request).with(/#{command}/)
+      .and_return(REXML::Document.new(command_response))
   end
 
   subject { described_class.new(connection_options, transport, Logging.logger['test']) }

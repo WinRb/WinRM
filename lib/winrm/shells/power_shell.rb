@@ -69,25 +69,27 @@ module WinRM
 
       def send_command(command, _arguments)
         command_id = SecureRandom.uuid.to_s.upcase
-        message = PSRP::MessageFactory.create_pipeline_message(shell_id, command_id, command)
+        message = PSRP::MessageFactory.create_pipeline_message(@powershell_id, command_id, command)
         fragmenter.fragment(message) do |fragment|
           command_args = [connection_opts, shell_id, command_id, fragment]
           if fragment.start_fragment
-            transport.send_request(WinRM::WSMV::CreatePipeline.new(*command_args).build)
+            resp_doc = transport.send_request(WinRM::WSMV::CreatePipeline.new(*command_args).build)
+            command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
           else
             transport.send_request(WinRM::WSMV::SendData.new(*command_args).build)
           end
         end
+
         logger.debug("[WinRM] Command created for #{command} with id: #{command_id}")
         command_id
       end
 
       def open_shell
-        shell_id = SecureRandom.uuid.to_s.upcase
+        @powershell_id = SecureRandom.uuid.to_s.upcase
         runspace_msg = WinRM::WSMV::InitRunspacePool.new(
           connection_opts,
-          shell_id,
-          open_shell_payload(shell_id)
+          @powershell_id,
+          open_shell_payload(@powershell_id)
         )
         resp_doc = transport.send_request(runspace_msg.build)
         shell_id = REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
