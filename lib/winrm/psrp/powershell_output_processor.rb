@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require 'nori'
 require_relative 'message_defragmenter'
 require_relative 'powershell_output_decoder'
 
@@ -41,6 +42,7 @@ module WinRM
 
         out = { stream_type(message) => decoded_text }
         output[:data] << out
+        output[:exitcode] = find_exit_code(message)
         [out[:stdout], out[:stderr]]
       end
 
@@ -53,6 +55,20 @@ module WinRM
           type = :stderr if message.data.include?('WriteError')
         end
         type
+      end
+
+      def find_exit_code(message)
+        return nil unless message.type == WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_host_call]
+
+        parser = Nori.new(
+          parser: :rexml,
+          advanced_typecasting: false,
+          convert_tags_to: ->(tag) { tag.snakecase.to_sym },
+          strip_namespaces: true
+        )
+        resp_objects = parser.parse(message.data)[:obj][:ms][:obj]
+
+        resp_objects[1][:lst][:i32].to_i if resp_objects[0][:to_string] == 'SetShouldExit'
       end
     end
   end

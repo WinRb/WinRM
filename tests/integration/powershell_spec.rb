@@ -13,6 +13,11 @@ describe 'winrm client powershell' do
     it { should have_no_stderr }
   end
 
+  describe 'exit' do
+    subject(:output) { @powershell.run('exit 5') }
+    it { should have_exit_code 5 }
+  end
+
   describe 'echo \'hello world\' using apostrophes' do
     subject(:output) { @powershell.run("echo 'hello world'") }
     it { should have_exit_code 0 }

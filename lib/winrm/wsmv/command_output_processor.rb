@@ -59,7 +59,7 @@ module WinRM
             yield handled_out if handled_out && block
           end
         end
-        output[:exitcode] = exit_code(resp_doc)
+        output[:exitcode] ||= exit_code(resp_doc)
         output
       end
 
