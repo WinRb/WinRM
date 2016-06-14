@@ -23,7 +23,8 @@ module WinRM
     class PowershellOutputDecoder
       MESSAGE_TYPES_TO_IGNORE = [
         WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_state],
-        WinRM::PSRP::Message::MESSAGE_TYPES[:information_record]
+        WinRM::PSRP::Message::MESSAGE_TYPES[:information_record],
+        WinRM::PSRP::Message::MESSAGE_TYPES[:progress_record]
       ].freeze
 
       attr_reader :message
@@ -34,6 +35,7 @@ module WinRM
       # @return [String] The decoded output
       def decode(message)
         return nil if MESSAGE_TYPES_TO_IGNORE.include?(message.type)
+        return nil if message.data =~ %r{<ToString>WriteProgress</ToString>}
         decoded_text = handle_invalid_encoding(message.data)
         decoded_text = remove_bom(decoded_text)
         decoded_text = extract_out_string(decoded_text)

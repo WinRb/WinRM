@@ -32,6 +32,23 @@ describe WinRM::PSRP::PowershellOutputDecoder do
     end
   end
 
+  context 'receiving progress record' do
+    let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:progress_record] }
+
+    it 'ignores message' do
+      expect(subject).to be nil
+    end
+  end
+
+  context 'receiving host call to WriteProgress' do
+    let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_host_call] }
+    let(:data) { '<ToString>WriteProgress</ToString>' }
+
+    it 'ignores message' do
+      expect(subject).to be nil
+    end
+  end
+
   context 'receiving output with BOM and no new line' do
     let(:data) { "\xEF\xBB\xBF<obj><S>some data</S></obj>" }
 
