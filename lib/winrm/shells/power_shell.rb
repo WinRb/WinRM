@@ -55,6 +55,22 @@ module WinRM
         @shell_uri = WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL
       end
 
+      # calculate the maimum fragment size so that they will be as large as possible yet
+      # no greater than the max_envelope_size_kb on the end point. To calculate this
+      # threshold, we:
+      # - determine the maximum number of bytes accepted on the endpoint
+      # - subtract the non-fragment characters in the SOAP envelope
+      # - determine the number of bytes that could be base64 encded to the above length
+      # - subtract the fragment header bytes (ids, length, etc)
+      def max_fragment_blob_size
+        @max_fragment_blob_size ||= begin
+          fragment_header_length = 21
+
+          max_fragment_bytes = (max_envelope_size_kb * 1024) - empty_pipeline_envelope.length
+          base64_deflated(max_fragment_bytes) - fragment_header_length
+        end
+      end
+
       protected
 
       def output_processor
@@ -98,20 +114,6 @@ module WinRM
       end
 
       private
-
-      # calculate the maimum fragment size so that they will be as large as possible yet
-      # no greater than the max_envelope_size_kb on the end point. To calculate this
-      # threshold, we:
-      # - determine the maximum number of bytes accepted on the endpoint
-      # - subtract the non-fragment characters in the SOAP envelope
-      # - determine the number of bytes that could be base64 encded to the above length
-      # - subtract the fragment header bytes (ids, length, etc)
-      def max_fragment_blob_size
-        fragment_header_length = 21
-
-        max_fragment_bytes = (max_envelope_size_kb * 1024) - empty_pipeline_envelope.length
-        base64_deflated(max_fragment_bytes) - fragment_header_length
-      end
 
       def base64_deflated(inflated_length)
         inflated_length / 4 * 3
