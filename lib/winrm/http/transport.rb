@@ -206,7 +206,7 @@ module WinRM
         if @ntlmcli.session.verify_signature(signature, message)
           message
         else
-          raise WinRMWebServiceError, "Could not verify SOAP message."
+          raise WinRMHTTPTransportError, "Could not decrypt NTLM message."
         end
       end
 

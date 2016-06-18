@@ -49,7 +49,7 @@ module WinRM
   class WinRMHTTPTransportError < WinRMError
     attr_reader :status_code
 
-    def initialize(msg, status_code)
+    def initialize(msg, status_code = nil)
       @status_code = status_code
       super(msg + " (#{status_code}).")
     end
