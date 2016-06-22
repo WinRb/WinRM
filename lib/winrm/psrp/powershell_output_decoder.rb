@@ -44,10 +44,6 @@ module WinRM
 
       private
 
-      def decode_raw_output(raw_output)
-        Base64.decode64(raw_output)
-      end
-
       def extract_out_string(decoded_text)
         doc = REXML::Document.new(decoded_text)
         doc.root.get_elements('//S').map do |node|
