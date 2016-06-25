@@ -29,7 +29,7 @@ module WinRM
   module Shells
     # Proxy to a remote PowerShell instance
     class PowerShell < Base
-      include WinRM::WSMV::ResponseStreamReader
+      include WinRM::WSMV::SOAP
 
       class << self
         def finalize(connection_opts, transport, shell_id)

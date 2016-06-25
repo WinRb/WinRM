@@ -16,7 +16,6 @@
 
 require_relative 'soap'
 require_relative 'header'
-require_relative 'response_stream_reader'
 require_relative 'command_output_decoder'
 require_relative '../output'
 
@@ -26,7 +25,6 @@ module WinRM
     class CommandOutputProcessor
       include WinRM::WSMV::SOAP
       include WinRM::WSMV::Header
-      include WinRM::WSMV::ResponseStreamReader
 
       # Creates a new command output processor
       # @param connection_opts [ConnectionOpts] The WinRM connection options
@@ -115,6 +113,13 @@ module WinRM
           resp_doc,
           "//*[@State='http://schemas.microsoft.com/wbem/wsman/1/windows/shell/" \
           "CommandState/Done']").any?
+      end
+
+      def read_streams(response_document)
+        REXML::XPath.match(response_document, "//#{NS_WIN_SHELL}:Stream").each do |stream|
+          next if stream.text.nil? || stream.text.empty?
+          yield type: stream.attributes['Name'].to_sym, text: stream.text
+        end
       end
     end
   end
