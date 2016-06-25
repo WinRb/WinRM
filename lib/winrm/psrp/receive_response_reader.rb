@@ -45,17 +45,16 @@ module WinRM
       end
 
       def read_output(wsmv_message, &block)
-        output = WinRM::Output.new
-        read_message(wsmv_message, true) do |message|
-          decoded_text = @output_decoder.decode(message)
-          next unless decoded_text
-          out = { stream_type(message) => decoded_text }
-          output[:data] << out
-          output[:exitcode] = find_exit_code(message)
-          yield [out[:stdout], out[:stderr]] if block_given?
+        with_output do |output|
+          read_message(wsmv_message, true) do |message|
+            decoded_text = @output_decoder.decode(message)
+            next unless decoded_text
+            out = { stream_type(message) => decoded_text }
+            output[:data] << out
+            output[:exitcode] = find_exit_code(message)
+            yield [out[:stdout], out[:stderr]] if block_given?
+          end
         end
-        output[:exitcode] ||= 0
-        output
       end
 
       private

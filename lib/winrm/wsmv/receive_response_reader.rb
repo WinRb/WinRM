@@ -42,13 +42,12 @@ module WinRM
       # @param command_id [UUID] The command id to get output for
       # @param block Optional callback for any output
       def read_output(wsmv_message, &block)
-        output = WinRM::Output.new
-        read_response(wsmv_message, true) do |stream, doc|
-          handled_out = handle_stream(stream, output, doc)
-          yield handled_out if handled_out && block
+        with_output do |output|
+          read_response(wsmv_message, true) do |stream, doc|
+            handled_out = handle_stream(stream, output, doc)
+            yield handled_out if handled_out && block
+          end
         end
-        output[:exitcode] ||= 0
-        output
       end
 
       def read_response(wsmv_message, wait_for_done_state = false, &block)
@@ -61,6 +60,15 @@ module WinRM
             yield stream, resp_doc
           end
         end
+      end
+
+      protected
+
+      def with_output
+        output = WinRM::Output.new
+        yield output
+        output[:exitcode] ||= 0
+        output
       end
 
       private
