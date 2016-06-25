@@ -75,20 +75,6 @@ module WinRM
         end
       end
 
-      def with_command_shell(command, arguments = [], &block)
-        tries ||= 2
-
-        open unless shell_id
-        command_id = send_command(command, arguments)
-        yield shell_id, command_id
-      rescue WinRMWSManFault => e
-        raise unless FAULTS_FOR_RESET.include?(e.fault_code) && (tries -= 1) > 0
-        reset_on_error(e)
-        retry
-      ensure
-        cleanup_command(command_id) if command_id
-      end
-
       # Closes the shell if oneis open
       def close
         return unless shell_id
@@ -123,6 +109,20 @@ module WinRM
           out_streams: out_streams
         }
         WinRM::WSMV::CommandOutput.new(connection_opts, cmd_out_opts)
+      end
+
+      def with_command_shell(command, arguments = [], &block)
+        tries ||= 2
+
+        open unless shell_id
+        command_id = send_command(command, arguments)
+        yield shell_id, command_id
+      rescue WinRMWSManFault => e
+        raise unless FAULTS_FOR_RESET.include?(e.fault_code) && (tries -= 1) > 0
+        reset_on_error(e)
+        retry
+      ensure
+        cleanup_command(command_id) if command_id
       end
 
       private
