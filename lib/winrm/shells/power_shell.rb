@@ -81,14 +81,9 @@ module WinRM
       end
 
       def send_pipeline_command(command, &block)
-        messages = []
         with_command_shell(command) do |shell, cmd|
-          send_message(command_output_message(shell, cmd), true) do |msg|
-            messages.push(msg) unless block_given?
-            yield msg if block_given?
-          end
+          send_message(command_output_message(shell, cmd), true, &block)
         end
-        messages unless block_given?
       end
 
       # calculate the maimum fragment size so that they will be as large as possible yet
