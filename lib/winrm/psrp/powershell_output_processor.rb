@@ -15,7 +15,6 @@
 # limitations under the License.
 
 require 'nori'
-require_relative 'message_defragmenter'
 require_relative 'powershell_output_decoder'
 
 module WinRM
@@ -29,17 +28,11 @@ module WinRM
       def initialize(connection_opts, transport, logger, out_opts = {})
         super
         @output_decoder = PowershellOutputDecoder.new
-        @message_defragmenter = MessageDefragmenter.new
       end
 
-      protected
-
-      def handle_stream(stream, output)
-        message = @message_defragmenter.defragment(stream[:text])
-        return unless message
+      def command_output(message, output)
         decoded_text = @output_decoder.decode(message)
         return unless decoded_text
-
         out = { stream_type(message) => decoded_text }
         output[:data] << out
         output[:exitcode] = find_exit_code(message)

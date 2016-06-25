@@ -70,11 +70,17 @@ module WinRM
       # @param block [&block] The optional callback for any realtime output
       # @return [WinRM::Output] The command output
       def run(command, arguments = [], &block)
+        with_command_shell(command, arguments) do |shell, cmd|
+          output_processor.command_output(shell, cmd, &block)
+        end
+      end
+
+      def with_command_shell(command, arguments = [], &block)
         tries ||= 2
 
         open unless shell_id
         command_id = send_command(command, arguments)
-        output_processor.command_output(shell_id, command_id, &block)
+        yield shell_id, command_id
       rescue WinRMWSManFault => e
         raise unless FAULTS_FOR_RESET.include?(e.fault_code) && (tries -= 1) > 0
         reset_on_error(e)

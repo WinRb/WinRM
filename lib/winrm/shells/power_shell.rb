@@ -55,6 +55,42 @@ module WinRM
         @shell_uri = WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL
       end
 
+      def send_message(wsmv_message, wait_for_done_state = false, &block)
+        messages = []
+        defragmenter = WinRM::PSRP::MessageDefragmenter.new
+        output_processor.message_output(wsmv_message, wait_for_done_state) do |stream|
+          message = defragmenter.defragment(stream[:text])
+          next unless message
+          if block_given?
+            yield message
+          else
+            messages.push(message)
+          end
+        end
+        messages unless block_given?
+      end
+
+      def run(command, &block)
+        output = WinRM::Output.new
+        send_pipeline_command(command) do |msg|
+          out = output_processor.command_output(msg, output)
+          yield out if out && block_given?
+        end
+        output[:exitcode] ||= 0
+        output
+      end
+
+      def send_pipeline_command(command, &block)
+        messages = []
+        with_command_shell(command) do |shell, cmd|
+          send_message(command_output_message(shell, cmd), true) do |msg|
+            messages.push(msg) unless block_given?
+            yield msg if block_given?
+          end
+        end
+        messages unless block_given?
+      end
+
       # calculate the maimum fragment size so that they will be as large as possible yet
       # no greater than the max_envelope_size_kb on the end point. To calculate this
       # threshold, we:
@@ -115,6 +151,16 @@ module WinRM
 
       private
 
+      def command_output_message(shell_id, command_id)
+        cmd_out_opts = {
+          shell_id: shell_id,
+          command_id: command_id,
+          shell_uri: shell_uri,
+          out_streams: %w(stdout)
+        }
+        WinRM::WSMV::CommandOutput.new(connection_opts, cmd_out_opts)
+      end
+
       def base64_deflated(inflated_length)
         inflated_length / 4 * 3
       end
@@ -152,12 +198,9 @@ module WinRM
         # 2 is "openned". if we start issuing commands while in "openning" the runspace
         # seems to hang
         until state.include?('<I32 N="RunspaceState">2</I32>')
-          doc = transport.send_request(keepalive_msg.build)
-          read_streams(doc) do |stream|
-            message = WinRM::PSRP::MessageDefragmenter.new.defragment(stream[:text])
-            logger.debug("[WinRM] polling for pipeline state. message: #{message.inspect}")
-            state = message.data
-          end
+          message = send_message(keepalive_msg).last
+          logger.debug("[WinRM] polling for pipeline state. message: #{message.inspect}")
+          state = message.data
         end
       end
 

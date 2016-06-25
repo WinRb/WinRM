@@ -47,30 +47,37 @@ module WinRM
       # @param command_id [UUID] The command id to get output for
       # @param block Optional callback for any output
       def command_output(shell_id, command_id, &block)
-        resp_doc = nil
         output = WinRM::Output.new
-        out_message = command_output_message(shell_id, command_id)
-        until command_done?(resp_doc)
-          logger.debug("[WinRM] Waiting for output for command id: #{command_id}")
-          resp_doc = send_get_output_message(out_message.build)
-          logger.debug("[WinRM] Processing output for command id: #{command_id}")
+        logger.debug("[WinRM] Retrieving output for command id: #{command_id}")
+        message_output(command_output_message(shell_id, command_id)) do |stream, doc|
+          handled_out = handle_stream(stream, output, doc)
+          yield handled_out if handled_out && block
+        end
+        output[:exitcode] ||= 0
+        output
+      end
+
+      def message_output(wsmv_message, wait_for_done_state = false, &block)
+        resp_doc = nil
+        until command_done?(resp_doc, wait_for_done_state)
+          logger.debug("[WinRM] Waiting for output...")
+          resp_doc = send_get_output_message(wsmv_message.build)
+          logger.debug("[WinRM] Processing output")
           read_streams(resp_doc) do |stream|
-            handled_out = handle_stream(stream, output)
-            yield handled_out if handled_out && block
+            yield stream, resp_doc
           end
         end
-        output[:exitcode] ||= exit_code(resp_doc)
-        output
       end
 
       protected
 
-      def handle_stream(stream, output)
+      def handle_stream(stream, output, resp_doc)
         decoded_text = @output_decoder.decode(stream[:text])
         return unless decoded_text
 
         out = { stream[:type] => decoded_text }
         output[:data] << out
+        output[:exitcode] ||= exit_code(resp_doc)
         [out[:stdout], out[:stderr]]
       end
 
@@ -100,8 +107,10 @@ module WinRM
         REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:ExitCode").text.to_i
       end
 
-      def command_done?(resp_doc)
+      def command_done?(resp_doc, wait_for_done_state)
         return false unless resp_doc
+        return true unless wait_for_done_state
+
         REXML::XPath.match(
           resp_doc,
           "//*[@State='http://schemas.microsoft.com/wbem/wsman/1/windows/shell/" \
