@@ -1,8 +1,8 @@
 # encoding: UTF-8
 
-require 'winrm/wsmv/command_output_processor'
+require 'winrm/wsmv/receive_response_reader'
 
-describe WinRM::WSMV::CommandOutputProcessor do
+describe WinRM::WSMV::ReceiveResponseReader do
   let(:shell_id) { 'F4A2622B-B842-4EB8-8A78-0225C8A993DF' }
   let(:command_id) { 'A2A2622B-B842-4EB8-8A78-0225C8A993DF' }
   let(:test_data_xml_template) do
@@ -14,7 +14,6 @@ describe WinRM::WSMV::CommandOutputProcessor do
 
   subject do
     described_class.new(
-      default_connection_opts,
       transport,
       Logging.logger['test']
     )
