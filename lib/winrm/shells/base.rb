@@ -20,7 +20,7 @@ require_relative '../wsmv/cleanup_command'
 require_relative '../wsmv/close_shell'
 require_relative '../wsmv/command'
 require_relative '../wsmv/command_output'
-require_relative '../wsmv/command_output_processor'
+require_relative '../wsmv/receive_response_reader'
 require_relative '../wsmv/create_shell'
 require_relative '../wsmv/soap'
 
@@ -70,8 +70,8 @@ module WinRM
       # @param block [&block] The optional callback for any realtime output
       # @return [WinRM::Output] The command output
       def run(command, arguments = [], &block)
-        with_command_shell(command, arguments) do |shell, cmd|
-          output_processor.command_output(shell, cmd, &block)
+        with_command_shell(command) do |shell, cmd|
+          response_reader.read_output(command_output_message(shell, cmd), &block)
         end
       end
 
@@ -103,12 +103,26 @@ module WinRM
         raise NotImplementedError
       end
 
-      def output_processor
+      def response_reader
         raise NotImplementedError
       end
 
       def open_shell
         raise NotImplementedError
+      end
+
+      def out_streams
+        raise NotImplementedError
+      end
+
+      def command_output_message(shell_id, command_id)
+        cmd_out_opts = {
+          shell_id: shell_id,
+          command_id: command_id,
+          shell_uri: shell_uri,
+          out_streams: out_streams
+        }
+        WinRM::WSMV::CommandOutput.new(connection_opts, cmd_out_opts)
       end
 
       private

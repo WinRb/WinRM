@@ -22,18 +22,15 @@ require_relative '../output'
 module WinRM
   module WSMV
     # Class to handle getting all the output of a command until it completes
-    class CommandOutputProcessor
+    class ReceiveResponseReader
       include WinRM::WSMV::SOAP
       include WinRM::WSMV::Header
 
       # Creates a new command output processor
-      # @param connection_opts [ConnectionOpts] The WinRM connection options
       # @param transport [HttpTransport] The WinRM SOAP transport
-      # @param out_opts [Hash] Additional output options
-      def initialize(connection_opts, transport, logger, out_opts = {})
-        @connection_opts = connection_opts
+      # @param logger [Logger] The logger to log diagnostic messages to
+      def initialize(transport, logger)
         @transport = transport
-        @out_opts = out_opts
         @logger = logger
         @output_decoder = CommandOutputDecoder.new
       end
@@ -44,10 +41,9 @@ module WinRM
       # @param shell_id [UUID] The remote shell id running the command
       # @param command_id [UUID] The command id to get output for
       # @param block Optional callback for any output
-      def command_output(shell_id, command_id, &block)
+      def read_output(wsmv_message, &block)
         output = WinRM::Output.new
-        logger.debug("[WinRM] Retrieving output for command id: #{command_id}")
-        message_output(command_output_message(shell_id, command_id)) do |stream, doc|
+        read_response(wsmv_message, true) do |stream, doc|
           handled_out = handle_stream(stream, output, doc)
           yield handled_out if handled_out && block
         end
@@ -55,7 +51,7 @@ module WinRM
         output
       end
 
-      def message_output(wsmv_message, wait_for_done_state = false, &block)
+      def read_response(wsmv_message, wait_for_done_state = false, &block)
         resp_doc = nil
         until command_done?(resp_doc, wait_for_done_state)
           logger.debug("[WinRM] Waiting for output...")
@@ -77,14 +73,6 @@ module WinRM
         output[:data] << out
         output[:exitcode] ||= exit_code(resp_doc)
         [out[:stdout], out[:stderr]]
-      end
-
-      def command_output_message(shell_id, command_id)
-        cmd_out_opts = {
-          shell_id: shell_id,
-          command_id: command_id
-        }.merge(@out_opts)
-        WinRM::WSMV::CommandOutput.new(@connection_opts, cmd_out_opts)
       end
 
       def send_get_output_message(message)

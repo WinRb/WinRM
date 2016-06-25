@@ -16,27 +16,46 @@
 
 require 'nori'
 require_relative 'powershell_output_decoder'
+require_relative 'message_defragmenter'
 
 module WinRM
   module PSRP
     # Class to handle getting all the output of a command until it completes
-    class PowershellOutputProcessor < WSMV::CommandOutputProcessor
+    class ReceiveResponseReader < WSMV::ReceiveResponseReader
       # Creates a new command output processor
-      # @param connection_opts [ConnectionOpts] The WinRM connection options
       # @param transport [HttpTransport] The WinRM SOAP transport
-      # @param out_opts [Hash] Additional output options
-      def initialize(connection_opts, transport, logger, out_opts = {})
+      def initialize(transport, logger)
         super
         @output_decoder = PowershellOutputDecoder.new
       end
 
-      def command_output(message, output)
-        decoded_text = @output_decoder.decode(message)
-        return unless decoded_text
-        out = { stream_type(message) => decoded_text }
-        output[:data] << out
-        output[:exitcode] = find_exit_code(message)
-        [out[:stdout], out[:stderr]]
+      def read_message(wsmv_message, wait_for_done_state = false, &block)
+        messages = []
+        defragmenter = MessageDefragmenter.new
+        read_response(wsmv_message, wait_for_done_state) do |stream|
+          message = defragmenter.defragment(stream[:text])
+          next unless message
+          if block_given?
+            yield message
+          else
+            messages.push(message)
+          end
+        end
+        messages unless block_given?
+      end
+
+      def read_output(wsmv_message, &block)
+        output = WinRM::Output.new
+        read_message(wsmv_message, true) do |message|
+          decoded_text = @output_decoder.decode(message)
+          next unless decoded_text
+          out = { stream_type(message) => decoded_text }
+          output[:data] << out
+          output[:exitcode] = find_exit_code(message)
+          yield [out[:stdout], out[:stderr]] if block_given?
+        end
+        output[:exitcode] ||= 0
+        output
       end
 
       def stream_type(message)

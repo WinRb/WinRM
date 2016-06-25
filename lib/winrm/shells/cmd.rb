@@ -47,18 +47,18 @@ module WinRM
         command_id
       end
 
-      def output_processor
-        @output_processor ||= WinRM::WSMV::CommandOutputProcessor.new(
-          connection_opts,
-          transport,
-          logger
-        )
+      def response_reader
+        @response_reader ||= WinRM::WSMV::ReceiveResponseReader.new(transport, logger)
       end
 
       def open_shell
         msg = WinRM::WSMV::CreateShell.new(connection_opts)
         resp_doc = transport.send_request(msg.build)
         REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
+      end
+
+      def out_streams
+        %w(stdout stderr)
       end
     end
   end

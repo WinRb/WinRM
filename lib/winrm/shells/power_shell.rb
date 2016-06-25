@@ -16,9 +16,8 @@
 
 require 'securerandom'
 require_relative 'base'
-require_relative '../psrp/message_defragmenter'
 require_relative '../psrp/message_fragmenter'
-require_relative '../psrp/powershell_output_processor'
+require_relative '../psrp/receive_response_reader'
 require_relative '../wsmv/configuration'
 require_relative '../wsmv/create_pipeline'
 require_relative '../wsmv/send_data'
@@ -55,34 +54,9 @@ module WinRM
         @shell_uri = WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL
       end
 
-      def send_message(wsmv_message, wait_for_done_state = false, &block)
-        messages = []
-        defragmenter = WinRM::PSRP::MessageDefragmenter.new
-        output_processor.message_output(wsmv_message, wait_for_done_state) do |stream|
-          message = defragmenter.defragment(stream[:text])
-          next unless message
-          if block_given?
-            yield message
-          else
-            messages.push(message)
-          end
-        end
-        messages unless block_given?
-      end
-
-      def run(command, &block)
-        output = WinRM::Output.new
-        send_pipeline_command(command) do |msg|
-          out = output_processor.command_output(msg, output)
-          yield out if out && block_given?
-        end
-        output[:exitcode] ||= 0
-        output
-      end
-
       def send_pipeline_command(command, &block)
         with_command_shell(command) do |shell, cmd|
-          send_message(command_output_message(shell, cmd), true, &block)
+          response_reader.read_message(command_output_message(shell, cmd), true, &block)
         end
       end
 
@@ -104,14 +78,8 @@ module WinRM
 
       protected
 
-      def output_processor
-        WinRM::PSRP::PowershellOutputProcessor.new(
-          connection_opts,
-          transport,
-          logger,
-          shell_uri: shell_uri,
-          out_streams: %w(stdout)
-        )
+      def response_reader
+        @response_reader ||= WinRM::PSRP::ReceiveResponseReader.new(transport, logger)
       end
 
       def send_command(command, _arguments)
@@ -144,17 +112,11 @@ module WinRM
         shell_id
       end
 
-      private
-
-      def command_output_message(shell_id, command_id)
-        cmd_out_opts = {
-          shell_id: shell_id,
-          command_id: command_id,
-          shell_uri: shell_uri,
-          out_streams: %w(stdout)
-        }
-        WinRM::WSMV::CommandOutput.new(connection_opts, cmd_out_opts)
+      def out_streams
+        %w(stdout)
       end
+
+      private
 
       def base64_deflated(inflated_length)
         inflated_length / 4 * 3
@@ -193,7 +155,7 @@ module WinRM
         # 2 is "openned". if we start issuing commands while in "openning" the runspace
         # seems to hang
         until state.include?('<I32 N="RunspaceState">2</I32>')
-          message = send_message(keepalive_msg).last
+          message = response_reader.read_message(keepalive_msg).last
           logger.debug("[WinRM] polling for pipeline state. message: #{message.inspect}")
           state = message.data
         end
