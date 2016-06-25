@@ -63,7 +63,7 @@ module WinRM
         end
       end
 
-      protected
+      private
 
       def handle_stream(stream, output, resp_doc)
         decoded_text = @output_decoder.decode(stream[:text])

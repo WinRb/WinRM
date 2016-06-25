@@ -58,6 +58,8 @@ module WinRM
         output
       end
 
+      private
+
       def stream_type(message)
         type = :stdout
         case message.type
