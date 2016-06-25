@@ -70,7 +70,7 @@ module WinRM
       # @param block [&block] The optional callback for any realtime output
       # @return [WinRM::Output] The command output
       def run(command, arguments = [], &block)
-        with_command_shell(command) do |shell, cmd|
+        with_command_shell(command, arguments) do |shell, cmd|
           response_reader.read_output(command_output_message(shell, cmd), &block)
         end
       end
@@ -111,7 +111,7 @@ module WinRM
         WinRM::WSMV::CommandOutput.new(connection_opts, cmd_out_opts)
       end
 
-      def with_command_shell(command, arguments = [], &block)
+      def with_command_shell(command, arguments = [])
         tries ||= 2
 
         open unless shell_id

@@ -50,12 +50,12 @@ module WinRM
         end
       end
 
-      def read_response(wsmv_message, wait_for_done_state = false, &block)
+      def read_response(wsmv_message, wait_for_done_state = false)
         resp_doc = nil
         until command_done?(resp_doc, wait_for_done_state)
-          logger.debug("[WinRM] Waiting for output...")
+          logger.debug('[WinRM] Waiting for output...')
           resp_doc = send_get_output_message(wsmv_message.build)
-          logger.debug("[WinRM] Processing output")
+          logger.debug('[WinRM] Processing output')
           read_streams(resp_doc) do |stream|
             yield stream, resp_doc
           end

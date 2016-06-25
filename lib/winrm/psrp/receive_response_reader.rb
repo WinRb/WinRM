@@ -29,7 +29,7 @@ module WinRM
         @output_decoder = PowershellOutputDecoder.new
       end
 
-      def read_message(wsmv_message, wait_for_done_state = false, &block)
+      def read_message(wsmv_message, wait_for_done_state = false)
         messages = []
         defragmenter = MessageDefragmenter.new
         read_response(wsmv_message, wait_for_done_state) do |stream|
@@ -44,7 +44,7 @@ module WinRM
         messages unless block_given?
       end
 
-      def read_output(wsmv_message, &block)
+      def read_output(wsmv_message)
         with_output do |output|
           read_message(wsmv_message, true) do |message|
             decoded_text = @output_decoder.decode(message)
