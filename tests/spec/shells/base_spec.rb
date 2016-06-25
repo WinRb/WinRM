@@ -26,6 +26,10 @@ class DummyShell < WinRM::Shells::Base
   def send_command(_command, _arguments)
     'command_id'
   end
+
+  def out_streams
+    %w(std)
+  end
 end
 
 describe DummyShell do
@@ -36,13 +40,16 @@ describe DummyShell do
   let(:payload) { 'message_payload' }
   let(:command) { 'command' }
   let(:arguments) { ['args'] }
+  let(:output_message) { double('output_message', build: 'output_message') }
   let(:connection_options) { { max_commands: 100, retry_limit: retry_limit, retry_delay: 0 } }
   let(:transport) { double('transport') }
-  let(:processor) { double('processor') }
+  let(:reader) { double('reader') }
 
   before do
-    allow(subject).to receive(:output_processor).and_return(processor)
-    allow(processor).to receive(:command_output).with(shell_id, command_id).and_return(output)
+    allow(subject).to receive(:response_reader).and_return(reader)
+    allow(subject).to receive(:command_output_message).with(shell_id, command_id)
+      .and_return(output_message)
+    allow(reader).to receive(:read_output).with(output_message).and_return(output)
     allow(transport).to receive(:send_request)
   end
 
@@ -148,6 +155,7 @@ describe DummyShell do
 
     context 'open_shell fails' do
       let(:retry_limit) { 2 }
+      let(:output_message2) { double('message') }
 
       it 'retries and raises failure if it never succeeds' do
         expect(subject).to receive(:open_shell)
@@ -157,8 +165,10 @@ describe DummyShell do
 
       it 'retries and returns shell on success' do
         @times = 0
-        allow(processor).to receive(:command_output)
-          .with('shell_id 2', command_id).and_return(output)
+        allow(subject).to receive(:command_output_message).with('shell_id 2', command_id)
+          .and_return(output_message2)
+        allow(reader).to receive(:read_output)
+          .with(output_message2).and_return(output)
         allow(subject).to receive(:open_shell) do
           @times += 1
           raise(Errno::ECONNREFUSED) if @times == 1

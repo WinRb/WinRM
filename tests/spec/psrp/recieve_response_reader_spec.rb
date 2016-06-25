@@ -5,6 +5,7 @@ require 'winrm/psrp/receive_response_reader'
 describe WinRM::PSRP::ReceiveResponseReader do
   let(:shell_id) { 'F4A2622B-B842-4EB8-8A78-0225C8A993DF' }
   let(:command_id) { 'A2A2622B-B842-4EB8-8A78-0225C8A993DF' }
+  let(:output_message) { double('output_message', build: 'output_message') }
   let(:test_data_xml_template) do
     ERB.new(stubbed_response('get_powershell_output_response.xml.erb'))
   end
@@ -40,7 +41,7 @@ describe WinRM::PSRP::ReceiveResponseReader do
 
     it 'outputs to stdout' do
       expect(
-        subject.command_output(shell_id, command_id)[:data][0][:stdout]
+        subject.read_output(output_message)[:data][0][:stdout]
       ).to eq("#{test_data_text}\r\n")
     end
   end
@@ -50,7 +51,7 @@ describe WinRM::PSRP::ReceiveResponseReader do
 
     it 'outputs to stderr' do
       expect(
-        subject.command_output(shell_id, command_id)[:data][0][:stderr]
+        subject.read_output(output_message)[:data][0][:stderr]
       ).to eq("#{test_data_text}\r\n")
     end
   end
@@ -68,7 +69,7 @@ describe WinRM::PSRP::ReceiveResponseReader do
 
     it 'outputs to stderr' do
       expect(
-        subject.command_output(shell_id, command_id)[:data][0][:stderr]
+        subject.read_output(output_message)[:data][0][:stderr]
       ).to eq("errors\r\n")
     end
   end
@@ -86,7 +87,7 @@ describe WinRM::PSRP::ReceiveResponseReader do
 
     it 'outputs to stdout' do
       expect(
-        subject.command_output(shell_id, command_id)[:data][0][:stdout]
+        subject.read_output(output_message)[:data][0][:stdout]
       ).to eq("output\r\n")
     end
   end

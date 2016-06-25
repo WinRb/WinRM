@@ -22,7 +22,7 @@ describe WinRM::Shells::Cmd do
       .and_return(create_shell_payload)
     allow_any_instance_of(WinRM::WSMV::CleanupCommand).to receive(:build)
       .and_return(cleanup_payload)
-    allow_any_instance_of(WinRM::WSMV::CommandOutputProcessor).to receive(:command_output)
+    allow_any_instance_of(WinRM::WSMV::ReceiveResponseReader).to receive(:read_output)
       .and_return(output)
     allow(transport).to receive(:send_request).with(create_shell_payload)
       .and_return(REXML::Document.new("<blah Name='ShellId'>#{shell_id}</blah>"))
@@ -54,14 +54,6 @@ describe WinRM::Shells::Cmd do
 
     it 'sends cleanup message through transport' do
       expect(transport).to receive(:send_request).with(cleanup_payload)
-      subject.run(command, arguments)
-    end
-
-    it 'output processor keeps default shell uri and streams' do
-      allow(WinRM::WSMV::CommandOutputProcessor).to receive(:new) do |_, _, _, opts|
-        expect(opts[:shell_uri]).to be nil
-        expect(opts[:out_streams]).to be nil
-      end.and_call_original
       subject.run(command, arguments)
     end
   end

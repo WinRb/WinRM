@@ -15,6 +15,7 @@ describe WinRM::Shells::PowerShell do
   let(:close_shell_payload) { 'close_shell_payload' }
   let(:cleanup_payload) { 'cleanup_payload' }
   let(:command) { 'command' }
+  let(:output_message) { double('output_message', build: 'output_message') }
   let(:command_response) { "<a xmlns:rsp='foo'><rsp:CommandId>#{command_id}</rsp:CommandId></a>" }
   let(:configuration_response) do
     "<a xmlns:cfg='foo'><cfg:MaxEnvelopeSizekb>#{max_envelope_size_kb}</cfg:MaxEnvelopeSizekb></a>"
@@ -38,6 +39,8 @@ describe WinRM::Shells::PowerShell do
 
   before do
     allow(SecureRandom).to receive(:uuid).and_return(command_id)
+    allow(subject).to receive(:command_output_message).with(shell_id, command_id)
+      .and_return(output_message)
     allow_any_instance_of(WinRM::WSMV::CreatePipeline).to receive(:build)
       .and_return(command_payload)
     allow_any_instance_of(WinRM::WSMV::CloseShell).to receive(:build)
@@ -49,8 +52,8 @@ describe WinRM::Shells::PowerShell do
     allow_any_instance_of(WinRM::WSMV::CleanupCommand).to receive(:build)
       .and_return(cleanup_payload)
     allow_any_instance_of(WinRM::WSMV::KeepAlive).to receive(:build).and_return(keepalive_payload)
-    allow_any_instance_of(WinRM::PSRP::PowershellOutputProcessor).to receive(:command_output)
-      .with(shell_id, command_id).and_return(output)
+    allow_any_instance_of(WinRM::PSRP::ReceiveResponseReader).to receive(:read_output)
+      .with(output_message).and_return(output)
     allow(transport).to receive(:send_request).with(configuration_payload).and_return(
       REXML::Document.new(configuration_response))
     allow(transport).to receive(:send_request).with(create_shell_payload)
@@ -90,14 +93,6 @@ describe WinRM::Shells::PowerShell do
 
     it 'sends cleanup message through transport' do
       expect(transport).to receive(:send_request).with(cleanup_payload)
-      subject.run(command)
-    end
-
-    it 'output processor sets powershell uri and streams' do
-      allow(WinRM::PSRP::PowershellOutputProcessor).to receive(:new) do |_, _, _, opts|
-        expect(opts[:shell_uri]).to be WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL
-        expect(opts[:out_streams]).to eq %w(stdout)
-      end.and_call_original
       subject.run(command)
     end
 

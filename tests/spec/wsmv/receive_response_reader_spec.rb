@@ -5,6 +5,7 @@ require 'winrm/wsmv/receive_response_reader'
 describe WinRM::WSMV::ReceiveResponseReader do
   let(:shell_id) { 'F4A2622B-B842-4EB8-8A78-0225C8A993DF' }
   let(:command_id) { 'A2A2622B-B842-4EB8-8A78-0225C8A993DF' }
+  let(:output_message) { double('output_message', build: 'output_message') }
   let(:test_data_xml_template) do
     ERB.new(stubbed_response('get_command_output_response.xml.erb'))
   end
@@ -33,7 +34,7 @@ describe WinRM::WSMV::ReceiveResponseReader do
     it 'does not raise an ArgumentError: invalid byte sequence in UTF-8' do
       begin
         expect(
-          subject.command_output(shell_id, command_id)
+          subject.read_output(output_message)
         ).not_to raise_error
       rescue RSpec::Expectations::ExpectationNotMetError => e
         expect(e.message).not_to include 'ArgumentError'
@@ -42,7 +43,7 @@ describe WinRM::WSMV::ReceiveResponseReader do
 
     it 'does not have an empty stdout' do
       expect(
-        subject.command_output(shell_id, command_id)[:data][0][:stdout]
+        subject.read_output(output_message)[:data][0][:stdout]
       ).not_to be_empty
     end
   end
@@ -61,7 +62,7 @@ describe WinRM::WSMV::ReceiveResponseReader do
 
     it 'decodes to match input data' do
       expect(
-        subject.command_output(shell_id, command_id)[:data][0][:stdout]
+        subject.read_output(output_message)[:data][0][:stdout]
       ).to eq(test_data_raw)
     end
   end
