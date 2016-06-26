@@ -54,6 +54,11 @@ module WinRM
         @shell_uri = WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL
       end
 
+      # Runs the specified command
+      # @param command [String] The powershell script to run
+      # @param block [&block] The optional callback for any realtime output
+      # @yield [Message] PSRP Message in response
+      # @yieldreturn [Array<Message>] All messages in response
       def send_pipeline_command(command, &block)
         with_command_shell(command) do |shell, cmd|
           response_reader.read_message(command_output_message(shell, cmd), true, &block)

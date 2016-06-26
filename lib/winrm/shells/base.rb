@@ -68,7 +68,9 @@ module WinRM
       # @param command [String] The command or executable to run
       # @param arguments [Array] The optional command arguments
       # @param block [&block] The optional callback for any realtime output
-      # @return [WinRM::Output] The command output
+      # @yieldparam [string] standard out response text
+      # @yieldparam [string] standard error response text
+      # @yieldreturn [WinRM::Output] The command output
       def run(command, arguments = [], &block)
         with_command_shell(command, arguments) do |shell, cmd|
           response_reader.read_output(command_output_message(shell, cmd), &block)

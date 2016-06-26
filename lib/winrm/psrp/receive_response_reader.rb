@@ -20,15 +20,21 @@ require_relative 'message_defragmenter'
 
 module WinRM
   module PSRP
-    # Class to handle getting all the output of a command until it completes
+    # Class for reading powershell responses in Receive_Response messages
     class ReceiveResponseReader < WSMV::ReceiveResponseReader
-      # Creates a new command output processor
+      # Creates a new ReceiveResponseReader
       # @param transport [HttpTransport] The WinRM SOAP transport
+      # @param logger [Logger] The logger to log diagnostic messages to
       def initialize(transport, logger)
         super
         @output_decoder = PowershellOutputDecoder.new
       end
 
+      # Reads PSRP messages sent in one or more receive response messages
+      # @param wsmv_message [WinRM::WSMV::Base] A wsmv message to send to endpoint
+      # @param wait_for_done_state whether to poll for a CommandState of Done
+      # @yield [Message] PSRP Message in response
+      # @yieldreturn [Array<Message>] All messages in response
       def read_message(wsmv_message, wait_for_done_state = false)
         messages = []
         defragmenter = MessageDefragmenter.new
@@ -44,6 +50,11 @@ module WinRM
         messages unless block_given?
       end
 
+      # Reads streams and returns decoded output
+      # @param wsmv_message [WinRM::WSMV::Base] A wsmv message to send to endpoint
+      # @yieldparam [string] standard out response text
+      # @yieldparam [string] standard error response text
+      # @yieldreturn [WinRM::Output] The command output
       def read_output(wsmv_message)
         with_output do |output|
           read_message(wsmv_message, true) do |message|

@@ -21,12 +21,12 @@ require_relative '../output'
 
 module WinRM
   module WSMV
-    # Class to handle getting all the output of a command until it completes
+    # Class for reading wsmv Receive_Response messages
     class ReceiveResponseReader
       include WinRM::WSMV::SOAP
       include WinRM::WSMV::Header
 
-      # Creates a new command output processor
+      # Creates a new ReceiveResponseReader
       # @param transport [HttpTransport] The WinRM SOAP transport
       # @param logger [Logger] The logger to log diagnostic messages to
       def initialize(transport, logger)
@@ -37,10 +37,12 @@ module WinRM
 
       attr_reader :logger
 
-      # Gets the command output from the remote shell
-      # @param shell_id [UUID] The remote shell id running the command
-      # @param command_id [UUID] The command id to get output for
+      # Reads streams and returns decoded output
+      # @param wsmv_message [WinRM::WSMV::Base] A wsmv message to send to endpoint
       # @param block Optional callback for any output
+      # @yieldparam [string] standard out response text
+      # @yieldparam [string] standard error response text
+      # @yieldreturn [WinRM::Output] The command output
       def read_output(wsmv_message, &block)
         with_output do |output|
           read_response(wsmv_message, true) do |stream, doc|
@@ -50,6 +52,11 @@ module WinRM
         end
       end
 
+      # Reads streams sent in one or more receive response messages
+      # @param wsmv_message [WinRM::WSMV::Base] A wsmv message to send to endpoint
+      # @param wait_for_done_state whether to poll for a CommandState of Done
+      # @yieldparam [Hash] Hash representation of stream with type and text
+      # @yieldparam [string] Complete SOAP envelope returned to wsmv_message
       def read_response(wsmv_message, wait_for_done_state = false)
         resp_doc = nil
         until command_done?(resp_doc, wait_for_done_state)
