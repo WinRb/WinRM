@@ -86,7 +86,7 @@ describe WinRM::WSMV::ReceiveResponseReader do
         ).once
       end
 
-      it 'decodes to match input data' do
+      it 'yields stream and document' do
         subject.read_response(output_message) do |stream, doc|
           expect(stream[:text]).to eq(test_data_stdout) if stream[:type] == :stdout
           expect(stream[:text]).to eq(test_data_stderr) if stream[:type] == :stderr
@@ -103,7 +103,7 @@ describe WinRM::WSMV::ReceiveResponseReader do
       let(:test_data_xml_not_done) { test_data_xml_template_not_done.result(binding) }
       let(:test_data_xml_done) { test_data_xml_template.result(binding) }
 
-      it 'decodes to match input data' do
+      it 'yields streams and both documents' do
         allow(transport).to receive(:send_request).and_return(
           REXML::Document.new(test_data_xml_not_done),
           REXML::Document.new(test_data_xml_done)
