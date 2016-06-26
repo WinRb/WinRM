@@ -9,6 +9,9 @@ describe WinRM::PSRP::ReceiveResponseReader do
   let(:test_data_xml_template) do
     ERB.new(stubbed_response('get_powershell_output_response.xml.erb'))
   end
+  let(:test_data_xml_template_not_done) do
+    ERB.new(stubbed_response('get_powershell_output_response_not_done.xml.erb'))
+  end
   let(:test_data_text) { 'some data' }
   let(:test_data) { "<obj><S>#{test_data_text}</S></obj>" }
   let(:message) do
@@ -36,59 +39,107 @@ describe WinRM::PSRP::ReceiveResponseReader do
     )
   end
 
-  context 'response doc stdout with pipeline output' do
-    let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_output] }
+  describe '#read_output' do
+    context 'response doc stdout with pipeline output' do
+      let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_output] }
 
-    it 'outputs to stdout' do
-      expect(
-        subject.read_output(output_message)[:data][0][:stdout]
-      ).to eq("#{test_data_text}\r\n")
+      it 'outputs to stdout' do
+        expect(
+          subject.read_output(output_message)[:data][0][:stdout]
+        ).to eq("#{test_data_text}\r\n")
+      end
+    end
+
+    context 'response doc stdout error record' do
+      let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:error_record] }
+
+      it 'outputs to stderr' do
+        expect(
+          subject.read_output(output_message)[:data][0][:stderr]
+        ).to eq("#{test_data_text}\r\n")
+      end
+    end
+
+    context 'response doc writing error to host' do
+      let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_host_call] }
+      let(:test_data) do
+        "<Obj RefId='0'><MS><I64 N='ci'>-100</I64><Obj N='mi' RefId='1'><TN RefId='0'>" \
+        '<T>System.Management.Automation.Remoting.RemoteHostMethodId</T><T>System.Enum</T>' \
+        '<T>System.ValueType</T><T>System.Object</T></TN><ToString>WriteErrorLine</ToString>' \
+        "<I32>18</I32></Obj><Obj N='mp' RefId='2'><TN RefId='1'>" \
+        '<T>System.Collections.ArrayList</T><T>System.Object</T></TN><LST><S>errors</S></LST>' \
+        '</Obj></MS></Obj>'
+      end
+
+      it 'outputs to stderr' do
+        expect(
+          subject.read_output(output_message)[:data][0][:stderr]
+        ).to eq("errors\r\n")
+      end
+    end
+
+    context 'response doc writing output to host' do
+      let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_host_call] }
+      let(:test_data) do
+        "<Obj RefId='0'><MS><I64 N='ci'>-100</I64><Obj N='mi' RefId='1'><TN RefId='0'>" \
+        '<T>System.Management.Automation.Remoting.RemoteHostMethodId</T><T>System.Enum</T>' \
+        '<T>System.ValueType</T><T>System.Object</T></TN><ToString>WriteHostLine</ToString>' \
+        "<I32>18</I32></Obj><Obj N='mp' RefId='2'><TN RefId='1'>" \
+        '<T>System.Collections.ArrayList</T><T>System.Object</T></TN><LST><S>output</S></LST>' \
+        '</Obj></MS></Obj>'
+      end
+
+      it 'outputs to stdout' do
+        expect(
+          subject.read_output(output_message)[:data][0][:stdout]
+        ).to eq("output\r\n")
+      end
     end
   end
 
-  context 'response doc stdout error record' do
-    let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:error_record] }
+  describe '#read_message' do
+    context 'do not wait for done state' do
+      let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_output] }
 
-    it 'outputs to stderr' do
-      expect(
-        subject.read_output(output_message)[:data][0][:stderr]
-      ).to eq("#{test_data_text}\r\n")
-    end
-  end
-
-  context 'response doc writing error to host' do
-    let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_host_call] }
-    let(:test_data) do
-      "<Obj RefId='0'><MS><I64 N='ci'>-100</I64><Obj N='mi' RefId='1'><TN RefId='0'>" \
-      '<T>System.Management.Automation.Remoting.RemoteHostMethodId</T><T>System.Enum</T>' \
-      '<T>System.ValueType</T><T>System.Object</T></TN><ToString>WriteErrorLine</ToString>' \
-      "<I32>18</I32></Obj><Obj N='mp' RefId='2'><TN RefId='1'>" \
-      '<T>System.Collections.ArrayList</T><T>System.Object</T></TN><LST><S>errors</S></LST></Obj>' \
-      '</MS></Obj>'
+      it 'outputs the message in an array' do
+        expect(subject.read_message(output_message).length).to eq(1)
+        expect(subject.read_message(output_message)[0].data).to end_with(message.data)
+      end
     end
 
-    it 'outputs to stderr' do
-      expect(
-        subject.read_output(output_message)[:data][0][:stderr]
-      ).to eq("errors\r\n")
-    end
-  end
+    context 'read in a block' do
+      let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_output] }
 
-  context 'response doc writing output to host' do
-    let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_host_call] }
-    let(:test_data) do
-      "<Obj RefId='0'><MS><I64 N='ci'>-100</I64><Obj N='mi' RefId='1'><TN RefId='0'>" \
-      '<T>System.Management.Automation.Remoting.RemoteHostMethodId</T><T>System.Enum</T>' \
-      '<T>System.ValueType</T><T>System.Object</T></TN><ToString>WriteHostLine</ToString>' \
-      "<I32>18</I32></Obj><Obj N='mp' RefId='2'><TN RefId='1'>" \
-      '<T>System.Collections.ArrayList</T><T>System.Object</T></TN><LST><S>output</S></LST></Obj>' \
-      '</MS></Obj>'
+      it 'outputs the message in an array' do
+        subject.read_message(output_message) do |msg|
+          expect(msg.data).to end_with(message.data)
+        end
+      end
     end
 
-    it 'outputs to stdout' do
-      expect(
-        subject.read_output(output_message)[:data][0][:stdout]
-      ).to eq("output\r\n")
+    context 'wait for done state' do
+      let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_output] }
+      let(:test_data_xml_not_done) { test_data_xml_template_not_done.result(binding) }
+      let(:test_data_xml_done) { test_data_xml_template.result(binding) }
+
+      before do
+        allow(transport).to receive(:send_request).and_return(
+          REXML::Document.new(test_data_xml_not_done),
+          REXML::Document.new(test_data_xml_done)
+        )
+      end
+
+      it 'outputs two messages' do
+        expect(subject.read_message(output_message, true).length).to eq(2)
+      end
+
+      it 'outputs the first message' do
+        expect(subject.read_message(output_message, true)[0].data).to end_with(message.data)
+      end
+
+      it 'outputs the second message' do
+        expect(subject.read_message(output_message, true)[1].data).to end_with(message.data)
+      end
     end
   end
 end
