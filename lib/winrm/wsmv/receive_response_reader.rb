@@ -39,15 +39,14 @@ module WinRM
 
       # Reads streams and returns decoded output
       # @param wsmv_message [WinRM::WSMV::Base] A wsmv message to send to endpoint
-      # @param block Optional callback for any output
       # @yieldparam [string] standard out response text
       # @yieldparam [string] standard error response text
       # @yieldreturn [WinRM::Output] The command output
-      def read_output(wsmv_message, &block)
+      def read_output(wsmv_message)
         with_output do |output|
           read_response(wsmv_message, true) do |stream, doc|
             handled_out = handle_stream(stream, output, doc)
-            yield handled_out if handled_out && block
+            yield handled_out if handled_out && block_given?
           end
         end
       end
