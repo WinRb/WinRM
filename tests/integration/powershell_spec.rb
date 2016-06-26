@@ -140,7 +140,7 @@ describe 'winrm client powershell' do
 
   describe 'reading pipeline messages' do
     subject(:messages) { @powershell.send_pipeline_command('ipconfig') }
-    
+
     it 'returns multiple messages' do
       expect(messages.length).to be > 1
     end
@@ -150,6 +150,5 @@ describe 'winrm client powershell' do
     it 'last message is pipeline state' do
       expect(messages.last.type).to eq(WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_state])
     end
-
   end
 end
