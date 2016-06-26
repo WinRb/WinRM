@@ -55,7 +55,7 @@ module WinRM
       # @param wsmv_message [WinRM::WSMV::Base] A wsmv message to send to endpoint
       # @param wait_for_done_state whether to poll for a CommandState of Done
       # @yieldparam [Hash] Hash representation of stream with type and text
-      # @yieldparam [string] Complete SOAP envelope returned to wsmv_message
+      # @yieldparam [REXML::Document] Complete SOAP envelope returned to wsmv_message
       def read_response(wsmv_message, wait_for_done_state = false)
         resp_doc = nil
         until command_done?(resp_doc, wait_for_done_state)
