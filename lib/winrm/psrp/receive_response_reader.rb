@@ -83,17 +83,10 @@ module WinRM
       end
 
       def find_exit_code(message)
-        return nil unless message.type == WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_host_call]
+        parsed = message.parsed_data
+        return nil unless parsed.is_a?(MessageData::PipelineHostCall)
 
-        parser = Nori.new(
-          parser: :rexml,
-          advanced_typecasting: false,
-          convert_tags_to: ->(tag) { tag.snakecase.to_sym },
-          strip_namespaces: true
-        )
-        resp_objects = parser.parse(message.data)[:obj][:ms][:obj]
-
-        resp_objects[1][:lst][:i32].to_i if resp_objects[0][:to_string] == 'SetShouldExit'
+        parsed.method_parameters[:i32].to_i if parsed.method_identifier == 'SetShouldExit'
       end
     end
   end
