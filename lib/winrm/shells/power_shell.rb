@@ -154,15 +154,17 @@ module WinRM
       end
 
       def wait_for_running(shell_id)
-        state = ''
+        state = WinRM::PSRP::MessageData::RunspacepoolState::OPENING
         keepalive_msg = WinRM::WSMV::KeepAlive.new(connection_opts, shell_id)
 
         # 2 is "openned". if we start issuing commands while in "openning" the runspace
         # seems to hang
-        until state.include?('<I32 N="RunspaceState">2</I32>')
+        until state == WinRM::PSRP::MessageData::RunspacepoolState::OPENED
           message = response_reader.read_message(keepalive_msg).last
           logger.debug("[WinRM] polling for pipeline state. message: #{message.inspect}")
-          state = message.data
+          if message.parsed_data.is_a?(WinRM::PSRP::MessageData::RunspacepoolState)
+            state = message.parsed_data.runspace_state
+          end
         end
       end
 

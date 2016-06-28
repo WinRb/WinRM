@@ -25,7 +25,7 @@ describe WinRM::Shells::PowerShell do
   let(:test_data_xml_template) do
     ERB.new(stubbed_response('get_powershell_output_response.xml.erb'))
   end
-  let(:test_data) { '<I32 N="RunspaceState">2</I32>' }
+  let(:test_data) { '<Obj RefId="0"><MS><I32 N="RunspaceState">2</I32></MS></Obj>' }
   let(:message) do
     WinRM::PSRP::Message.new(
       shell_id,

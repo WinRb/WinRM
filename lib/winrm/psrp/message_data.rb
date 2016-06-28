@@ -19,6 +19,7 @@ require_relative 'message_data/error_record'
 require_relative 'message_data/pipeline_output'
 require_relative 'message_data/pipeline_host_call'
 require_relative 'message_data/runspacepool_host_call'
+require_relative 'message_data/runspacepool_state'
 
 module WinRM
   # PowerShell Remoting Protcol module
