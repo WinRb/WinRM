@@ -8,7 +8,7 @@ describe WinRM::PSRP::Message do
     subject do
       described_class.new(
         'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
-        WinRM::PSRP::Message::MESSAGE_TYPES[:session_capability],
+        WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_output],
         payload,
         '4218a578-0f18-4b19-82c3-46b433319126')
     end
@@ -17,7 +17,7 @@ describe WinRM::PSRP::Message do
       expect(subject.bytes[0..3]).to eq([2, 0, 0, 0])
     end
     it 'sets the message type LE' do
-      expect(subject.bytes[4..7]).to eq([2, 0, 1, 0])
+      expect(subject.bytes[4..7]).to eq([4, 16, 4, 0])
     end
     it 'sets the runspace pool id' do
       expect(subject.bytes[8..23]).to eq(
@@ -32,6 +32,9 @@ describe WinRM::PSRP::Message do
     end
     it 'contains at least the first 8 bytes of the XML payload' do
       expect(subject.bytes[43..-1]).to eq(payload.bytes)
+    end
+    it 'parses the data' do
+      expect(subject.parsed_data).to be_a(WinRM::PSRP::MessageData::PipelineOutput)
     end
   end
 

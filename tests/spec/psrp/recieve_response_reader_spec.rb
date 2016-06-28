@@ -83,7 +83,7 @@ describe WinRM::PSRP::ReceiveResponseReader do
       let(:test_data) do
         "<Obj RefId='0'><MS><I64 N='ci'>-100</I64><Obj N='mi' RefId='1'><TN RefId='0'>" \
         '<T>System.Management.Automation.Remoting.RemoteHostMethodId</T><T>System.Enum</T>' \
-        '<T>System.ValueType</T><T>System.Object</T></TN><ToString>WriteHostLine</ToString>' \
+        '<T>System.ValueType</T><T>System.Object</T></TN><ToString>WriteLine</ToString>' \
         "<I32>18</I32></Obj><Obj N='mp' RefId='2'><TN RefId='1'>" \
         '<T>System.Collections.ArrayList</T><T>System.Object</T></TN><LST><S>output</S></LST>' \
         '</Obj></MS></Obj>'

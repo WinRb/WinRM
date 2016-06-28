@@ -11,6 +11,10 @@ module SpecUnitHelper
     File.read("tests/spec/stubs/responses/#{file}")
   end
 
+  def stubbed_clixml(file)
+    File.read("tests/spec/stubs/clixml/#{file}")
+  end
+
   def default_connection_opts
     {
       user: 'Administrator',

@@ -16,6 +16,7 @@
 # limitations under the License.
 
 require_relative 'uuid'
+require_relative 'message_data'
 
 module WinRM
   # PowerShell Remoting Protcol module
@@ -103,6 +104,12 @@ module WinRM
           byte_order_mark,
           data_bytes
         ].flatten
+      end
+
+      # Parses the raw data to a MessageData class
+      # @return [MessageData::Base] MessageData corresponding to this message type
+      def parsed_data
+        @parsed_data ||= MessageData.parse(self)
       end
 
       private

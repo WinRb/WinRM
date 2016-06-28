@@ -21,31 +21,50 @@ module WinRM
   module PSRP
     # Handles decoding a raw powershell output response
     class PowershellOutputDecoder
-      MESSAGE_TYPES_TO_IGNORE = [
-        WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_state],
-        WinRM::PSRP::Message::MESSAGE_TYPES[:information_record],
-        WinRM::PSRP::Message::MESSAGE_TYPES[:progress_record]
-      ].freeze
-
-      attr_reader :message
-
       # Decode the raw SOAP output into decoded PSRP message,
       # Removes BOM and replaces encoded line endings
       # @param raw_output [String] The raw encoded output
       # @return [String] The decoded output
       def decode(message)
-        return nil if MESSAGE_TYPES_TO_IGNORE.include?(message.type)
-        return nil if message.data =~ %r{<ToString>WriteProgress</ToString>}
-        decoded_text = handle_invalid_encoding(message.data)
-        decoded_text = remove_bom(decoded_text)
-        decoded_text = extract_out_string(decoded_text)
-        decoded_text
+        case message.type
+        when WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_output]
+          decode_pipeline_output(message)
+        when WinRM::PSRP::Message::MESSAGE_TYPES[:runspacepool_host_call]
+          decode_host_call(message)
+        when WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_host_call]
+          decode_host_call(message)
+        when WinRM::PSRP::Message::MESSAGE_TYPES[:error_record]
+          decode_error_record(message)
+        end
       end
 
-      private
+      protected
 
-      def extract_out_string(decoded_text)
-        doc = REXML::Document.new(decoded_text)
+      def decode_pipeline_output(message)
+        message.parsed_data.output
+      end
+
+      def decode_host_call(message)
+        text = begin
+          case message.parsed_data.method_identifier
+          when /WriteLine/, 'WriteErrorLine'
+            "#{message.parsed_data.method_parameters[:s]}\r\n"
+          when 'WriteDebugLine'
+            "Debug: #{message.parsed_data.method_parameters[:s]}\r\n"
+          when 'WriteWarningLine'
+            "Warning: #{message.parsed_data.method_parameters[:s]}\r\n"
+          when 'WriteVerboseLine'
+            "Verbose: #{message.parsed_data.method_parameters[:s]}\r\n"
+          when %r{Write\/[1-2]}
+            message.parsed_data.method_parameters[:s]
+          end
+        end
+
+        hex_decode(text)
+      end
+
+      def decode_error_record(message)
+        doc = REXML::Document.new(message.data)
         doc.root.get_elements('//S').map do |node|
           text = ''
           text << "#{node.attributes['N']}: " if node.attributes['N']
@@ -57,18 +76,14 @@ module WinRM
         end.join
       end
 
-      def handle_invalid_encoding(decoded_text)
-        decoded_text = decoded_text.force_encoding('utf-8')
-        return decoded_text if decoded_text.valid_encoding?
-        if decoded_text.respond_to?(:scrub)
-          decoded_text.scrub
-        else
-          decoded_text.encode('utf-16', invalid: :replace, undef: :replace).encode('utf-8')
-        end
-      end
+      private
 
-      def remove_bom(decoded_text)
-        decoded_text.sub("\xEF\xBB\xBF", '')
+      def hex_decode(text)
+        return unless text
+
+        text.gsub(/_x(\h\h\h\h)_/) do
+          Regexp.last_match[1].hex.chr
+        end
       end
     end
   end
