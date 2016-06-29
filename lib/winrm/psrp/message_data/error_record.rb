@@ -29,9 +29,7 @@ module WinRM
         end
 
         def fully_qualified_error_id
-          @fully_qualified_error_id ||= begin
-            REXML::XPath.first(REXML::Document.new(raw), "//*[@N='FullyQualifiedErrorId']").text
-          end
+          @fully_qualified_error_id ||= string_prop('FullyQualifiedErrorId')
         end
 
         def invocation_info
@@ -44,21 +42,20 @@ module WinRM
         end
 
         def error_category_message
-          @error_category_message ||= begin
-            message = REXML::XPath.first(doc, "//*[@N='ErrorCategory_Message']")
-            message.text if message
-          end
+          @error_category_message ||= string_prop('ErrorCategory_Message')
         end
 
         def error_details_script_stack_trace
-          @error_details_script_stack_trace ||= begin
-            trace = REXML::XPath.first(doc, "//*[@N='ErrorDetails_ScriptStackTrace']")
-            trace.text if trace
-          end
+          @error_details_script_stack_trace ||= string_prop('ErrorDetails_ScriptStackTrace')
         end
 
         def doc
           @doc ||= REXML::Document.new(raw)
+        end
+
+        def string_prop(prop_name)
+          prop = REXML::XPath.first(doc, "//*[@N='#{prop_name}']")
+          prop.text if prop
         end
       end
     end
