@@ -8,6 +8,7 @@ describe WinRM::PSRP::MessageData::ErrorRecord do
     ERB.new(stubbed_clixml('error_record.xml.erb'))
   end
   let(:error_message) { 'an error' }
+  let(:script_root) { 'script_root' }
   let(:category_message) { 'category message' }
   let(:stack_trace) { 'stack trace' }
   let(:error_id) { 'Microsoft.PowerShell.Commands.WriteErrorException' }
@@ -24,6 +25,10 @@ describe WinRM::PSRP::MessageData::ErrorRecord do
 
   it 'returns the invocation info' do
     expect(subject.invocation_info[:line]).to eq("write-error '#{error_message}'")
+  end
+
+  it 'converts camel case properties to underscore' do
+    expect(subject.invocation_info[:ps_script_root]).to eq(script_root)
   end
 
   it 'returns the error category message' do

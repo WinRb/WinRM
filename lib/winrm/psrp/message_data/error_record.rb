@@ -51,8 +51,16 @@ module WinRM
         def property_hash(prop_name)
           prop_nodes = REXML::XPath.first(doc, "//*[@N='#{prop_name}']/Props")
           prop_nodes.elements.each_with_object({}) do |node, props|
-            props[node.attributes['N'].downcase.to_sym] = node.text if node.text
+            name = node.attributes['N']
+            props[underscore(name).to_sym] = node.text if node.text
           end
+        end
+
+        def underscore(camel)
+          camel.gsub(/::/, '/')
+               .gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2')
+               .gsub(/([a-z\d])([A-Z])/, '\1_\2')
+               .tr('-', '_').downcase
         end
       end
     end
