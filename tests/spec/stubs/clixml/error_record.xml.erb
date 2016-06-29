@@ -32,7 +32,7 @@
             </Props>
         </Obj>
         <Nil N="TargetObject"/>
-        <S N="FullyQualifiedErrorId">Microsoft.PowerShell.Commands.WriteErrorException</S>
+        <S N="FullyQualifiedErrorId"><%= error_id %></S>
         <Obj N="InvocationInfo" RefId="3">
             <TN RefId="3">
                 <T>System.Management.Automation.InvocationInfo</T>
@@ -76,9 +76,9 @@
         <S N="ErrorCategory_Reason">WriteErrorException</S>
         <S N="ErrorCategory_TargetName"/>
         <S N="ErrorCategory_TargetType"/>
-        <S N="ErrorCategory_Message">NotSpecified: (:) [Write-Error], WriteErrorException</S>
+        <S N="ErrorCategory_Message"><%= category_message %></S>
         <B N="SerializeExtendedInfo">false</B>
-        <S N="ErrorDetails_ScriptStackTrace">at &lt;ScriptBlock&gt;, &lt;No file&gt;: line 1</S>
+        <S N="ErrorDetails_ScriptStackTrace"><%= stack_trace %></S>
         <Nil N="PSMessageDetails"/>
     </MS>
 </Obj>

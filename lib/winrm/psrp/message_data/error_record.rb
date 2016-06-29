@@ -19,12 +19,46 @@ module WinRM
     module MessageData
       # pipeline host call message type
       class ErrorRecord < Base
-        def method_identifier
-          clixml[:obj][0][:to_string]
+        def exception
+          @exception ||= begin
+            ex_props = REXML::XPath.first(REXML::Document.new(raw), "//*[@N='Exception']/Props")
+            ex_props.elements.each_with_object({}) do |node, props|
+              props[node.attributes['N'].downcase.to_sym] = node.text if node.text
+            end
+          end
         end
 
-        def method_parameters
-          clixml[:obj][1][:lst]
+        def fully_qualified_error_id
+          @fully_qualified_error_id ||= begin
+            REXML::XPath.first(REXML::Document.new(raw), "//*[@N='FullyQualifiedErrorId']").text
+          end
+        end
+
+        def invocation_info
+          @invocation_info ||= begin
+            in_props = REXML::XPath.first(doc, "//*[@N='InvocationInfo']/Props")
+            in_props.elements.each_with_object({}) do |node, props|
+              props[node.attributes['N'].downcase.to_sym] = node.text if node.text
+            end
+          end
+        end
+
+        def error_category_message
+          @error_category_message ||= begin
+            message = REXML::XPath.first(doc, "//*[@N='ErrorCategory_Message']")
+            message.text if message
+          end
+        end
+
+        def error_details_script_stack_trace
+          @error_details_script_stack_trace ||= begin
+            trace = REXML::XPath.first(doc, "//*[@N='ErrorDetails_ScriptStackTrace']")
+            trace.text if trace
+          end
+        end
+
+        def doc
+          @doc ||= REXML::Document.new(raw)
         end
       end
     end
