@@ -20,12 +20,7 @@ module WinRM
       # pipeline host call message type
       class ErrorRecord < Base
         def exception
-          @exception ||= begin
-            ex_props = REXML::XPath.first(REXML::Document.new(raw), "//*[@N='Exception']/Props")
-            ex_props.elements.each_with_object({}) do |node, props|
-              props[node.attributes['N'].downcase.to_sym] = node.text if node.text
-            end
-          end
+          @exception ||= property_hash('Exception')
         end
 
         def fully_qualified_error_id
@@ -33,12 +28,7 @@ module WinRM
         end
 
         def invocation_info
-          @invocation_info ||= begin
-            in_props = REXML::XPath.first(doc, "//*[@N='InvocationInfo']/Props")
-            in_props.elements.each_with_object({}) do |node, props|
-              props[node.attributes['N'].downcase.to_sym] = node.text if node.text
-            end
-          end
+          @invocation_info ||= property_hash('InvocationInfo')
         end
 
         def error_category_message
@@ -56,6 +46,13 @@ module WinRM
         def string_prop(prop_name)
           prop = REXML::XPath.first(doc, "//*[@N='#{prop_name}']")
           prop.text if prop
+        end
+
+        def property_hash(prop_name)
+          prop_nodes = REXML::XPath.first(doc, "//*[@N='#{prop_name}']/Props")
+          prop_nodes.elements.each_with_object({}) do |node, props|
+            props[node.attributes['N'].downcase.to_sym] = node.text if node.text
+          end
         end
       end
     end
