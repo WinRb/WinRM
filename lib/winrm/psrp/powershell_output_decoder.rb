@@ -64,16 +64,46 @@ module WinRM
       end
 
       def decode_error_record(message)
-        doc = REXML::Document.new(message.data)
-        doc.root.get_elements('//S').map do |node|
-          text = ''
-          text << "#{node.attributes['N']}: " if node.attributes['N']
-          next unless node.text
-          text << node.text.gsub(/_x(\h\h\h\h)_/) do
-            Regexp.last_match[1].hex.chr
-          end.chomp
-          text << "\r\n"
-        end.join
+        parsed = message.parsed_data
+        text = begin
+          case parsed.fully_qualified_error_id
+          when 'Microsoft.PowerShell.Commands.WriteErrorException'
+            render_write_error_exception(parsed)
+          when 'NativeCommandError'
+            render_native_command_error(parsed)
+          when 'NativeCommandErrorMessage'
+            parsed.exception[:message]
+          else
+            render_exception(parsed)
+          end
+        end
+
+        hex_decode(text)
+      end
+
+      def render_write_error_exception(parsed)
+        <<EOH
+#{parsed.invocation_info[:line]} : #{parsed.exception[:message]}
+    + CategoryInfo          : #{parsed.error_category_message}
+    + FullyQualifiedErrorId : #{parsed.fully_qualified_error_id}
+EOH
+      end
+
+      def render_exception(parsed)
+        <<EOH
+#{parsed.exception[:message]}
+#{parsed.invocation_info[:position_message]}
+    + CategoryInfo          : #{parsed.error_category_message}
+    + FullyQualifiedErrorId : #{parsed.fully_qualified_error_id}
+EOH
+      end
+
+      def render_native_command_error(parsed)
+        <<EOH
+#{parsed.invocation_info[:my_command]} : #{parsed.exception[:message]}
+    + CategoryInfo          : #{parsed.error_category_message}
+    + FullyQualifiedErrorId : #{parsed.fully_qualified_error_id}
+EOH
       end
 
       private

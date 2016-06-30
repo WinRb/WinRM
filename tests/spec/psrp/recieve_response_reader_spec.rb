@@ -52,11 +52,21 @@ describe WinRM::PSRP::ReceiveResponseReader do
 
     context 'response doc stdout error record' do
       let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:error_record] }
+      let(:test_data_error_xml_template) do
+        ERB.new(stubbed_clixml('error_record.xml.erb'))
+      end
+      let(:error_message) { 'an error' }
+      let(:script_root) { 'script_root' }
+      let(:category_message) { 'category message' }
+      let(:stack_trace) { 'stack trace' }
+      let(:error_id) { 'Microsoft.PowerShell.Commands.WriteErrorException' }
+      let(:test_data) { test_data_error_xml_template.result(binding) }
 
       it 'outputs to stderr' do
+        puts test_data
         expect(
           subject.read_output(output_message)[:data][0][:stderr]
-        ).to eq("#{test_data_text}\r\n")
+        ).to match(/#{error_message}/)
       end
     end
 

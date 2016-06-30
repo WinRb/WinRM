@@ -67,11 +67,18 @@ describe WinRM::PSRP::PowershellOutputDecoder do
 
   context 'receiving error record' do
     let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:error_record] }
-    let(:data) { %(<obj><S N="blah1">blahblah1</S><S N="blah2">blahblah2</S></obj>) }
+    let(:test_data_error_xml_template) do
+      ERB.new(stubbed_clixml('error_record.xml.erb'))
+    end
+    let(:error_message) { 'an error' }
+    let(:script_root) { 'script_root' }
+    let(:category_message) { 'category message' }
+    let(:stack_trace) { 'stack trace' }
+    let(:error_id) { 'Microsoft.PowerShell.Commands.WriteErrorException' }
+    let(:data) { test_data_error_xml_template.result(binding) }
 
-    it 'decodes key value record' do
-      expect(subject.split("\r\n")[0]).to eq('blah1: blahblah1')
-      expect(subject.split("\r\n")[1]).to eq('blah2: blahblah2')
+    it 'decodes error record' do
+      expect(subject).to match(/#{error_message}/)
     end
   end
 end
