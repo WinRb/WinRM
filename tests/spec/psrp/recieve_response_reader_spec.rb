@@ -63,7 +63,6 @@ describe WinRM::PSRP::ReceiveResponseReader do
       let(:test_data) { test_data_error_xml_template.result(binding) }
 
       it 'outputs to stderr' do
-        puts test_data
         expect(
           subject.read_output(output_message)[:data][0][:stderr]
         ).to match(/#{error_message}/)
