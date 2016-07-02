@@ -2,7 +2,7 @@
 
 require 'winrm/shells/power_shell'
 
-describe WinRM::Shells::PowerShell do
+describe WinRM::Shells::Powershell do
   let(:retry_limit) { 1 }
   let(:max_envelope_size_kb) { 150 }
   let(:shell_id) { 'bc1bfbba-8215-4a04-b2df-7a3ac0310e16' }

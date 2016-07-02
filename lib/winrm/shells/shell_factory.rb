@@ -36,14 +36,13 @@ module WinRM
       # @param shell_type [Symbol] The shell type :cmd or :powershell
       # @return The ready to use shell instance
       def create_shell(shell_type)
-        case shell_type
-        when :cmd
-          return WinRM::Shells::Cmd.new(@connection_opts, @transport, @logger)
-        when :powershell
-          return WinRM::Shells::PowerShell.new(@connection_opts, @transport, @logger)
+        type = shell_type.to_s.capitalize.to_sym
+        if Shells.constants.include?(type)
+          WinRM::Shells.const_get(type).new(@connection_opts, @transport, @logger)
         else
-          raise "#{shell_type} is not a valid WinRM shell type. " \
-            'Expected either :cmd or :powershell.'
+          message = "#{type} is not a valid WinRM shell type. " \
+            'Expected either :cmd, :powershell or pluggable shell.'
+          raise WinRM::InvalidShellError, message
         end
       end
     end
