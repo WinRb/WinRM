@@ -55,7 +55,7 @@ module WinRM
             "Warning: #{message.parsed_data.method_parameters[:s]}\r\n"
           when 'WriteVerboseLine'
             "Verbose: #{message.parsed_data.method_parameters[:s]}\r\n"
-          when %r{Write\/[1-2]}
+          when /Write[1-2]/
             message.parsed_data.method_parameters[:s]
           end
         end
