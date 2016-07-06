@@ -42,7 +42,7 @@ module WinRM
       def init_kerberos_transport(opts)
         require 'gssapi'
         require 'gssapi/extensions'
-        HTTP::HttpGSSAPI.new(opts[:endpoint], opts[:realm], opts[:service], opts[:keytab], opts)
+        HTTP::HttpGSSAPI.new(opts[:endpoint], opts[:realm], opts, opts[:service], opts[:keytab])
       end
 
       def init_plaintext_transport(opts)

@@ -23,7 +23,6 @@ module WinRM
     # This backend will maintain state for every WinRMWebService instance that is instantiated so it
     # is possible to use GSSAPI with Keep-Alive.
     class HttpTransport
-
       attr_reader :endpoint
 
       def initialize(endpoint, options)
@@ -104,10 +103,21 @@ module WinRM
         return unless @ssl_peer_fingerprint
         conn_fingerprint = OpenSSL::Digest::SHA1.new(cert.to_der).to_s
         return unless @ssl_peer_fingerprint.casecmp(conn_fingerprint) != 0
-        fail "ssl fingerprint mismatch!!!!\n"
+        raise "ssl fingerprint mismatch!!!!\n"
       end
 
       protected
+
+      def body(message, length, type = 'application/HTTP-SPNEGO-session-encrypted')
+        [
+          '--Encrypted Boundary',
+          "Content-Type: #{type}",
+          "OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{length}",
+          '--Encrypted Boundary',
+          'Content-Type: application/octet-stream',
+          "#{message}--Encrypted Boundary--"
+        ].join("\r\n").concat("\r\n")
+      end
 
       def log_soap_message(message)
         return unless @logger.debug?
@@ -122,7 +132,6 @@ module WinRM
       end
     end
 
-
     # Plain text, insecure, HTTP transport
     class HttpPlaintext < HttpTransport
       def initialize(endpoint, user, pass, opts)
@@ -134,7 +143,6 @@ module WinRM
       end
     end
 
-
     # NTLM/Negotiate, secure, HTTP transport
     class HttpNegotiate < HttpTransport
       def initialize(endpoint, user, pass, opts)
@@ -143,7 +151,7 @@ module WinRM
         no_sspi_auth!
 
         user_parts = user.split('\\')
-        if(user_parts.length > 1)
+        if user_parts.length > 1
           opts[:domain] = user_parts[0]
           user = user_parts[1]
         end
@@ -160,69 +168,61 @@ module WinRM
         auth_header = init_auth if @ntlmcli.session.nil?
         log_soap_message(message)
 
-        original_length = message.bytesize
-
-        emessage = @ntlmcli.session.seal_message message
-        signature = @ntlmcli.session.sign_message message
-        seal = "\x10\x00\x00\x00#{signature}#{emessage}"
-
         hdr = {
-          "Content-Type" => "multipart/encrypted;protocol=\"application/HTTP-SPNEGO-session-encrypted\";boundary=\"Encrypted Boundary\""
+          'Content-Type' => 'multipart/encrypted;'\
+            'protocol="application/HTTP-SPNEGO-session-encrypted";boundary="Encrypted Boundary"'
         }
         hdr.merge!(auth_header) if auth_header
 
-        body = [
-          "--Encrypted Boundary",
-          "Content-Type: application/HTTP-SPNEGO-session-encrypted",
-          "OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{original_length}",
-          "--Encrypted Boundary",
-          "Content-Type: application/octet-stream",
-          "#{seal}--Encrypted Boundary--",
-          ""
-        ].join("\r\n")
-
-        resp = @httpcli.post(@endpoint, body, hdr)
+        resp = @httpcli.post(@endpoint, body(seal(message), message.bytesize), hdr)
         verify_ssl_fingerprint(resp.peer_cert)
         if resp.status == 401 && @retryable
           @retryable = false
           send_request(message, init_auth)
         else
           @retryable = true
-          decrypted_body = resp.body.empty? ? '' : winrm_decrypt(resp.body)
+          decrypted_body = winrm_decrypt(resp.body)
           log_soap_message(decrypted_body)
-          handler = WinRM::ResponseHandler.new(decrypted_body, resp.status)
-          handler.parse_to_xml()
+          WinRM::ResponseHandler.new(decrypted_body, resp.status).parse_to_xml
         end
       end
 
       private
 
+      def seal(message)
+        emessage = @ntlmcli.session.seal_message message
+        signature = @ntlmcli.session.sign_message message
+        "\x10\x00\x00\x00#{signature}#{emessage}"
+      end
+
       def winrm_decrypt(str)
+        return '' if str.empty?
         str.force_encoding('BINARY')
-        str.sub!(/^.*Content-Type: application\/octet-stream\r\n(.*)--Encrypted.*$/m, '\1')
+        str.sub!(%r{^.*Content-Type: application\/octet-stream\r\n(.*)--Encrypted.*$}m, '\1')
 
         signature = str[4..19]
         message = @ntlmcli.session.unseal_message str[20..-1]
         if @ntlmcli.session.verify_signature(signature, message)
           message
         else
-          raise WinRMHTTPTransportError, "Could not decrypt NTLM message."
+          raise WinRMHTTPTransportError, 'Could not decrypt NTLM message.'
         end
       end
 
       def init_auth
         @logger.debug "Initializing Negotiate for #{@endpoint}"
         auth1 = @ntlmcli.init_context
-        hdr = {"Authorization" => "Negotiate #{auth1.encode64}",
-               "Content-Type" => "application/soap+xml;charset=UTF-8"
+        hdr = {
+          'Authorization' => "Negotiate #{auth1.encode64}",
+          'Content-Type' => 'application/soap+xml;charset=UTF-8'
         }
-        @logger.debug "Sending HTTP POST for Negotiate Authentication"
-        r = @httpcli.post(@endpoint, "", hdr)
+        @logger.debug 'Sending HTTP POST for Negotiate Authentication'
+        r = @httpcli.post(@endpoint, '', hdr)
         verify_ssl_fingerprint(r.peer_cert)
-        itok = r.header["WWW-Authenticate"].pop.split.last
+        itok = r.header['WWW-Authenticate'].pop.split.last
         binding = r.peer_cert.nil? ? nil : Net::NTLM::ChannelBinding.create(r.peer_cert)
         auth3 = @ntlmcli.init_context(itok, binding)
-        { "Authorization" => "Negotiate #{auth3.encode64}" }
+        { 'Authorization' => "Negotiate #{auth3.encode64}" }
       end
     end
 
@@ -257,7 +257,7 @@ module WinRM
       # @param [String<optional>] service the service name, default is HTTP
       # @param [String<optional>] keytab the path to a keytab file if you are using one
       # rubocop:disable Lint/UnusedMethodArgument
-      def initialize(endpoint, realm, service = nil, keytab = nil, opts)
+      def initialize(endpoint, realm, opts, service = nil, keytab = nil)
         # rubocop:enable Lint/UnusedMethodArgument
         super(endpoint, opts)
         # Remove the GSSAPI auth from HTTPClient because we are doing our own thing
@@ -296,24 +296,18 @@ module WinRM
         log_soap_message(message)
         original_length = message.bytesize
         pad_len, emsg = winrm_encrypt(message)
+        req_length = original_length + pad_len
         hdr = {
           'Connection' => 'Keep-Alive',
-          'Content-Type' =>
-            'multipart/encrypted;' \
-            'protocol="application/HTTP-Kerberos-session-encrypted";' \
-            'boundary="Encrypted Boundary"'
+          'Content-Type' => 'multipart/encrypted;' \
+            'protocol="application/HTTP-Kerberos-session-encrypted";boundary="Encrypted Boundary"'
         }
-        body = [
-          "--Encrypted Boundary",
-          "Content-Type: application/HTTP-Kerberos-session-encrypted",
-          "OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{original_length + pad_len}",
-          "--Encrypted Boundary",
-          "Content-Type: application/octet-stream",
-          "#{emsg}--Encrypted Boundary--",
-          ""
-        ].join("\r\n")
 
-        resp = @httpcli.post(@endpoint, body, hdr)
+        resp = @httpcli.post(
+          @endpoint,
+          body(emsg, req_length, 'application/HTTP-Kerberos-session-encrypted'),
+          hdr
+        )
         log_soap_message(resp.http_body.content)
         resp
       end
@@ -340,82 +334,85 @@ module WinRM
       # @return [String] the encrypted request string
       def winrm_encrypt(str)
         @logger.debug "Encrypting SOAP message:\n#{str}"
-        iov_cnt = 3
-        iov = FFI::MemoryPointer.new(GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * iov_cnt)
+        iov = iov_pointer
 
-        iov0 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(FFI::Pointer.new(iov.address))
-        iov0[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_HEADER | \
-          GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_FLAG_ALLOCATE)
+        iov0 = create_iov(iov.address, 0, :header)[:buffer]
+        iov1 = create_iov(iov.address, 1, :data, str)[:buffer]
+        iov2 = create_iov(iov.address, 2, :padding)[:buffer]
 
-        iov1 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(
-          FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 1)))
-        iov1[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA)
-        iov1[:buffer].value = str
+        gss_wrap(iov)
 
-        iov2 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(
-          FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 2)))
-        iov2[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_PADDING | \
-          GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_FLAG_ALLOCATE)
-
-        conf_state = FFI::MemoryPointer.new :uint32
-        min_stat = FFI::MemoryPointer.new :uint32
-
-        GSSAPI::LibGSSAPI.gss_wrap_iov(
-          min_stat,
-          @gsscli.context,
-          1,
-          GSSAPI::LibGSSAPI::GSS_C_QOP_DEFAULT,
-          conf_state,
-          iov,
-          iov_cnt)
-
-        token = [iov0[:buffer].length].pack('L')
-        token += iov0[:buffer].value
-        token += iov1[:buffer].value
-        pad_len = iov2[:buffer].length
-        token += iov2[:buffer].value if pad_len > 0
+        token = [iov0.length].pack('L')
+        token += iov0.value
+        token += iov1.value
+        pad_len = iov2.length
+        token += iov2.value if pad_len > 0
         [pad_len, token]
       end
 
       # @return [String] the unencrypted response string
       def winrm_decrypt(str)
         @logger.debug "Decrypting SOAP message:\n#{str}"
-        iov_cnt = 3
-        iov = FFI::MemoryPointer.new(GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * iov_cnt)
-
-        iov0 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(FFI::Pointer.new(iov.address))
-        iov0[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_HEADER | \
-          GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_FLAG_ALLOCATE)
-
-        iov1 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(
-          FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 1)))
-        iov1[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA)
-
-        iov2 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(
-          FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 2)))
-        iov2[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA)
 
         str.force_encoding('BINARY')
-        str.sub!(/^.*Content-Type: application\/octet-stream\r\n(.*)--Encrypted.*$/m, '\1')
+        str.sub!(%r{^.*Content-Type: application\/octet-stream\r\n(.*)--Encrypted.*$}m, '\1')
+        iov_data = str.unpack("LA#{str.unpack('L').first}A*")
 
-        len = str.unpack('L').first
-        iov_data = str.unpack("LA#{len}A*")
-        iov0[:buffer].value = iov_data[1]
-        iov1[:buffer].value = iov_data[2]
+        iov = iov_pointer
 
+        create_iov(iov.address, 0, :header, iov_data[1])
+        ret = create_iov(iov.address, 1, :data, iov_data[2])[:buffer].value
+        create_iov(iov.address, 2, :data)
+
+        maj_stat = gss_unwrap(iov)
+
+        @logger.debug "SOAP message decrypted (MAJ: #{maj_stat}, " \
+          "MIN: #{min_stat.read_int}):\n#{ret}"
+
+        ret
+      end
+
+      def iov_pointer
+        FFI::MemoryPointer.new(GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 3)
+      end
+
+      def gss_unwrap(iov)
         min_stat = FFI::MemoryPointer.new :uint32
         conf_state = FFI::MemoryPointer.new :uint32
         conf_state.write_int(1)
         qop_state = FFI::MemoryPointer.new :uint32
         qop_state.write_int(0)
 
-        maj_stat = GSSAPI::LibGSSAPI.gss_unwrap_iov(
-          min_stat, @gsscli.context, conf_state, qop_state, iov, iov_cnt)
+        GSSAPI::LibGSSAPI.gss_unwrap_iov(
+          min_stat, @gsscli.context, conf_state, qop_state, iov, 3)
+      end
 
-        @logger.debug "SOAP message decrypted (MAJ: #{maj_stat}, " \
-          "MIN: #{min_stat.read_int}):\n#{iov1[:buffer].value}"
+      def gss_wrap(iov)
+        GSSAPI::LibGSSAPI.gss_wrap_iov(
+          FFI::MemoryPointer.new(:uint32),
+          @gsscli.context,
+          1,
+          GSSAPI::LibGSSAPI::GSS_C_QOP_DEFAULT,
+          FFI::MemoryPointer.new(:uint32),
+          iov,
+          3)
+      end
 
-        iov1[:buffer].value
+      def create_iov(address, offset, type, buffer = nil)
+        iov = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(
+          FFI::Pointer.new(address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * offset)))
+        case type
+        when :data
+          iov[:type] = GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA
+        when :header
+          iov[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_HEADER | \
+          GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_FLAG_ALLOCATE)
+        when :padding
+          iov[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_PADDING | \
+            GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_FLAG_ALLOCATE)
+        end
+        iov[:buffer].value = buffer if buffer
+        iov
       end
     end
   end
