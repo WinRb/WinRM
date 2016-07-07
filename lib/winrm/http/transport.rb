@@ -219,7 +219,12 @@ module WinRM
         @logger.debug 'Sending HTTP POST for Negotiate Authentication'
         r = @httpcli.post(@endpoint, '', hdr)
         verify_ssl_fingerprint(r.peer_cert)
-        itok = r.header['WWW-Authenticate'].pop.split.last
+        auth_header = r.header['WWW-Authenticate'].pop
+        unless auth_header
+          msg = "Unable to parse authorization header. Headers: #{r.headers}\r\nBody: #{r.body}"
+          raise WinRMHTTPTransportError.new(msg, r.status_code)
+        end
+        itok = auth_header.split.last
         binding = r.peer_cert.nil? ? nil : Net::NTLM::ChannelBinding.create(r.peer_cert)
         auth3 = @ntlmcli.init_context(itok, binding)
         { 'Authorization' => "Negotiate #{auth3.encode64}" }
