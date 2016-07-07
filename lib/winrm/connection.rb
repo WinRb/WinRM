@@ -34,7 +34,7 @@ module WinRM
     # Creates a new shell on the remote Windows server associated with
     # this connection.
     # @param shell_type [Symbol] The shell type :cmd or :powershell
-    # @return [Shell|Cmd] PowerShell or Cmd shell instance.
+    # @return [Shell] PowerShell or Cmd shell instance.
     def shell(shell_type)
       shell = shell_factory.create_shell(shell_type)
       if block_given?
@@ -48,6 +48,9 @@ module WinRM
       end
     end
 
+    # Executes a WQL query against the WinRM connection
+    # @param wql [String] The wql query
+    # @return [Hash] Hash representation of wql query response
     def run_wql(wql)
       query = WinRM::WSMV::WqlQuery.new(@connection_opts, wql)
       query.process_response(transport.send_request(query.build))
