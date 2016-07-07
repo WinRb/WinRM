@@ -21,7 +21,7 @@ WinRM 1.1 is supported, however 2.0 and higher is recommended. [See MSDN](http:/
 ```ruby
 require 'winrm'
 opts = { 
-  endpoint: "http://myhost:5985/wsman",
+  endpoint: 'http://myhost:5985/wsman',
   user: 'administrator',
   password: 'Pass@word1'
 }
@@ -56,7 +56,7 @@ The transport used governs the authentication method used and the encryption lev
 ### `:negotiate`
 ```ruby
 WinRM::Connection.new( 
-  endpoint: "http://myhost:5985/wsman",
+  endpoint: 'http://myhost:5985/wsman',
   transport: :negotiate,
   user: 'administrator',
   password: 'Pass@word1'
@@ -68,7 +68,7 @@ The `:negotiate` transport uses the [rubyntlm gem](https://github.com/WinRb/ruby
 ### `:ssl`
 ```ruby
 WinRM::Connection.new( 
-  endpoint: "https://myhost:59856/wsman",
+  endpoint: 'https://myhost:59856/wsman',
   transport: :ssl,
   user: 'administrator',
   password: 'Pass@word1'
@@ -87,7 +87,7 @@ The `:ssl` transport establishes a connection to the winrm endpoint over a secur
 ### `:kerberos`
 ```ruby
 WinRM::Connection.new( 
-  endpoint: "http://myhost:5985/wsman",
+  endpoint: 'http://myhost:5985/wsman',
   transport: :kerberos,
   realm: 'kerberos_realm'
 )
@@ -95,14 +95,15 @@ WinRM::Connection.new(
 
 Uses `:kerberos` to authenticate with the endpoint. These additional connection options may be used:
 
-* `:service` - kerberos service used to authenticate with the endpoint.
+* `:service` - kerberos service used to authenticate with the endpoint. Defaults to `HTTP`.
 * `:keytab` - path to a keytab file used to authenticate with the endpoint.
+* `:realm` - Kerberos realm to authenticate against.
 
 ### `:plaintext`
 Note: It is strongly recommended that you use `:negotiate` instead of `:plaintext`. As the name infers, the `:plaintext` transport includes authentication credentials in plain text.
 ```ruby
 WinRM::Connection.new( 
-  endpoint: "http://myhost:5985/wsman",
+  endpoint: 'http://myhost:5985/wsman',
   transport: :plaintext,
   user: 'administrator',
   password: 'Pass@word1',
@@ -122,12 +123,12 @@ As of the WinRM gem version 2, one creates a shell for executing commands by cal
 * `:cmd` - initiates a traditional cmd.exe shell via the WinRM protocol
 * `:powershell` - initiates a powershell runspace via the PSRP protocol
 
-Both shells support the same public methods: `:open`, `:close`, and `:run`. Note that when given a shell, it is opened automatically upon executing the first command via `:run`. Further, `close` is called automatically when a `shell` is garbage collected or when using a shell from a block. However, it is always a good idea to proactively `close` a shell.
+Both shells support the same public methods: `:open`, `:close`, and `run`. Note that when given a shell, it is opened automatically upon executing the first command via `:run`. Further, `close` is called automatically when a `shell` is garbage collected or when using a shell from a block. However, it is always a good idea to proactively `close` a shell.
 
 ## Executing a WQL Query
 ```ruby
 opts = { 
-  endpoint: "http://myhost:5985/wsman",
+  endpoint: 'http://myhost:5985/wsman',
   user: 'administrator',
   password: 'Pass@word1'
 }
@@ -216,8 +217,7 @@ To run the integration tests you will need a Windows box with the WinRM service 
 
 1. Create a Windows VM with WinRM configured (see above).
 2. Copy the config-example.yml to config.yml - edit this file with your WinRM connection details.
-3. Ensure that the box you are running the test against has a default shell profile (check ~\Documents\WindowsPowerShell).  If any of your shell profiles generate stdout or stderr output, the test validators may get thrown off.
-4. Run `bundle exec rake integration`
+3. Run `bundle exec rake integration`
 
 ## WinRM Author
 * Twitter: [@zentourist](https://twitter.com/zentourist)
