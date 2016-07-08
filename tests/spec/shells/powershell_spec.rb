@@ -23,19 +23,41 @@ describe WinRM::Shells::Powershell do
   let(:connection_options) { { max_commands: 100, retry_limit: retry_limit, retry_delay: 0 } }
   let(:transport) { double('transport', send_request: nil) }
   let(:test_data_xml_template) do
-    ERB.new(stubbed_response('get_powershell_output_response.xml.erb'))
+    ERB.new(stubbed_response('get_powershell_keepalive_response.xml.erb'))
   end
-  let(:test_data) { '<Obj RefId="0"><MS><I32 N="RunspaceState">2</I32></MS></Obj>' }
-  let(:message) do
+  let(:protocol_version) { 2.2 }
+  let(:test_data1) do
+    <<-EOH
+      <Obj RefId="0">
+        <MS>
+          <Version N="protocolversion">#{protocol_version}</Version>
+          <Version N="PSVersion">2.0</Version>
+          <Version N="SerializationVersion">1.1.0.1</Version>
+        </MS>
+      </Obj>
+    EOH
+  end
+  let(:test_data2) { '<Obj RefId="0"><MS><I32 N="RunspaceState">2</I32></MS></Obj>' }
+  let(:message1) do
     WinRM::PSRP::Message.new(
       shell_id,
-      WinRM::PSRP::Message::MESSAGE_TYPES[:runspacepool_state],
-      test_data,
+      WinRM::PSRP::Message::MESSAGE_TYPES[:session_capability],
+      test_data1,
       command_id
     )
   end
-  let(:fragment) { WinRM::PSRP::Fragment.new(1, message.bytes) }
-  let(:test_data_stdout) { Base64.strict_encode64(fragment.bytes.pack('C*')) }
+  let(:message2) do
+    WinRM::PSRP::Message.new(
+      shell_id,
+      WinRM::PSRP::Message::MESSAGE_TYPES[:runspacepool_state],
+      test_data2,
+      command_id
+    )
+  end
+  let(:fragment1) { WinRM::PSRP::Fragment.new(1, message1.bytes) }
+  let(:fragment2) { WinRM::PSRP::Fragment.new(1, message2.bytes) }
+  let(:test_data_stdout1) { Base64.strict_encode64(fragment1.bytes.pack('C*')) }
+  let(:test_data_stdout2) { Base64.strict_encode64(fragment2.bytes.pack('C*')) }
 
   before do
     allow(SecureRandom).to receive(:uuid).and_return(command_id)
@@ -94,6 +116,33 @@ describe WinRM::Shells::Powershell do
     it 'sends cleanup message through transport' do
       expect(transport).to receive(:send_request).with(cleanup_payload)
       subject.run(command)
+    end
+
+    context 'non admin user' do
+      before do
+        allow(transport).to receive(:send_request).with(configuration_payload)
+          .and_raise(WinRM::WinRMWSManFault.new('no access for you', '5'))
+      end
+
+      context 'protocol version 2.1' do
+        let(:protocol_version) { 2.1 }
+
+        it 'sets the fragmenter max_blob_length' do
+          expect_any_instance_of(WinRM::PSRP::MessageFragmenter).to receive(:max_blob_length=)
+            .with(153600)
+          subject.run(command)
+        end
+      end
+
+      context 'protocol version 2.2' do
+        let(:protocol_version) { 2.2 }
+
+        it 'sets the fragmenter max_blob_length' do
+          expect_any_instance_of(WinRM::PSRP::MessageFragmenter).to receive(:max_blob_length=)
+            .with(512000)
+          subject.run(command)
+        end
+      end
     end
 
     context 'fragment large command' do

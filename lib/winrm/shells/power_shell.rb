@@ -76,8 +76,17 @@ module WinRM
         @max_fragment_blob_size ||= begin
           fragment_header_length = 21
 
-          max_fragment_bytes = (max_envelope_size_kb * 1024) - empty_pipeline_envelope.length
-          base64_deflated(max_fragment_bytes) - fragment_header_length
+          begin
+            max_fragment_bytes = (max_envelope_size_kb * 1024) - empty_pipeline_envelope.length
+            base64_deflated(max_fragment_bytes) - fragment_header_length
+          rescue WinRMWSManFault => e
+            # A non administrator user will encounter an access denied
+            # error attempting to query winrm configuration.
+            # we will assin a small default and adjust to a protocol
+            # appropriate max length when that info is available
+            raise unless e.fault_code == '5'
+            WinRM::PSRP::MessageFragmenter::DEFAULT_BLOB_LENGTH
+          end
         end
       end
 
@@ -160,12 +169,28 @@ module WinRM
         # 2 is "openned". if we start issuing commands while in "openning" the runspace
         # seems to hang
         until state == WinRM::PSRP::MessageData::RunspacepoolState::OPENED
-          message = response_reader.read_message(keepalive_msg).last
-          logger.debug("[WinRM] polling for pipeline state. message: #{message.inspect}")
-          if message.parsed_data.is_a?(WinRM::PSRP::MessageData::RunspacepoolState)
-            state = message.parsed_data.runspace_state
+          response_reader.read_message(keepalive_msg) do |message|
+            logger.debug("[WinRM] polling for pipeline state. message: #{message.inspect}")
+            parsed = message.parsed_data
+            case parsed
+            when WinRM::PSRP::MessageData::RunspacepoolState
+              state = parsed.runspace_state
+            when WinRM::PSRP::MessageData::SessionCapability
+              # if the user lacks admin privileges, we cannot query the MaxEnvelopeSizeKB
+              # on the server and will assign to a "best effort" default based on protocol version
+              if fragmenter.max_blob_length == WinRM::PSRP::MessageFragmenter::DEFAULT_BLOB_LENGTH
+                fragmenter.max_blob_length = default_protocol_envelope_size(parsed.protocol_version)
+              end
+            end
           end
         end
+      end
+
+      # Powershell v2.0 has a protocol version of 2.1
+      # which defaults to a 150 MaxEnvelopeSizeKB
+      # later versions default to 500
+      def default_protocol_envelope_size(protocol_version)
+        protocol_version > '2.1' ? 512000 : 153600
       end
 
       def fragmenter

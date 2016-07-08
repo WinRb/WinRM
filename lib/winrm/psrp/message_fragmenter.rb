@@ -21,12 +21,15 @@ module WinRM
   module PSRP
     # PowerShell Remoting Protocol message fragmenter.
     class MessageFragmenter
-      def initialize(max_blob_length = 32_768)
+      DEFAULT_BLOB_LENGTH = 32_768
+
+      def initialize(max_blob_length = DEFAULT_BLOB_LENGTH)
         @object_id = 0
-        @max_blob_length = max_blob_length
+        @max_blob_length = max_blob_length || DEFAULT_BLOB_LENGTH
       end
 
       attr_reader :object_id
+      attr_accessor :max_blob_length
 
       def fragment(message)
         @object_id += 1
@@ -36,7 +39,7 @@ module WinRM
         fragment = nil
 
         while bytes_fragmented < message_bytes.length
-          last_byte = bytes_fragmented + @max_blob_length
+          last_byte = bytes_fragmented + max_blob_length
           last_byte = message_bytes.length if last_byte > message_bytes.length
           fragment = Fragment.new(
             object_id,
