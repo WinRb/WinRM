@@ -118,6 +118,7 @@ module WinRM
 
         open unless shell_id
         command_id = send_command(command, arguments)
+        logger.debug("[WinRM] creating command_id: #{command_id} on shell_id #{shell_id}")
         yield shell_id, command_id
       rescue WinRMWSManFault => e
         raise unless FAULTS_FOR_RESET.include?(e.fault_code) && (tries -= 1) > 0
@@ -136,6 +137,7 @@ module WinRM
       end
 
       def cleanup_command(command_id)
+        logger.debug("[WinRM] cleaning up command_id: #{command_id} on shell_id #{shell_id}")
         cleanup_msg = WinRM::WSMV::CleanupCommand.new(
           connection_opts,
           shell_uri: shell_uri,
@@ -144,6 +146,9 @@ module WinRM
         transport.send_request(cleanup_msg.build)
       rescue WinRMWSManFault => e
         raise unless e.fault_code == ERROR_OPERATION_ABORTED
+      rescue WinRMHTTPTransportError => t
+        # dont let the cleanup raise so we dont lose any errors from the command
+        logger.info("[WinRM] #{t.status_code} returned in cleanup with error: #{t.message}")
       end
 
       def open
