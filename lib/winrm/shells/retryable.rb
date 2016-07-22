@@ -24,7 +24,7 @@ module WinRM
       RETRYABLE_EXCEPTIONS = lambda do
         [
           Errno::EACCES, Errno::EADDRINUSE, Errno::ECONNREFUSED, Errno::ETIMEDOUT,
-          Errno::ECONNRESET, Errno::ENETUNREACH, Errno::EHOSTUNREACH,
+          Errno::ECONNRESET, Errno::ENETUNREACH, Errno::EHOSTUNREACH, ::WinRM::WinRMWSManFault,
           ::WinRM::WinRMHTTPTransportError, ::WinRM::WinRMAuthorizationError,
           HTTPClient::KeepAliveDisconnected, HTTPClient::ConnectTimeoutError
         ].freeze
