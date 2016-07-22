@@ -87,7 +87,10 @@ module WinRM
     end
 
     def raise_transport_error
-      raise WinRMHTTPTransportError.new('Bad HTTP response returned from server', @status_code)
+      raise WinRMHTTPTransportError.new(
+        "Bad HTTP response returned from server. Body(if present):#{@response_body}",
+        @status_code
+      )
     end
   end
 end
