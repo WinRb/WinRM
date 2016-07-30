@@ -6,13 +6,13 @@
 This is a SOAP library that uses the functionality in Windows Remote
 Management(WinRM) to call native object in Windows.  This includes, but is
 not limited to, running batch scripts, powershell scripts and fetching WMI
-variables.  For more information on WinRM, please visit Microsoft's WinRM
-site: http://msdn.microsoft.com/en-us/library/aa384426(v=VS.85).aspx
+variables.  For more information on WinRM, please visit [Microsoft's WinRM
+site](http://msdn.microsoft.com/en-us/library/aa384426.aspx).
 
-As of version 2.0, this gem retains the WinRM name but all powershell calls use the more modern [Powershell Remoting Protocol(PSRP)](https://msdn.microsoft.com/en-us/library/dd357801.aspx) for initializing runspace pools as well as creating and processing powershell pipelines.
+As of version 2.0, this gem retains the WinRM name but all powershell calls use the more modern [Powershell Remoting Protocol (PSRP)](https://msdn.microsoft.com/en-us/library/dd357801.aspx) for initializing runspace pools as well as creating and processing powershell pipelines.
 
 ## Supported WinRM Versions
-WinRM 1.1 is supported, however 2.0 and higher is recommended. [See MSDN](http://technet.microsoft.com/en-us/library/ff520073(v=ws.10).aspx) for information about WinRM versions and supported operating systems.
+WinRM 1.1 is supported, however 2.0 and higher is recommended. [See MSDN](http://technet.microsoft.com/en-us/library/ff520073.aspx) for information about WinRM versions and supported operating systems.
 
 ## Install
 `gem install -r winrm` then on the server `Enable-PSRemoting -Force` (already enabled on server operating systems 2012 and above) as admin
