@@ -45,7 +45,7 @@ describe WinRM::PSRP::ReceiveResponseReader do
 
       it 'outputs to stdout' do
         expect(
-          subject.read_output(output_message)[:data][0][:stdout]
+          subject.read_output(output_message).stdout
         ).to eq("#{test_data_text}\r\n")
       end
     end
@@ -64,7 +64,7 @@ describe WinRM::PSRP::ReceiveResponseReader do
 
       it 'outputs to stderr' do
         expect(
-          subject.read_output(output_message)[:data][0][:stderr]
+          subject.read_output(output_message).stderr
         ).to match(/#{error_message}/)
       end
     end
@@ -82,7 +82,7 @@ describe WinRM::PSRP::ReceiveResponseReader do
 
       it 'outputs to stderr' do
         expect(
-          subject.read_output(output_message)[:data][0][:stderr]
+          subject.read_output(output_message).stderr
         ).to eq("errors\r\n")
       end
     end
@@ -100,7 +100,7 @@ describe WinRM::PSRP::ReceiveResponseReader do
 
       it 'outputs to stdout' do
         expect(
-          subject.read_output(output_message)[:data][0][:stdout]
+          subject.read_output(output_message).stdout
         ).to eq("output\r\n")
       end
     end

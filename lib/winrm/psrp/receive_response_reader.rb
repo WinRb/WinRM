@@ -59,11 +59,11 @@ module WinRM
         with_output do |output|
           read_message(wsmv_message, true) do |message|
             exit_code = find_exit_code(message)
-            output[:exitcode] = exit_code if exit_code
+            output.exitcode = exit_code if exit_code
             decoded_text = @output_decoder.decode(message)
             next unless decoded_text
             out = { stream_type(message) => decoded_text }
-            output[:data] << out
+            output << out
             yield [out[:stdout], out[:stderr]] if block_given?
           end
         end

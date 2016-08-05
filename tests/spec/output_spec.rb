@@ -25,26 +25,26 @@ describe WinRM::Output do
   context 'when there is only one line' do
     describe '#stdout' do
       it 'is equal to that line' do
-        subject[:data] << { stdout: 'foo' }
+        subject << { stdout: 'foo' }
         expect(subject.stdout).to eq('foo')
       end
     end
 
     describe '#stderr' do
       it 'is equal to that line' do
-        subject[:data] << { stderr: 'foo' }
+        subject << { stderr: 'foo' }
         expect(subject.stderr).to eq('foo')
       end
     end
 
     describe '#output' do
       it 'is equal to stdout' do
-        subject[:data] << { stdout: 'foo' }
+        subject << { stdout: 'foo' }
         expect(subject.output).to eq('foo')
       end
 
       it 'is equal to stderr' do
-        subject[:data] << { stderr: 'foo' }
+        subject << { stderr: 'foo' }
         expect(subject.output).to eq('foo')
       end
     end
@@ -52,8 +52,8 @@ describe WinRM::Output do
 
   context 'when there is one line of each type' do
     before(:each) do
-      subject[:data] << { stdout: 'foo' }
-      subject[:data] << { stderr: 'bar' }
+      subject << { stdout: 'foo' }
+      subject << { stderr: 'bar' }
     end
 
     describe '#stdout' do
@@ -77,11 +77,11 @@ describe WinRM::Output do
 
   context 'when there are multiple lines' do
     before(:each) do
-      subject[:data] << { stdout: 'I can have a newline\nanywhere, ' }
-      subject[:data] << { stderr: 'I can also have stderr' }
-      subject[:data] << { stdout: 'or stdout', stderr: ' and stderr' }
-      subject[:data] << {}
-      subject[:data] << { stdout: ' or nothing! (above)' }
+      subject << { stdout: 'I can have a newline\nanywhere, ' }
+      subject << { stderr: 'I can also have stderr' }
+      subject << { stdout: 'or stdout', stderr: ' and stderr' }
+      subject << {}
+      subject << { stdout: ' or nothing! (above)' }
     end
 
     describe '#stdout' do
@@ -102,6 +102,25 @@ describe WinRM::Output do
         expect(subject.output).to eq(
           'I can have a newline\nanywhere, I can also have stderror stdout ' \
             'and stderr or nothing! (above)')
+      end
+    end
+  end
+
+  describe '#exitcode' do
+    let(:exitcode) { 0 }
+
+    context 'when a valid exit code is set' do
+      it 'sets the exit code' do
+        subject.exitcode = exitcode
+        expect(subject.exitcode).to eq exitcode
+      end
+    end
+
+    context 'when an invalid exit code is set' do
+      let(:exitcode) { 'bad' }
+
+      it 'sets the exit code' do
+        expect { subject.exitcode = exitcode }.to raise_error WinRM::InvalidExitCode
       end
     end
   end

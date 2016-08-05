@@ -47,7 +47,7 @@ describe WinRM::WSMV::ReceiveResponseReader do
 
       it 'does not have an empty stdout' do
         expect(
-          subject.read_output(output_message)[:data][0][:stdout]
+          subject.read_output(output_message).stdout
         ).not_to be_empty
       end
     end
@@ -66,7 +66,7 @@ describe WinRM::WSMV::ReceiveResponseReader do
 
       it 'decodes to match input data' do
         expect(
-          subject.read_output(output_message)[:data][0][:stdout]
+          subject.read_output(output_message).stdout
         ).to eq(test_data_raw)
       end
     end

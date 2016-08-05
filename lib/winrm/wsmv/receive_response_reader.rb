@@ -73,7 +73,7 @@ module WinRM
       def with_output
         output = WinRM::Output.new
         yield output
-        output[:exitcode] ||= 0
+        output.exitcode ||= 0
         output
       end
 
@@ -84,8 +84,8 @@ module WinRM
         return unless decoded_text
 
         out = { stream[:type] => decoded_text }
-        output[:data] << out
-        output[:exitcode] ||= exit_code(resp_doc)
+        output << out
+        output.exitcode ||= exit_code(resp_doc)
         [out[:stdout], out[:stderr]]
       end
 

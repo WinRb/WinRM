@@ -24,6 +24,9 @@ module WinRM
   # Shell creation error
   class InvalidShellError < WinRMError; end
 
+  # Exitcode error
+  class InvalidExitCode < WinRMError; end
+
   # A Fault returned in the SOAP response. The XML node is a WSManFault
   class WinRMWSManFault < WinRMError
     attr_reader :fault_code
