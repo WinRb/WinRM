@@ -77,7 +77,7 @@ module WinRM
         end
       end
 
-      # Closes the shell if oneis open
+      # Closes the shell if one is open
       def close
         return unless shell_id
         self.class.close_shell(connection_opts, transport, shell_id)
