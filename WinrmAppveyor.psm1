@@ -1,5 +1,5 @@
 function New-ClientCertificate {
-  param([String]$username, [String]$basePath = ((Resolve-Parh .).Path))
+  param([String]$username, [String]$basePath = ((Resolve-Path .).Path))
 
   $env:OPENSSL_CONF=[System.IO.Path]::GetTempFileName()
 
