@@ -27,6 +27,19 @@ module WinRM
   # Exitcode error
   class InvalidExitCode < WinRMError; end
 
+  # Shell creation error
+  class InvalidTransportError < WinRMError
+    attr_reader :invalid_transport
+
+    def initialize(invalid_transport, valid_transports)
+      @invalid_transport = invalid_transport
+      super(
+        "Invalid transport '#{invalid_transport}' specified" \
+        ", expected: #{valid_transports.join(', ')}."
+      )
+    end
+  end
+
   # A Fault returned in the SOAP response. The XML node is a WSManFault
   class WinRMWSManFault < WinRMError
     attr_reader :fault_code

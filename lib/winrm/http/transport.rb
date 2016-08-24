@@ -260,10 +260,10 @@ module WinRM
       # @param [String,URI] endpoint the WinRM webservice endpoint
       # @param [String] realm the Kerberos realm we are authenticating to
       # @param [String<optional>] service the service name, default is HTTP
-      # @param [String<optional>] keytab the path to a keytab file if you are using one
-      # rubocop:disable Lint/UnusedMethodArgument
-      def initialize(endpoint, realm, opts, service = nil, keytab = nil)
-        # rubocop:enable Lint/UnusedMethodArgument
+      def initialize(endpoint, realm, opts, service = nil)
+        require 'gssapi'
+        require 'gssapi/extensions'
+
         super(endpoint, opts)
         # Remove the GSSAPI auth from HTTPClient because we are doing our own thing
         no_sspi_auth!

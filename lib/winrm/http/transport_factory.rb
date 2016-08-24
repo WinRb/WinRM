@@ -25,12 +25,8 @@ module WinRM
       # @return [HttpTransport] A transport instance for making WinRM calls.
       def create_transport(connection_opts)
         transport = connection_opts[:transport]
-        begin
-          send "init_#{transport}_transport", connection_opts
-        rescue NoMethodError
-          raise "Invalid transport '#{transport}' specified, expected: " \
-            'negotiate, kerberos, plaintext, ssl.'
-        end
+        validate_transport!(transport)
+        send "init_#{transport}_transport", connection_opts
       end
 
       private
@@ -40,9 +36,7 @@ module WinRM
       end
 
       def init_kerberos_transport(opts)
-        require 'gssapi'
-        require 'gssapi/extensions'
-        HTTP::HttpGSSAPI.new(opts[:endpoint], opts[:realm], opts, opts[:service], opts[:keytab])
+        HTTP::HttpGSSAPI.new(opts[:endpoint], opts[:realm], opts, opts[:service])
       end
 
       def init_plaintext_transport(opts)
@@ -57,6 +51,16 @@ module WinRM
                                       opts[:client_key], opts[:key_pass], opts)
         else
           HTTP::HttpNegotiate.new(opts[:endpoint], opts[:user], opts[:password], opts)
+        end
+      end
+
+      def validate_transport!(transport)
+        valid = private_methods
+                .select { |m| m.to_s.start_with?('init_') && m.to_s.end_with?('_transport') }
+                .map { |tm| tm.to_s.split('_')[1] }
+
+        unless valid.include?(transport.to_s)
+          raise WinRM::InvalidTransportError.new(transport, valid)
         end
       end
     end
