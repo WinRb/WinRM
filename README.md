@@ -96,7 +96,6 @@ WinRM::Connection.new(
 Uses `:kerberos` to authenticate with the endpoint. These additional connection options may be used:
 
 * `:service` - kerberos service used to authenticate with the endpoint. Defaults to `HTTP`.
-* `:keytab` - path to a keytab file used to authenticate with the endpoint.
 * `:realm` - Kerberos realm to authenticate against.
 
 ### `:plaintext`
