@@ -6,7 +6,7 @@ platform:
 
 environment:
   winrm_user: test_user
-  winrm_pass: Pass@word1
+  winrm_password: Pass@word1
   user_cert: c:\projects\winrm\user.pem
   user_key: c:\projects\winrm\key.pem
 
@@ -21,7 +21,7 @@ branches:
     - master
 
 install:
-  - ps: net user /add $env:winrm_user $env:winrm_pass
+  - ps: net user /add $env:winrm_user $env:winrm_password
   - ps: net localgroup administrators $env:winrm_user /add
   - ps: $env:PATH="C:\OpenSSL-Win64\bin;$env:PATH"
   - ps: Import-Module c:\projects\winrm\WinrmAppveyor.psm1

@@ -5,79 +5,139 @@
 
 This is a SOAP library that uses the functionality in Windows Remote
 Management(WinRM) to call native object in Windows.  This includes, but is
-not limitted to, running batch scripts, powershell scripts and fetching WMI
-variables.  For more information on WinRM, please visit Microsoft's WinRM
-site: http://msdn.microsoft.com/en-us/library/aa384426(v=VS.85).aspx
+not limited to, running batch scripts, powershell scripts and fetching WMI
+variables.  For more information on WinRM, please visit [Microsoft's WinRM
+site](http://msdn.microsoft.com/en-us/library/aa384426.aspx).
+
+As of version 2.0, this gem retains the WinRM name but all powershell calls use the more modern [Powershell Remoting Protocol (PSRP)](https://msdn.microsoft.com/en-us/library/dd357801.aspx) for initializing runspace pools as well as creating and processing powershell pipelines.
 
 ## Supported WinRM Versions
-WinRM 1.1 is supported, however 2.0 and higher is recommended. [See MSDN](http://technet.microsoft.com/en-us/library/ff520073(v=ws.10).aspx) for information about WinRM versions and supported operating systems.
+WinRM 1.1 is supported, however 2.0 and higher is recommended. [See MSDN](http://technet.microsoft.com/en-us/library/ff520073.aspx) for information about WinRM versions and supported operating systems.
 
 ## Install
-`gem install -r winrm` then on the server `winrm quickconfig` as admin
+`gem install -r winrm` then on the server `Enable-PSRemoting -Force` (already enabled on server operating systems 2012 and above) as admin
 
 ## Example
 ```ruby
 require 'winrm'
-endpoint = 'http://mywinrmhost:5985/wsman'
-krb5_realm = 'EXAMPLE.COM'
-winrm = WinRM::WinRMWebService.new(endpoint, :kerberos, :realm => krb5_realm)
-winrm.create_executor do |executor|
-  executor.run_cmd('ipconfig /all') do |stdout, stderr|
+opts = { 
+  endpoint: 'http://myhost:5985/wsman',
+  user: 'administrator',
+  password: 'Pass@word1'
+}
+conn = WinRM::Connection.new(opts)
+conn.shell(:powershell) do |shell|
+  shell.run('$PSVersionTable') do |stdout, stderr|
     STDOUT.print stdout
     STDERR.print stderr
   end
 end
 ```
 
-There are various connection types you can specify upon initialization:
+## Connection Options
+There are various connection options you can specify upon initializing a WinRM connection object:
 
-It is recommended that you <code>:disable_sspi => true</code> if you are using the plaintext or ssl transport.
+* `:transport` - The type of underlying connection transport to use (more on this below). Defaults to `:negotiate`
+* `:locale` - The locale requested for response text formatting. This is the value sent in the `DataLocale` and `Locale` header values and defaults to `en-us`
+* `:max_envelope_size` - mazimum number of bytes expected for WinRM responses. This defaults to 153600
+* `:operation_timeout` - The maximum amount of time to wait for a response from the endpoint. This defaults to 60 seconds. Note that this will not "timeout" commands that exceed this amount of time to process, it just requires the endpoint to report the status of the command before the given amount of time passes.
+* `:receive_timeout` - The amount of time given to the underlying HTTP connection to respond before timing out. The defaults to 10 seconds longer than the `:operation_timeout`.
+* `:retry_limit` - the maximum number of times to retry opening a shell after failure. This defaults to 3.
+* `:retry_delay` - the amount of time to wait between retries and defaults to 10 seconds
+* `:user` - username used to authenticate over the `:transport`
+* `:password` - password used to authenticate over the `:transport`
 
-### Deprecated methods
-As of version 1.5.0 `WinRM::WinRMWebService` methods `cmd`, `run_cmd`, `powershell`, and `run_powershell_script` have been deprecated and will be removed from the next major version of the WinRM gem.
+There are other options that may apply depending on the type of `:transport` used and are discussed below.
 
-Use the `run_cmd` and `run_powershell_script` of the `WinRM::CommandExecutor` class instead. The `CommandExecutor` allows multiple commands to be run from the same WinRM shell providing a significant performance improvement when issuing multiple calls.
+## Transports
 
-#### NTLM/Negotiate
+The transport used governs the authentication method used and the encryption level used for the underlying HTTP communication with the endpoint. The WinRM gem supports the following transport types:
+
+### `:negotiate`
 ```ruby
-winrm = WinRM::WinRMWebService.new(endpoint, :negotiate, :user => myuser, :pass => mypass)
+WinRM::Connection.new( 
+  endpoint: 'http://myhost:5985/wsman',
+  transport: :negotiate,
+  user: 'administrator',
+  password: 'Pass@word1'
+)
 ```
 
-#### Plaintext
+The `:negotiate` transport uses the [rubyntlm gem](https://github.com/WinRb/rubyntlm) to authenticate with the endpoint using the NTLM protocol. This uses an HTTP based connection but the SOAP message payloads are encrypted. If using HTTP (as opposed to HTTPS) this is the recommended transport. This is also the default transport used if none is specified in the connection options.
+
+### `:ssl`
+```ruby
+WinRM::Connection.new( 
+  endpoint: 'https://myhost:59856/wsman',
+  transport: :ssl,
+  user: 'administrator',
+  password: 'Pass@word1'
+)
+```
+
+The `:ssl` transport establishes a connection to the winrm endpoint over a secure sockets layer transport encrypting the entire message. Here are some additional connecion options available to `:ssl` connections:
+
+* `:client_cert` - Either a string path to a certificate `.pem` file or a `X509::Certificate` object. This along with an accompanying `:client_key` can be used in lieu of a `:user` and `:password`.
+* `:client_key` - the path to the private key file accompanying the above mentioned `:client_cert` or an `PKey::Pkey` object.
+* `:key_pass` - the optional password if necessary to access the `:client_cert`
+* `:no_ssl_peer_verification` - when set to `true` ssl certificate validation is not performed. With a self signed cert, its a match made in heaven!
+* `:ssl_peer_fingerprint` - when this is provided, normal certificate validation is skipped and instead the given fingerprint is matched against the certificate of the endpoint for verification.
+* `:ca_trust_path` - the path to a certificate `.pem` file to trust. Its similar to the `:ssl_peer_fingerprint` but contains the entire certificate to trust.
+
+### `:kerberos`
+```ruby
+WinRM::Connection.new( 
+  endpoint: 'http://myhost:5985/wsman',
+  transport: :kerberos,
+  realm: 'kerberos_realm'
+)
+```
+
+Uses `:kerberos` to authenticate with the endpoint. These additional connection options may be used:
+
+* `:service` - kerberos service used to authenticate with the endpoint. Defaults to `HTTP`.
+* `:realm` - Kerberos realm to authenticate against.
+
+### `:plaintext`
 Note: It is strongly recommended that you use `:negotiate` instead of `:plaintext`. As the name infers, the `:plaintext` transport includes authentication credentials in plain text.
 ```ruby
-WinRM::WinRMWebService.new(endpoint, :plaintext, :user => myuser, :pass => mypass, :disable_sspi => true)
-
-## Same but force basic authentication:
-WinRM::WinRMWebService.new(endpoint, :plaintext, :user => myuser, :pass => mypass, :basic_auth_only => true)
+WinRM::Connection.new( 
+  endpoint: 'http://myhost:5985/wsman',
+  transport: :plaintext,
+  user: 'administrator',
+  password: 'Pass@word1',
+  basic_auth_only: true
+)
 ```
 
-#### SSL
+Additional supported connection options:
+
+* `:basic_auth_only` - Force basic authentication
+* `:disable_sspi` - Disable SSPI Negotiation authentication
+
+## Shells
+
+As of the WinRM gem version 2, one creates a shell for executing commands by calling the `shell` method of a WinRM connection. There are two types of shells available:
+
+* `:cmd` - initiates a traditional cmd.exe shell via the WinRM protocol
+* `:powershell` - initiates a powershell runspace via the PSRP protocol
+
+Both shells support the same public methods: `:open`, `:close`, and `run`. Note that when given a shell, it is opened automatically upon executing the first command via `:run`. Further, `close` is called automatically when a `shell` is garbage collected or when using a shell from a block. However, it is always a good idea to proactively `close` a shell.
+
+## Executing a WQL Query
 ```ruby
-WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :disable_sspi => true)
+opts = { 
+  endpoint: 'http://myhost:5985/wsman',
+  user: 'administrator',
+  password: 'Pass@word1'
+}
+conn = WinRM::Connection.new(opts)
 
-# Specifying CA path
-WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :ca_trust_path => '/etc/ssl/certs/cert.pem', :basic_auth_only => true)
-
-# Same but force basic authentication:
-WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :basic_auth_only => true)
-
-# Basic auth over SSL w/self signed cert
-# Enabling no_ssl_peer_verification is not recommended. HTTPS connections are still encrypted,
-# but the WinRM gem is not able to detect forged replies or man in the middle attacks.
-WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :basic_auth_only => true, :no_ssl_peer_verification => true)
-
-# Verify against a known fingerprint
-WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :basic_auth_only => true, :ssl_peer_fingerprint => '6C04B1A997BA19454B0CD31C65D7020A6FC2669D')
-
-# Specifying a Client Cert, key and (optional) key password for password-less authentication 
-WinRM::WinRMWebService.new(endpoint, :ssl, :client_cert => '/path/to/cert.pem', :client_key => '/path/to/key.key', :key_pass => 'password', :no_ssl_peer_verification => true)
-
-# Specifying a Client Cert object, key object and (optional) key password for password-less authentication 
-WinRM::WinRMWebService.new(endpoint, :ssl, :client_cert => <X509::Certificate object>, :client_key => <PKey::Pkey object>, :key_pass => 'password', :no_ssl_peer_verification => true)  
+out = conn.run_wql('select * from Win32_OperatingSystem')
+output_caption = out[:win32_operating_system][0][:caption]
 ```
 
-##### Create a self signed cert for WinRM
+## Create a self signed cert for WinRM
 You may want to create a self signed certificate for servicing https WinRM connections. You can use the following PowerShell script to create a cert and enable the WinRM HTTPS listener. Unless you are running windows server 2012 R2 or later, you must install makecert.exe from the Windows SDK, otherwise use `New-SelfSignedCertificate`.
 
 ```powershell
@@ -94,7 +154,7 @@ $cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname
 iex $cmd
 ```
 
-##### Setting up Certificate based authentication
+## Setting up Certificate based authentication
 Perform the following steps to authenticate with a certificate instead of a username and password:
 
 1. Generate a certificate with an Extended Key Usage of Client Authentication and a Subject Alternative Name with the UPN of the user. See this [powershell function](https://github.com/WinRb/WinRM/blob/master/WinrmAppveyor.psm1#L1) as an example of using `openssl` to create a self signed user certificate in `.pem` and `.pfx` formats along with the private key file.
@@ -109,68 +169,25 @@ Perform the following steps to authenticate with a certificate instead of a user
 
 See [this post](http://www.hurryupandwait.io/blog/certificate-password-less-based-authentication-in-winrm) for more details on certificate authentication.
 
-#### Kerberos
-```ruby
-WinRM::WinRMWebService.new(endpoint, :kerberos, :realm => 'MYREALM.COM')
-```
-
-## Retries and opening a shell
-Especially if provisioning a new machine, it's possible the winrm service is not yet running when first attempting to connect. The `WinRMWebService` accepts the options `:retry_limit` and `:retry_delay` to specify the maximum number of attempts to make and how long to wait in between. These default to 3 attempts and a 10 second delay.
-```ruby
-WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass, :retry_limit => 30, :retry_delay => 10)
-```
-
 ## Logging
-The `WinRMWebService` exposes a `logger` attribute and uses the [logging](https://rubygems.org/gems/logging) gem to manage logging behavior. By default this appends to `STDOUT` and has a level of `:warn`, but one can adjust the level or add additional appenders.
+The `WinRM::Connection` exposes a `logger` attribute and uses the [logging](https://rubygems.org/gems/logging) gem to manage logging behavior. By default this appends to `STDOUT` and has a level of `:warn`, but one can adjust the level or add additional appenders.
 ```ruby
-winrm = WinRM::WinRMWebService.new(endpoint, :ssl, :user => myuser, :pass => mypass)
+conn = WinRM::Connection.new(opts)
 
 # suppress warnings
-winrm.logger.level = :error
+conn.logger.level = :error
 
 # Log to a file
-winrm.logger.add_appenders(Logging.appenders.file('error.log'))
+conn.logger.add_appenders(Logging.appenders.file('error.log'))
 ```
 
 If a consuming application uses its own logger that complies to the logging API, you can simply swap it in:
 ```ruby
-winrm.logger = my_logger
+conn.logger = my_logger
 ```
 
 ## Troubleshooting
-You may have some errors like ```WinRM::WinRMAuthorizationError```.
-You can run the following commands on the server to try to solve the problem:
-```
-winrm set winrm/config/client/auth @{Basic="true"}
-winrm set winrm/config/service/auth @{Basic="true"}
-winrm set winrm/config/service @{AllowUnencrypted="true"}
-```
-You can read more about that on issue [#29](https://github.com/WinRb/WinRM/issues/29)
-
-Also see [this post](http://www.hurryupandwait.io/blog/understanding-and-troubleshooting-winrm-connection-and-authentication-a-thrill-seekers-guide-to-adventure) for more general tips related to winrm connection and authentication issues.
-
-
-## Current features
-
-1. GSSAPI support:  This is the default way that Windows authenticates and
-   secures WinRM messages. In order for this to work the computer you are
-   connecting to must be a part of an Active Directory domain and you must
-   have local credentials via kinit. GSSAPI support is dependent on the
-   gssapi gem which only supports the MIT Kerberos libraries at this time.
-
-   If you are using this method there is no longer a need to change the
-   WinRM service authentication settings. You can simply do a
-   'winrm quickconfig' on your server or enable WinRM via group policy and
-   everything should be working.
-
-2. Multi-Instance support:  Moving away from Handsoap allows multiple
-   instances to be created because the SOAP backend is no longer a Singleton
-   type class.
-
-3. 100% Ruby: Nokogiri while faster can present additional frustration for
-   users above and beyond what is already required to get WinRM working.
-   The goal of this gem is make using WinRM easy. In V2 we plan on making
-   the parser swappable in case you really do need the performance.
+You may have some errors like ```WinRM::WinRMAuthorizationError```. See [this post](http://www.hurryupandwait.io/blog/understanding-and-troubleshooting-winrm-connection-and-authentication-a-thrill-seekers-guide-to-adventure) for tips and troubleshooting steps related to winrm connection and authentication issues.
 
 ## Contributing
 
@@ -195,12 +212,11 @@ Once you have the dependencies, you can run the unit tests with `rake`:
 $ bundle exec rake spec
 ```
 
-To run the integration tests you will need a Windows box with the WinRM service properly configured. Its easiest to use a Vagrant Windows box (mwrock/Windows2012R2 is public on [atlas](https://atlas.hashicorp.com/mwrock/boxes/Windows2012R2) with an evaluation version of Windows 2012 R2).
+To run the integration tests you will need a Windows box with the WinRM service properly configured. Its easiest to use a Vagrant Windows box (mwrock/Windows2012R2 is public on [atlas](https://atlas.hashicorp.com/mwrock/boxes/Windows2012R2) with an evaluation version of Windows 2012 R2). You can also use `mwrock/WindowsNano` provided in this repo's `Vagrantfile`.
 
 1. Create a Windows VM with WinRM configured (see above).
 2. Copy the config-example.yml to config.yml - edit this file with your WinRM connection details.
-3. Ensure that the box you are running the test against has a default shell profile (check ~\Documents\WindowsPowerShell).  If any of your shell profiles generate stdout or stderr output, the test validators may get thrown off.
-4. Run `bundle exec rake integration`
+3. Run `bundle exec rake integration`
 
 ## WinRM Author
 * Twitter: [@zentourist](https://twitter.com/zentourist)
@@ -211,5 +227,6 @@ To run the integration tests you will need a Windows box with the WinRM service 
 ## Maintainers
 * Paul Morton (https://github.com/pmorton)
 * Shawn Neal (https://github.com/sneal)
+* Matt Wrock (https://github.com/mwrock)
 
 [Contributors](https://github.com/WinRb/WinRM/graphs/contributors)

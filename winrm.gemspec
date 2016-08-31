@@ -33,8 +33,10 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'nori', '~> 2.0'
   s.add_runtime_dependency 'gyoku', '~> 1.0'
   s.add_runtime_dependency 'builder', '>= 2.1.2'
+  s.add_runtime_dependency 'erubis', '~> 2.7'
   s.add_development_dependency 'rspec', '~> 3.2'
   s.add_development_dependency 'rake', '~> 10.3'
-  s.add_development_dependency 'rubocop', '~> 0.28'
+  s.add_development_dependency 'rubocop', '~> 0.39.0'
   s.add_development_dependency 'pry'
+  s.add_development_dependency 'rb-readline'
 end

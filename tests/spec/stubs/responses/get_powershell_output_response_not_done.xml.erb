@@ -1,0 +1,9 @@
+<s:Envelope xmlns:a='http://schemas.xmlsoap.org/ws/2004/08/addressing' xml:lang='en-US' xmlns:p='http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd' xmlns:rsp='http://schemas.microsoft.com/wbem/wsman/1/windows/shell' xmlns:s='http://www.w3.org/2003/05/soap-envelope' xmlns:w='http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd'>
+   <s:Header>
+   </s:Header>
+   <s:Body>
+      <rsp:ReceiveResponse>
+         <rsp:Stream CommandId='<%= command_id %>' Name='stdout'><%= test_data_stdout %></rsp:Stream>
+      </rsp:ReceiveResponse>
+   </s:Body>
+</s:Envelope>

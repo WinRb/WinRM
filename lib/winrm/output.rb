@@ -15,29 +15,45 @@
 # limitations under the License.
 
 module WinRM
-  # This class holds raw output as a hash, and has convenience methods to parse.
-  class Output < Hash
+  # This class holds raw output and has convenience methods to parse.
+  class Output
     def initialize
-      super
-      self[:data] = []
+      @data = []
     end
 
+    # @return [Integer] exitcode returned from command
+    attr_reader :exitcode
+
+    # @return [String] Aggregated stdout and stderr streams
     def output
-      self[:data].flat_map do |line|
+      @data.flat_map do |line|
         [line[:stdout], line[:stderr]]
       end.compact.join
     end
 
+    # @return [String] stdout stream output
     def stdout
-      self[:data].map do |line|
+      @data.map do |line|
         line[:stdout]
       end.compact.join
     end
 
+    # @return [String] stderr stream output
     def stderr
-      self[:data].map do |line|
+      @data.map do |line|
         line[:stderr]
       end.compact.join
+    end
+
+    # Sets the exitcode
+    def exitcode=(code)
+      raise WinRM::InvalidExitCode unless code.is_a? Integer
+      @exitcode = code
+    end
+
+    # Appends stream data to the output
+    def <<(data)
+      @data << data
     end
   end
 end

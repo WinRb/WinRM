@@ -1,5 +1,5 @@
 function New-ClientCertificate {
-  param([String]$username, [String]$basePath = ((Resolve-Parh .).Path))
+  param([String]$username, [String]$basePath = ((Resolve-Path .).Path))
 
   $env:OPENSSL_CONF=[System.IO.Path]::GetTempFileName()
 
@@ -24,7 +24,7 @@ function New-ClientCertificate {
 
 function New-WinrmUserCertificateMapping {
   param([String]$issuer)
-  $secure_pass = ConvertTo-SecureString $env:winrm_pass -AsPlainText -Force
+  $secure_pass = ConvertTo-SecureString $env:winrm_password -AsPlainText -Force
   $cred = New-Object System.Management.Automation.PSCredential ($env:winrm_user, $secure_pass)
   New-Item -Path WSMan:\localhost\ClientCertificate -Subject "$env:winrm_user@localhost" -URI * -Issuer $issuer -Credential $cred -Force
 }

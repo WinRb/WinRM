@@ -14,9 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'date'
 require 'logging'
 require_relative 'winrm/version'
+require_relative 'winrm/connection'
+require_relative 'winrm/exceptions'
 
 # Main WinRM module entry point
 module WinRM
@@ -36,7 +37,3 @@ module WinRM
     end
   end
 end
-
-require 'winrm/output'
-require 'winrm/helpers/iso8601_duration'
-require 'winrm/soap_provider'

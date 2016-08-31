@@ -1,0 +1,16 @@
+# Copy this file to config.yml and edit the settings below.
+# This should work out of the box for vagrant provisioned boxes.
+
+## Kerberos
+#  auth_type: kerberos
+#  realm: "your.realm"
+#  endpoint: "http://<yourserver>:5985/wsman"
+
+# If you are running this in a vagrant provisioned box using NAT,
+# this will be the forwarded WinRM HTTP port to your VM.
+# If you are running this on the VM, the default HTTP port is 5985.
+# See README.md#Troubleshooting.
+
+endpoint: "http://localhost:55985/wsman"
+user: vagrant
+password: vagrant

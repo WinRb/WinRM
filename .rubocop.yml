@@ -1,12 +1,14 @@
 AllCops:
   Exclude:
     - 'appveyor.yml'
+    - 'Vagrantfile'
     - 'scripts/**/*'
-    - 'lib/winrm/winrm_service.rb'
-    - 'lib/winrm/http/transport.rb'
 
 Style/Encoding:
   Enabled: true
+
+Style/NumericLiterals:
+  Enabled: false
 
 Metrics/LineLength:
   Max: 100
@@ -14,9 +16,11 @@ Metrics/LineLength:
 Metrics/MethodLength:
   Max: 20
 
+ModuleLength:
+  Max: 250
+
 ClassLength:
   Max: 250
 
 Metrics/AbcSize:
   Max: 25
-  

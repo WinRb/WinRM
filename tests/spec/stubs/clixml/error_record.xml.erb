@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<Obj RefId="0">
+    <TN RefId="0">
+        <T>System.Management.Automation.ErrorRecord</T>
+        <T>System.Object</T>
+    </TN>
+    <ToString><%= error_message %></ToString>
+    <MS>
+        <B N="writeErrorStream">true</B>
+        <Obj N="Exception" RefId="1">
+            <TN RefId="1">
+                <T>Microsoft.PowerShell.Commands.WriteErrorException</T>
+                <T>Microsoft.PowerShell.CoreClr.Stubs.SystemException</T>
+                <T>System.Exception</T>
+                <T>System.Object</T>
+            </TN>
+            <ToString>Microsoft.PowerShell.Commands.WriteErrorException: <%= error_message %></ToString>
+            <Props>
+                <S N="Message"><%= error_message %></S>
+                <Obj N="Data" RefId="2">
+                    <TN RefId="2">
+                        <T>System.Collections.ListDictionaryInternal</T>
+                        <T>System.Object</T>
+                    </TN>
+                    <DCT/>
+                </Obj>
+                <Nil N="InnerException"/>
+                <Nil N="StackTrace"/>
+                <Nil N="HelpLink"/>
+                <Nil N="Source"/>
+                <I32 N="HResult">-2146233088</I32>
+            </Props>
+        </Obj>
+        <Nil N="TargetObject"/>
+        <S N="FullyQualifiedErrorId"><%= error_id %></S>
+        <Obj N="InvocationInfo" RefId="3">
+            <TN RefId="3">
+                <T>System.Management.Automation.InvocationInfo</T>
+                <T>System.Object</T>
+            </TN>
+            <ToString>System.Management.Automation.InvocationInfo</ToString>
+            <Props>
+                <Nil N="MyCommand"/>
+                <Obj N="BoundParameters" RefId="4">
+                    <TN RefId="4">
+                        <T>System.Collections.Generic.Dictionary`2[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]</T>
+                        <T>System.Object</T>
+                    </TN>
+                    <DCT/>
+                </Obj>
+                <Obj N="UnboundArguments" RefId="5">
+                    <TN RefId="5">
+                        <T>System.Collections.Generic.List`1[[System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]</T>
+                        <T>System.Object</T>
+                    </TN>
+                    <LST/>
+                </Obj>
+                <I32 N="ScriptLineNumber">1</I32>
+                <I32 N="OffsetInLine">1</I32>
+                <I64 N="HistoryId">1</I64>
+                <S N="ScriptName"/>
+                <S N="Line">write-error '<%= error_message %>'</S>
+                <S N="PositionMessage">At line:1 char:1_x000D__x000A_+ write-error '<%= error_message %>'_x000D__x000A_+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</S>
+                <S N="PSScriptRoot"><%= script_root %></S>
+                <Nil N="PSCommandPath"/>
+                <S N="InvocationName"/>
+                <I32 N="PipelineLength">0</I32>
+                <I32 N="PipelinePosition">0</I32>
+                <B N="ExpectingInput">false</B>
+                <S N="CommandOrigin">Internal</S>
+                <Nil N="DisplayScriptPosition"/>
+            </Props>
+        </Obj>
+        <I32 N="ErrorCategory_Category">0</I32>
+        <S N="ErrorCategory_Activity">Write-Error</S>
+        <S N="ErrorCategory_Reason">WriteErrorException</S>
+        <S N="ErrorCategory_TargetName"/>
+        <S N="ErrorCategory_TargetType"/>
+        <S N="ErrorCategory_Message"><%= category_message %></S>
+        <B N="SerializeExtendedInfo">false</B>
+        <S N="ErrorDetails_ScriptStackTrace"><%= stack_trace %></S>
+        <Nil N="PSMessageDetails"/>
+    </MS>
+</Obj>
