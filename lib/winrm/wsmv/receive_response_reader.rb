@@ -85,7 +85,9 @@ module WinRM
 
         out = { stream[:type] => decoded_text }
         output << out
-        output.exitcode ||= exit_code(resp_doc)
+        if (code = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:ExitCode"))
+          output.exitcode = code.text.to_i
+        end
         [out[:stdout], out[:stderr]]
       end
 
@@ -101,10 +103,6 @@ module WinRM
 
         logger.debug('[WinRM] retrying receive request after timeout')
         retry
-      end
-
-      def exit_code(resp_doc)
-        REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:ExitCode").text.to_i
       end
 
       def command_done?(resp_doc, wait_for_done_state)
