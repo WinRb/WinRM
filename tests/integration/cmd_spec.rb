@@ -27,6 +27,12 @@ describe 'winrm client cmd' do
     it { should have_no_stderr }
   end
 
+  describe 'multi stream output from large file' do
+    subject(:output) { @cmd_shell.run('type c:\windows\logs\dism\dism.log') }
+    it { should have_exit_code 0 }
+    it { should have_no_stderr }
+  end
+
   describe 'echo "string with trailing \\" using double quotes' do
     # This is a regression test for #131.  " is converted to &quot; when serializing
     # the command to SOAP/XML.  Any naive substitution performed on such a serialized
