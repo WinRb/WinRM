@@ -32,7 +32,7 @@ module WinRM
 
       class << self
         def finalize(connection_opts, transport, shell_id)
-          proc { PowerShell.close_shell(connection_opts, transport, shell_id) }
+          proc { Powershell.close_shell(connection_opts, transport, shell_id) }
         end
 
         def close_shell(connection_opts, transport, shell_id)
