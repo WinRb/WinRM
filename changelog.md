@@ -1,5 +1,12 @@
 # WinRM Gem Changelog
 
+# 2.0.1
+- Fixed Powershell shell leakage when not explicitly closed
+- Fixed cmd commands with responses that extend beyond one stream
+
+# 2.0.0
+- Cleaned up API and implemented Powershell Remoting Protocol (PSRP) for all powershell calls.
+
 # 1.8.1
 - Http receive timeout should always be equal to 10 seconds greater than the winrm operation timeout and not default to one hour
 
