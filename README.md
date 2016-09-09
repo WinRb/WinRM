@@ -27,10 +27,11 @@ opts = {
 }
 conn = WinRM::Connection.new(opts)
 conn.shell(:powershell) do |shell|
-  shell.run('$PSVersionTable') do |stdout, stderr|
+  output = shell.run('$PSVersionTable') do |stdout, stderr|
     STDOUT.print stdout
     STDERR.print stderr
   end
+  puts "The script exited with exit code #{output.exitcode}"
 end
 ```
 
