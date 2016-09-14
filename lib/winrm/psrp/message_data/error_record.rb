@@ -17,7 +17,7 @@
 module WinRM
   module PSRP
     module MessageData
-      # pipeline host call message type
+      # error record message type
       class ErrorRecord < Base
         def exception
           @exception ||= property_hash('Exception')

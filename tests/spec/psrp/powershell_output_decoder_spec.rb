@@ -17,7 +17,7 @@ describe WinRM::PSRP::PowershellOutputDecoder do
   subject { described_class.new.decode(message) }
 
   context 'undecodable message type' do
-    let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_state] }
+    let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:public_key] }
 
     it 'ignores message' do
       expect(subject).to be nil
@@ -75,6 +75,22 @@ describe WinRM::PSRP::PowershellOutputDecoder do
     let(:category_message) { 'category message' }
     let(:stack_trace) { 'stack trace' }
     let(:error_id) { 'Microsoft.PowerShell.Commands.WriteErrorException' }
+    let(:data) { test_data_error_xml_template.result(binding) }
+
+    it 'decodes error record' do
+      expect(subject).to match(/#{error_message}/)
+    end
+  end
+
+  context 'receiving error record in pipeline state' do
+    let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_state] }
+    let(:test_data_error_xml_template) do
+      ERB.new(stubbed_clixml('pipeline_state.xml.erb'))
+    end
+    let(:pipeline_state) { WinRM::PSRP::MessageData::PipelineState::FAILED }
+    let(:error_message) { 'an error' }
+    let(:category_message) { 'category message' }
+    let(:error_id) { 'an error' }
     let(:data) { test_data_error_xml_template.result(binding) }
 
     it 'decodes error record' do
