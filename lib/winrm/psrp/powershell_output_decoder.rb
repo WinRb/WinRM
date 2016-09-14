@@ -16,11 +16,13 @@
 
 require 'base64'
 require_relative 'message'
+require_relative 'message_data/pipeline_state'
 
 module WinRM
   module PSRP
     # Handles decoding a raw powershell output response
     class PowershellOutputDecoder
+      # rubocop:disable Metrics/CyclomaticComplexity
       # Decode the raw SOAP output into decoded PSRP message,
       # Removes BOM and replaces encoded line endings
       # @param raw_output [String] The raw encoded output
@@ -35,8 +37,13 @@ module WinRM
           decode_host_call(message)
         when WinRM::PSRP::Message::MESSAGE_TYPES[:error_record]
           decode_error_record(message)
+        when WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_state]
+          if message.parsed_data.pipeline_state == WinRM::PSRP::MessageData::PipelineState::FAILED
+            decode_error_record(message)
+          end
         end
       end
+      # rubocop:enable Metrics/CyclomaticComplexity
 
       protected
 
@@ -66,15 +73,19 @@ module WinRM
       def decode_error_record(message)
         parsed = message.parsed_data
         text = begin
-          case parsed.fully_qualified_error_id
-          when 'Microsoft.PowerShell.Commands.WriteErrorException'
-            render_write_error_exception(parsed)
-          when 'NativeCommandError'
-            render_native_command_error(parsed)
-          when 'NativeCommandErrorMessage'
-            parsed.exception[:message]
+          if message.type == WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_state]
+            render_exception_as_error_record(parsed.exception_as_error_record)
           else
-            render_exception(parsed)
+            case parsed.fully_qualified_error_id
+            when 'Microsoft.PowerShell.Commands.WriteErrorException'
+              render_write_error_exception(parsed)
+            when 'NativeCommandError'
+              render_native_command_error(parsed)
+            when 'NativeCommandErrorMessage'
+              parsed.exception[:message]
+            else
+              render_exception(parsed)
+            end
           end
         end
 
@@ -101,6 +112,14 @@ EOH
       def render_native_command_error(parsed)
         <<EOH
 #{parsed.invocation_info[:my_command]} : #{parsed.exception[:message]}
+    + CategoryInfo          : #{parsed.error_category_message}
+    + FullyQualifiedErrorId : #{parsed.fully_qualified_error_id}
+EOH
+      end
+
+      def render_exception_as_error_record(parsed)
+        <<EOH
+#{parsed.exception[:message]}
     + CategoryInfo          : #{parsed.error_category_message}
     + FullyQualifiedErrorId : #{parsed.fully_qualified_error_id}
 EOH

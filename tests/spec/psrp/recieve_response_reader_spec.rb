@@ -69,6 +69,24 @@ describe WinRM::PSRP::ReceiveResponseReader do
       end
     end
 
+    context 'response doc failed pipeline state' do
+      let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_state] }
+      let(:test_data_error_xml_template) do
+        ERB.new(stubbed_clixml('pipeline_state.xml.erb'))
+      end
+      let(:pipeline_state) { WinRM::PSRP::MessageData::PipelineState::FAILED }
+      let(:error_message) { 'an error' }
+      let(:category_message) { 'category message' }
+      let(:error_id) { 'Microsoft.PowerShell.Commands.WriteErrorException' }
+      let(:test_data) { test_data_error_xml_template.result(binding) }
+
+      it 'outputs to stderr' do
+        expect(
+          subject.read_output(output_message).stderr
+        ).to match(/#{error_message}/)
+      end
+    end
+
     context 'response doc writing error to host' do
       let(:message_type) { WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_host_call] }
       let(:test_data) do

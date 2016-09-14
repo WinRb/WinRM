@@ -78,6 +78,10 @@ module WinRM
           type = :stderr
         when WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_host_call]
           type = :stderr if message.data.include?('WriteError')
+        when WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_state]
+          if message.parsed_data.pipeline_state == WinRM::PSRP::MessageData::PipelineState::FAILED
+            type = :stderr
+          end
         end
         type
       end

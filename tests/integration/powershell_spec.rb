@@ -13,6 +13,12 @@ describe 'winrm client powershell' do
     it { should have_no_stderr }
   end
 
+  describe 'throw' do
+    subject(:output) { @powershell.run("throw 'an error occured'") }
+    it { should have_exit_code 0 }
+    it { should have_stderr_match(/an error occured/) }
+  end
+
   describe 'exit' do
     subject(:output) { @powershell.run('exit 5') }
     it { should have_exit_code 5 }
