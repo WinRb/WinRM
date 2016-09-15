@@ -66,8 +66,12 @@ module WinRM
 
     def validate_required_fields
       raise 'endpoint is a required option' unless self[:endpoint]
-      raise 'user is a required option' unless self[:user]
-      raise 'password is a required option' unless self[:password]
+      if self[:client_cert]
+        raise 'path to client key is required' unless self[:client_key]
+      else
+        raise 'user is a required option' unless self[:user]
+        raise 'password is a required option' unless self[:password]
+      end
     end
 
     def validate_data_types
