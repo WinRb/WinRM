@@ -1,5 +1,10 @@
 # WinRM Gem Changelog
 
+# 2.0.2
+- Constrain to rubyntlm `>= 0.6.1` to avoid mutating frozen strings
+- When using certificate authentication, do not validate presense of user and password
+- Handle failed `PIPELINE_STATE` messages so that `throw` errors are not swallowed
+
 # 2.0.1
 - Fixed Powershell shell leakage when not explicitly closed
 - Fixed cmd commands with responses that extend beyond one stream
