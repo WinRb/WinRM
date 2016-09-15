@@ -2,13 +2,82 @@
 require 'winrm/connection_opts'
 
 describe WinRM::ConnectionOpts do
-  context 'when there are no overrides' do
-    describe '#create_with_defaults' do
-      it 'throws a validation error' do
-        expect { WinRM::ConnectionOpts.create_with_defaults({}) }.to raise_error
-      end
+  shared_examples 'invalid options' do
+    it 'throws a validation error' do
+      expect { WinRM::ConnectionOpts.create_with_defaults(overrides) }.to raise_error
     end
   end
+
+  context 'when there are no overrides' do
+    it_behaves_like 'invalid options'
+  end
+
+  context 'when there are only username and password' do
+    let(:overrides) do
+      {
+        user: 'Administrator',
+        password: 'password'
+      }
+    end
+
+    it_behaves_like 'invalid options'
+  end
+
+  context 'when there are only username and endpoint' do
+    let(:overrides) do
+      {
+        user: 'Administrator',
+        endpoint: 'http://localhost:5985/wsman'
+      }
+    end
+
+    it_behaves_like 'invalid options'
+  end
+
+  context 'when there are only password and endpoint' do
+    let(:overrides) do
+      {
+        password: 'password',
+        endpoint: 'http://localhost:5985/wsman'
+      }
+    end
+
+    it_behaves_like 'invalid options'
+  end
+
+  context 'when there are only certificate and key' do
+    let(:overrides) do
+      {
+        client_cert: 'path/to/cert',
+        client_key: 'path/to/key'
+      }
+    end
+
+    it_behaves_like 'invalid options'
+  end
+
+  context 'when there are only certificate and endpoint' do
+    let(:overrides) do
+      {
+        client_cert: 'path/to/cert',
+        endpoint: 'http://localhost:5985/wsman'
+      }
+    end
+
+    it_behaves_like 'invalid options'
+  end
+
+  context 'when there are only key and endpoint' do
+    let(:overrides) do
+      {
+        client_key: 'path/to/key',
+        endpoint: 'http://localhost:5985/wsman'
+      }
+    end
+
+    it_behaves_like 'invalid options'
+  end
+
   context 'when username, password, and endpoint are given' do
     let(:overrides) do
       {
@@ -26,6 +95,25 @@ describe WinRM::ConnectionOpts do
       end
     end
   end
+
+  context 'when certificate, key and endpoint are given' do
+    let(:overrides) do
+      {
+        client_cert: 'path/to/cert',
+        client_key: 'path/to/key',
+        endpoint: 'http://localhost:5985/wsman'
+      }
+    end
+    describe '#create_with_defaults' do
+      it 'creates a ConnectionOpts object' do
+        config = WinRM::ConnectionOpts.create_with_defaults(overrides)
+        expect(config[:client_cert]).to eq(overrides[:client_cert])
+        expect(config[:client_key]).to eq(overrides[:client_key])
+        expect(config[:endpoint]).to eq(overrides[:endpoint])
+      end
+    end
+  end
+
   context 'when overrides are provided' do
     let(:overrides) do
       {
@@ -42,6 +130,7 @@ describe WinRM::ConnectionOpts do
       end
     end
   end
+
   context 'when receive_timeout is specified' do
     let(:overrides) do
       {
@@ -58,6 +147,7 @@ describe WinRM::ConnectionOpts do
       end
     end
   end
+
   context 'when operation_timeout is specified' do
     let(:overrides) do
       {
@@ -75,6 +165,7 @@ describe WinRM::ConnectionOpts do
       end
     end
   end
+
   context 'when invalid data types are given' do
     let(:overrides) do
       {
