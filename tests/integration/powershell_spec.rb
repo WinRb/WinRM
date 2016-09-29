@@ -13,6 +13,11 @@ describe 'winrm client powershell' do
     it { should have_no_stderr }
   end
 
+  describe 'ipconfig with invalid args' do
+    subject(:output) { @powershell.run('ipconfig blah') }
+    it { should have_exit_code 1 }
+  end
+
   describe 'throw' do
     subject(:output) { @powershell.run("throw 'an error occured'") }
     it { should have_exit_code 0 }
