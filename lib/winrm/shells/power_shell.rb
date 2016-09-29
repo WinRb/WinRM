@@ -98,6 +98,7 @@ module WinRM
 
       def send_command(command, _arguments)
         command_id = SecureRandom.uuid.to_s.upcase
+        command += "\r\nif (!$?) { if($LASTEXITCODE) { exit $LASTEXITCODE } else { exit 1 } }"
         message = PSRP::MessageFactory.create_pipeline_message(@runspace_id, command_id, command)
         fragmenter.fragment(message) do |fragment|
           command_args = [connection_opts, shell_id, command_id, fragment]
