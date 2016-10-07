@@ -43,10 +43,12 @@ module WinRM
       # @param connection_opts [ConnectionOpts] The WinRM connection options
       # @param transport [HttpTransport] The WinRM SOAP transport
       # @param logger [Logger] The logger to log diagnostic messages to
-      def initialize(connection_opts, transport, logger)
+      # @param shell_opts [Hash] Options targeted for the created shell
+      def initialize(connection_opts, transport, logger, shell_opts = {})
         @connection_opts = connection_opts
         @transport = transport
         @logger = logger
+        @shell_opts = shell_opts
       end
 
       # @return [String] shell id of the currently opn shell or nil if shell is closed
@@ -63,6 +65,9 @@ module WinRM
 
       # @return [Logger] logger used for diagnostic messages
       attr_reader :logger
+
+      # @return [Hash] Options targeted for the created shell
+      attr_reader :shell_opts
 
       # Runs the specified command with optional arguments
       # @param command [String] The command or executable to run

@@ -52,7 +52,7 @@ module WinRM
       end
 
       def open_shell
-        msg = WinRM::WSMV::CreateShell.new(connection_opts)
+        msg = WinRM::WSMV::CreateShell.new(connection_opts, shell_opts)
         resp_doc = transport.send_request(msg.build)
         REXML::XPath.first(resp_doc, "//*[@Name='ShellId']").text
       end

@@ -34,11 +34,19 @@ module WinRM
 
       # Creates a new shell instance based off the shell_type
       # @param shell_type [Symbol] The shell type :cmd or :powershell
+      # @param shell_opts [Hash] Options targeted for the created shell
       # @return The ready to use shell instance
-      def create_shell(shell_type)
+      def create_shell(shell_type, shell_opts = {})
         type = shell_type.to_s.capitalize.to_sym
+        args = [
+          @connection_opts,
+          @transport,
+          @logger
+        ]
+        # winrm-elevated has an initializer with no shell_opts so don't break it
+        args << shell_opts unless shell_opts.nil? || shell_opts.empty?
         if Shells.constants.include?(type)
-          WinRM::Shells.const_get(type).new(@connection_opts, @transport, @logger)
+          WinRM::Shells.const_get(type).new(*args)
         else
           message = "#{type} is not a valid WinRM shell type. " \
             'Expected either :cmd, :powershell or pluggable shell.'
