@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 2.1.0
+- Expose shell options when creating a winrm shell
+
 # 2.0.3
 - Do not swallow exit codes from executables
 
