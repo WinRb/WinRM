@@ -34,9 +34,10 @@ module WinRM
     # Creates a new shell on the remote Windows server associated with
     # this connection.
     # @param shell_type [Symbol] The shell type :cmd or :powershell
+    # @param shell_opts [Hash] Options targeted for the created shell
     # @return [Shell] PowerShell or Cmd shell instance.
-    def shell(shell_type)
-      shell = shell_factory.create_shell(shell_type)
+    def shell(shell_type, shell_opts = {})
+      shell = shell_factory.create_shell(shell_type, shell_opts)
       if block_given?
         begin
           yield shell

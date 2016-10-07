@@ -125,6 +125,33 @@ As of the WinRM gem version 2, one creates a shell for executing commands by cal
 
 Both shells support the same public methods: `:open`, `:close`, and `run`. Note that when given a shell, it is opened automatically upon executing the first command via `:run`. Further, `close` is called automatically when a `shell` is garbage collected or when using a shell from a block. However, it is always a good idea to proactively `close` a shell.
 
+### Shell options supported by the `:cmd` shell
+
+```
+shell_opts = {
+  env_vars: { 'FOO' => 'BAR' }
+}
+conn = WinRM::Connection.new(opts)
+shell = conn.shell(:cmd, shell_opts)
+```
+
+The `:cmd` shell supports a number of shell options that you can specify for the shell. There are safe defaults for all shell options and chances are that you will not need to override any of them. The available options are listed below.
+
+* `:shell_uri` - WSMAN Resource URI. Defaults to `http://schemas.microsoft.com/wbem/wsman/1/windows/shell/cmd` and you should not change this unless you hold the keys to the portal of eternity.
+* `:i_stream` - A simple token list of all input streams the client will be using during execution. The only supported stream and the default is `stdin`.
+* `:o_stream` - A simple token list of all output streams expected by the client. The supported streams and the defaults are `stdout` and `stderr`.
+* `:codepage` - The `WINRS_CODEPAGE` which is the client's console output code page. The default is 65001 (UTF-8).
+* `:noprofile` - The `WINRS_NOPROFILE` if set to `TRUE`, this option specifies that the user profile does not exist on the remote system and that the default profile should be used. By default, the value is `FALSE`.
+* `:working_directory` - the starting directory that the Shell is to use for initialization.
+* `:idle_timeout` - The remote winrm service will close and terminate the shell instance if it is idle for this many seconds. If the Shell is reused within this time limit, the countdown timer is reset once the command sequence is completed.
+* `:env_vars` - a hash of EnvironmentVariable key/values, the starting set of environment variables that the Shell will use.
+
+### `:codepage` and working with legacy Windows versions
+
+When using the `:cmd` shell, the default codepage used is `65001`. This works best accross locales on "modern" versions of Windows (Windows 7/Server 2008 R2 and later). Older versions may exhibit undesirable behavior under the 65001 codepage. The most common symptom is that commands invoking executables will return immediately with no output or errors.
+
+When using these older versions of Windows, its best to use the native code page of the server's locale. For example, en-US servers will have a codepage of `437`. The `chcp` command can be used to determine the value of the native codepage.
+
 ## Executing a WQL Query
 ```ruby
 opts = { 
