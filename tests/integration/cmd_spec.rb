@@ -20,6 +20,27 @@ describe 'winrm client cmd' do
     it { should have_no_stderr }
   end
 
+  describe 'codepage' do
+    let(:options) { Hash.new }
+    let(:shell) { winrm_connection.shell(:cmd, options) }
+
+    after { shell.close }
+
+    subject(:output) { shell.run('chcp') }
+
+    it 'should default to UTF-8 (65001)' do
+      should have_stdout_match(/Active code page: 65001/)
+    end
+
+    context 'when changing the codepage' do
+      let(:options) { { codepage: 437 } }
+
+      it 'sets the codepage to the one given' do
+        should have_stdout_match(/Active code page: 437/)
+      end
+    end
+  end
+
   describe 'echo \'hello world\' using apostrophes' do
     subject(:output) { @cmd_shell.run("echo 'hello world'") }
     it { should have_exit_code 0 }
