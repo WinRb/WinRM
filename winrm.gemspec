@@ -8,8 +8,13 @@ Gem::Specification.new do |s|
   s.version = WinRM::VERSION
   s.date = Date.today.to_s
 
-  s.author = ['Dan Wanek', 'Paul Morton']
-  s.email = ['dan.wanek@gmail.com', 'paul@themortonsonline.com']
+  s.author = ['Dan Wanek', 'Paul Morton', 'Matt Wrock', 'Shawn Neal']
+  s.email = [
+    'dan.wanek@gmail.com',
+    'paul@themortonsonline.com',
+    'matt@mattwrock.com',
+    'sneal@sneal.net'
+  ]
   s.homepage = 'https://github.com/WinRb/WinRM'
 
   s.summary = 'Ruby library for Windows Remote Management'
@@ -25,7 +30,7 @@ Gem::Specification.new do |s|
 
   s.bindir = 'bin'
   s.executables = ['rwinrm']
-  s.required_ruby_version = '>= 1.9.0'
+  s.required_ruby_version = '>= 2.0'
   s.add_runtime_dependency 'gssapi', '~> 1.2'
   s.add_runtime_dependency 'httpclient', '~> 2.2', '>= 2.2.0.2'
   s.add_runtime_dependency 'rubyntlm', '~> 0.6.0', '>= 0.6.1'
