@@ -8,8 +8,13 @@ Gem::Specification.new do |s|
   s.version = WinRM::VERSION
   s.date = Date.today.to_s
 
-  s.author = ['Dan Wanek', 'Paul Morton']
-  s.email = ['dan.wanek@gmail.com', 'paul@themortonsonline.com']
+  s.author = ['Dan Wanek', 'Paul Morton', 'Matt Wrock', 'Shawn Neal']
+  s.email = [
+    'dan.wanek@gmail.com',
+    'paul@themortonsonline.com',
+    'matt@mattwrock.com',
+    'sneal@sneal.net'
+  ]
   s.homepage = 'https://github.com/WinRb/WinRM'
 
   s.summary = 'Ruby library for Windows Remote Management'
