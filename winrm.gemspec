@@ -25,7 +25,7 @@ Gem::Specification.new do |s|
 
   s.bindir = 'bin'
   s.executables = ['rwinrm']
-  s.required_ruby_version = '>= 1.9.0'
+  s.required_ruby_version = '>= 2.0'
   s.add_runtime_dependency 'gssapi', '~> 1.2'
   s.add_runtime_dependency 'httpclient', '~> 2.2', '>= 2.2.0.2'
   s.add_runtime_dependency 'rubyntlm', '~> 0.6.0', '>= 0.6.1'
