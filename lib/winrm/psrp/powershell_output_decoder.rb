@@ -131,7 +131,12 @@ EOH
         return unless text
 
         text.gsub(/_x(\h\h\h\h)_/) do
-          Regexp.last_match[1].hex.chr
+          decoded_text = Regexp.last_match[1].hex.chr.force_encoding('utf-8')
+          if decoded_text.respond_to?(:scrub)
+            decoded_text.scrub
+          else
+            decoded_text.encode('utf-16', invalid: :replace, undef: :replace).encode('utf-8')
+          end
         end
       end
     end
