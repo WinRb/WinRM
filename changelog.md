@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 2.1.2
+- Fix kerberos transport
+
 # 2.1.1
 - Fix rendering of powershell output with non ascii UTF-8 characters emitted from executables
 
