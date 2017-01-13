@@ -269,6 +269,7 @@ module WinRM
         no_sspi_auth!
         service ||= 'HTTP'
         @service = "#{service}/#{@endpoint.host}@#{realm}"
+        no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
         init_krb
       end
 
@@ -336,89 +337,91 @@ module WinRM
         @gsscli.init_context(itok)
       end
 
+      # rubocop:disable Metrics/MethodLength
+      # rubocop:disable Metrics/AbcSize
+
       # @return [String] the encrypted request string
       def winrm_encrypt(str)
         @logger.debug "Encrypting SOAP message:\n#{str}"
-        iov = iov_pointer
+        iov_cnt = 3
+        iov = FFI::MemoryPointer.new(GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * iov_cnt)
 
-        iov0 = create_iov(iov.address, 0, :header)[:buffer]
-        iov1 = create_iov(iov.address, 1, :data, str)[:buffer]
-        iov2 = create_iov(iov.address, 2, :padding)[:buffer]
+        iov0 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(FFI::Pointer.new(iov.address))
+        iov0[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_HEADER | \
+          GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_FLAG_ALLOCATE)
 
-        gss_wrap(iov)
+        iov1 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(
+          FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 1)))
+        iov1[:type] = GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA
+        iov1[:buffer].value = str
 
-        token = [iov0.length].pack('L')
-        token += iov0.value
-        token += iov1.value
-        pad_len = iov2.length
-        token += iov2.value if pad_len > 0
+        iov2 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(
+          FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 2)))
+        iov2[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_PADDING | \
+          GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_FLAG_ALLOCATE)
+
+        conf_state = FFI::MemoryPointer.new :uint32
+        min_stat = FFI::MemoryPointer.new :uint32
+
+        GSSAPI::LibGSSAPI.gss_wrap_iov(
+          min_stat,
+          @gsscli.context,
+          1,
+          GSSAPI::LibGSSAPI::GSS_C_QOP_DEFAULT,
+          conf_state,
+          iov,
+          iov_cnt)
+
+        token = [iov0[:buffer].length].pack('L')
+        token += iov0[:buffer].value
+        token += iov1[:buffer].value
+        pad_len = iov2[:buffer].length
+        token += iov2[:buffer].value if pad_len > 0
         [pad_len, token]
       end
 
       # @return [String] the unencrypted response string
       def winrm_decrypt(str)
         @logger.debug "Decrypting SOAP message:\n#{str}"
+        iov_cnt = 3
+        iov = FFI::MemoryPointer.new(GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * iov_cnt)
+
+        iov0 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(FFI::Pointer.new(iov.address))
+        iov0[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_HEADER | \
+          GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_FLAG_ALLOCATE)
+
+        iov1 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(
+          FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 1)))
+        iov1[:type] = GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA
+
+        iov2 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(
+          FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 2)))
+        iov2[:type] = GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA
 
         str.force_encoding('BINARY')
         str.sub!(%r{^.*Content-Type: application\/octet-stream\r\n(.*)--Encrypted.*$}m, '\1')
-        iov_data = str.unpack("LA#{str.unpack('L').first}A*")
 
-        iov = iov_pointer
+        len = str.unpack('L').first
+        iov_data = str.unpack("LA#{len}A*")
+        iov0[:buffer].value = iov_data[1]
+        iov1[:buffer].value = iov_data[2]
 
-        create_iov(iov.address, 0, :header, iov_data[1])
-        ret = create_iov(iov.address, 1, :data, iov_data[2])[:buffer].value
-        create_iov(iov.address, 2, :data)
-
-        maj_stat = gss_unwrap(iov)
-
-        @logger.debug "SOAP message decrypted (MAJ: #{maj_stat}, " \
-          "MIN: #{min_stat.read_int}):\n#{ret}"
-
-        ret
-      end
-
-      def iov_pointer
-        FFI::MemoryPointer.new(GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 3)
-      end
-
-      def gss_unwrap(iov)
         min_stat = FFI::MemoryPointer.new :uint32
         conf_state = FFI::MemoryPointer.new :uint32
         conf_state.write_int(1)
         qop_state = FFI::MemoryPointer.new :uint32
         qop_state.write_int(0)
 
-        GSSAPI::LibGSSAPI.gss_unwrap_iov(
-          min_stat, @gsscli.context, conf_state, qop_state, iov, 3)
-      end
+        maj_stat = GSSAPI::LibGSSAPI.gss_unwrap_iov(
+          min_stat, @gsscli.context, conf_state, qop_state, iov, iov_cnt)
 
-      def gss_wrap(iov)
-        GSSAPI::LibGSSAPI.gss_wrap_iov(
-          FFI::MemoryPointer.new(:uint32),
-          @gsscli.context,
-          1,
-          GSSAPI::LibGSSAPI::GSS_C_QOP_DEFAULT,
-          FFI::MemoryPointer.new(:uint32),
-          iov,
-          3)
-      end
+        @logger.debug "SOAP message decrypted (MAJ: #{maj_stat}, " \
+          "MIN: #{min_stat.read_int}):\n#{iov1[:buffer].value}"
 
-      def create_iov(address, offset, type, buffer = nil)
-        iov = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(
-          FFI::Pointer.new(address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * offset)))
-        case type
-        when :data
-          iov[:type] = GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA
-        when :header
-          iov[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_HEADER | \
-          GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_FLAG_ALLOCATE)
-        when :padding
-          iov[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_PADDING | \
-            GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_FLAG_ALLOCATE)
-        end
-        iov[:buffer].value = buffer if buffer
-        iov
+        iov1[:buffer].value
       end
+      # rubocop:enable Metrics/MethodLength
+      # rubocop:enable Metrics/AbcSize
     end
   end
 end # WinRM
