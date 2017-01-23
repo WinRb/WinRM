@@ -75,16 +75,16 @@ module WinRM
     end
 
     def validate_data_types
-      validate_fixnum(:retry_limit)
-      validate_fixnum(:retry_delay)
-      validate_fixnum(:max_envelope_size)
-      validate_fixnum(:operation_timeout)
-      validate_fixnum(:receive_timeout, self[:operation_timeout])
+      validate_integer(:retry_limit)
+      validate_integer(:retry_delay)
+      validate_integer(:max_envelope_size)
+      validate_integer(:operation_timeout)
+      validate_integer(:receive_timeout, self[:operation_timeout])
     end
 
-    def validate_fixnum(key, min = 0)
+    def validate_integer(key, min = 0)
       value = self[key]
-      raise "#{key} must be a Fixnum" unless value && value.is_a?(Fixnum)
+      raise "#{key} must be a Integer" unless value && value.is_a?(Integer)
       raise "#{key} must be greater than #{min}" unless value > min
     end
   end

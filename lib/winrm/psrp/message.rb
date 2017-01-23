@@ -70,10 +70,10 @@ module WinRM
       # Creates a new PSRP message instance
       # @param runspace_pool_id [String] The UUID of the remote shell/runspace pool.
       # @param pipeline_id [String] The UUID to correlate the command/pipeline response
-      # @param type [Fixnum] The PSRP MessageType. This is most commonly
+      # @param type [Integer] The PSRP MessageType. This is most commonly
       # specified in hex, e.g. 0x00010002.
       # @param data [String] The PSRP payload as serialized XML
-      # @param destination [Fixnum] The destination for this message - client or server
+      # @param destination [Integer] The destination for this message - client or server
       def initialize(
         runspace_pool_id,
         type,
