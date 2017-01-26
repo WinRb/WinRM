@@ -21,9 +21,9 @@ module WinRM
     # PowerShell Remoting Protocol message fragment.
     class Fragment
       # Creates a new PSRP message fragment
-      # @param object_id [Fixnum] The id of the fragmented message.
+      # @param object_id [Integer] The id of the fragmented message.
       # @param blob [Array] Array of fragmented bytes.
-      # @param fragment_id [Fixnum] The id of this fragment
+      # @param fragment_id [Integer] The id of this fragment
       # @param start_fragment [Boolean] If the fragment is the first fragment
       # @param end_fragment [Boolean] If the fragment is the last fragment
       def initialize(object_id, blob, fragment_id = 0, start_fragment = true, end_fragment = true)

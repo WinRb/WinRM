@@ -31,8 +31,8 @@ module WinRM
       end
 
       # Retries the operation a specified number of times with a delay between
-      # @param retries [Fixnum] The number of times to retry
-      # @param delay [Fixnum] The number of seconds to wait between retry attempts
+      # @param retries [Integer] The number of times to retry
+      # @param delay [Integer] The number of seconds to wait between retry attempts
       def retryable(retries, delay)
         yield
       rescue *RETRYABLE_EXCEPTIONS.call

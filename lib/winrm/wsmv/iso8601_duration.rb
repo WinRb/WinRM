@@ -23,7 +23,7 @@ module WinRM
     module Iso8601Duration
       # Convert the number of seconds to an ISO8601 duration format
       # @see http://tools.ietf.org/html/rfc2445#section-4.3.6
-      # @param [Fixnum] seconds The amount of seconds for this duration
+      # @param [Integer] seconds The amount of seconds for this duration
       def self.sec_to_dur(seconds)
         seconds = seconds.to_i
         iso_str = 'P'
