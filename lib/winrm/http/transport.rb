@@ -225,7 +225,8 @@ module WinRM
           raise WinRMHTTPTransportError.new(msg, r.status_code)
         end
         itok = auth_header.split.last
-        binding = r.peer_cert.nil? ? nil : Net::NTLM::ChannelBinding.create(r.peer_cert)
+        cert = OpenSSL::X509::Certificate.new(r.peer_cert.cert.getEncoded())
+        binding = r.peer_cert.nil? ? nil : Net::NTLM::ChannelBinding.create(cert)
         auth3 = @ntlmcli.init_context(itok, binding)
         { 'Authorization' => "Negotiate #{auth3.encode64}" }
       end
