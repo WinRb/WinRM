@@ -117,6 +117,20 @@ describe DummyShell do
       subject.run(command, arguments)
     end
 
+    it 'does not error if shell is not present anymore' do
+      allow(SecureRandom).to receive(:uuid).and_return('uuid')
+      expect(transport).to receive(:send_request)
+        .with(
+          WinRM::WSMV::CleanupCommand.new(
+            connection_options,
+            shell_uri: nil,
+            shell_id: shell_id,
+            command_id: command_id
+          ).build
+        ).and_raise(WinRM::WinRMWSManFault.new('oops', '2150858843'))
+      subject.run(command, arguments)
+    end
+
     it 'opens a shell only once when shell is already open' do
       expect(subject).to receive(:open_shell).and_call_original.once
       subject.run(command, arguments)
