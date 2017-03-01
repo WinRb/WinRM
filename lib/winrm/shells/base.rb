@@ -30,6 +30,7 @@ module WinRM
     class Base
       TOO_MANY_COMMANDS = '2150859174'.freeze
       ERROR_OPERATION_ABORTED = '995'.freeze
+      SHELL_NOT_FOUND = '2150858843'.freeze
 
       FAULTS_FOR_RESET = [
         '2150858843', # Shell has been closed
@@ -150,7 +151,7 @@ module WinRM
           command_id: command_id)
         transport.send_request(cleanup_msg.build)
       rescue WinRMWSManFault => e
-        raise unless e.fault_code == ERROR_OPERATION_ABORTED
+        raise unless [ERROR_OPERATION_ABORTED, SHELL_NOT_FOUND].include?(e.fault_code)
       rescue WinRMHTTPTransportError => t
         # dont let the cleanup raise so we dont lose any errors from the command
         logger.info("[WinRM] #{t.status_code} returned in cleanup with error: #{t.message}")
