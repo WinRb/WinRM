@@ -1,5 +1,9 @@
 # WinRM Gem Changelog
 
+# 2.1.3
+- Ignore WSManFault 2150858843 during command cleanup
+- Uns `Integer` in place of `Fixnum` to remove deprecation warnings in ruby 2.4
+
 # 2.1.2
 - Fix kerberos transport
 
