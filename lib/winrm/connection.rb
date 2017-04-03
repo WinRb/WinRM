@@ -53,7 +53,7 @@ module WinRM
     # @param wql [String] The wql query
     # @param namespace [String] namespace for query - default is root/cimv2/*
     # @return [Hash] Hash representation of wql query response
-    def run_wql(wql, namespace='root/cimv2/*')
+    def run_wql(wql, namespace = 'root/cimv2/*')
       query = WinRM::WSMV::WqlQuery.new(@connection_opts, wql, namespace)
       query.process_response(transport.send_request(query.build))
     end

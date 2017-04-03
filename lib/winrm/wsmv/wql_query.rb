@@ -21,7 +21,7 @@ module WinRM
   module WSMV
     # WSMV message to query Windows via WQL
     class WqlQuery < Base
-      def initialize(session_opts, wql, namespace=nil)
+      def initialize(session_opts, wql, namespace = nil)
         @session_opts = session_opts
         @wql = wql
         @namespace = namespace
