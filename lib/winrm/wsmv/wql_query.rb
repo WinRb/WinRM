@@ -21,9 +21,10 @@ module WinRM
   module WSMV
     # WSMV message to query Windows via WQL
     class WqlQuery < Base
-      def initialize(session_opts, wql)
+      def initialize(session_opts, wql, namespace = nil)
         @session_opts = session_opts
         @wql = wql
+        @namespace = namespace
       end
 
       def process_response(response)
@@ -58,7 +59,7 @@ module WinRM
       private
 
       def wql_header
-        merge_headers(shared_headers(@session_opts), resource_uri_wmi, action_enumerate)
+        merge_headers(shared_headers(@session_opts), resource_uri_wmi(@namespace), action_enumerate)
       end
 
       def wql_body
