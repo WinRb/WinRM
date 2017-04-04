@@ -41,7 +41,7 @@ module WinRM
         process_items hresp[:items], &block
 
         # Perform WS-Enum PULL's until we have all the elements
-        enumeration_context = hresp[:enumerate_response][:enumeration_context]
+        enumeration_context = hresp[:enumeration_context]
         until enumeration_context.nil?
           query = WqlPull.new(@session_opts, @namespace, enumeration_context)
           hresp = query.process_response(@transport.send_request(query.build))[:pull_response]
