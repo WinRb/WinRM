@@ -185,6 +185,18 @@ module WinRM
         }
       end
 
+      def action_enumerate_pull
+        {
+          "#{SOAP::NS_ADDRESSING}:Action" =>
+          'http://schemas.xmlsoap.org/ws/2004/09/enumeration/Pull',
+          :attributes! => {
+            "#{SOAP::NS_ADDRESSING}:Action" => {
+              'mustUnderstand' => true
+            }
+          }
+        }
+      end
+
       def selector_shell_id(shell_id)
         {
           "#{SOAP::NS_WSMAN_DMTF}:SelectorSet" => {
