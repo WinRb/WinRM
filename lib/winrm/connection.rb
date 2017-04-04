@@ -18,6 +18,7 @@ require_relative 'connection_opts'
 require_relative 'http/transport_factory'
 require_relative 'shells/shell_factory'
 require_relative 'wsmv/wql_query'
+require_relative 'wsmv/wql_pull'
 
 module WinRM
   # WinRM connection used to establish a session with the remote WinRM service.
@@ -52,10 +53,11 @@ module WinRM
     # Executes a WQL query against the WinRM connection
     # @param wql [String] The wql query
     # @param namespace [String] namespace for query - default is root/cimv2/*
-    # @return [Hash] Hash representation of wql query response
-    def run_wql(wql, namespace = 'root/cimv2/*')
-      query = WinRM::WSMV::WqlQuery.new(@connection_opts, wql, namespace)
-      query.process_response(transport.send_request(query.build))
+    # @return [Hash] Hash representation of wql query response (Hash is empty if a block is given)
+    # @yeild [type, item] Yields the time name and item for every item
+    def run_wql(wql, namespace = 'root/cimv2/*', &block)
+      query = WinRM::WSMV::WqlQuery.new(transport, @connection_opts, wql, namespace)
+      query.process_response(transport.send_request(query.build), &block)
     end
 
     private

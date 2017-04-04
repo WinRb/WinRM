@@ -21,29 +21,35 @@ module WinRM
   module WSMV
     # WSMV message to query Windows via WQL
     class WqlQuery < Base
-      def initialize(session_opts, wql, namespace = nil)
+      def initialize(transport, session_opts, wql, namespace = nil)
         @session_opts = session_opts
         @wql = wql
         @namespace = namespace
+        @transport = transport
       end
 
-      def process_response(response)
+      def process_response(response, &block)
         parser = Nori.new(
           parser: :rexml,
           advanced_typecasting: false,
           convert_tags_to: ->(tag) { tag.snakecase.to_sym },
           strip_namespaces: true
         )
-        hresp = parser.parse(response.to_s)[:envelope][:body]
+        @items = Hash.new { |h, k| h[k] = [] }
 
-        # Normalize items so the type always has an array even if it's just a single item.
-        items = {}
-        if hresp[:enumerate_response][:items]
-          hresp[:enumerate_response][:items].each_pair do |k, v|
-            items[k] = v.is_a?(Array) ? v : [v]
-          end
+        hresp = parser.parse(response.to_s)[:envelope][:body][:enumerate_response]
+        process_items hresp[:items], &block
+
+        # Perform WS-Enum PULL's until we have all the elements
+        enumeration_context = hresp[:enumerate_response][:enumeration_context]
+        until enumeration_context.nil?
+          query = WqlPull.new(@session_opts, @namespace, enumeration_context)
+          hresp = query.process_response(@transport.send_request(query.build))[:pull_response]
+          process_items hresp[:items], &block
+          enumeration_context = hresp[:enumeration_context]
         end
-        items
+
+        @items
       end
 
       protected
@@ -57,6 +63,19 @@ module WinRM
       end
 
       private
+
+      def process_items(items, &block)
+        return if items.nil?
+        items.each_pair do |k, v|
+          # Normalize items so the type always has an array even if it's just a single item.
+          v_ary = v.is_a?(Array) ? v : [v]
+          if block
+            v_ary.each { |val| yield k, val }
+          else
+            @items[k] += v_ary
+          end
+        end
+      end
 
       def wql_header
         merge_headers(shared_headers(@session_opts), resource_uri_wmi(@namespace), action_enumerate)
