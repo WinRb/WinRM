@@ -86,7 +86,11 @@ module WinRM
       # Closes the shell if one is open
       def close
         return unless shell_id
-        self.class.close_shell(connection_opts, transport, shell_id)
+        begin
+          self.class.close_shell(connection_opts, transport, shell_id)
+        rescue WinRMWSManFault => e
+          raise unless [ERROR_OPERATION_ABORTED, SHELL_NOT_FOUND].include?(e.fault_code)
+        end
         remove_finalizer
         @shell_id = nil
       end

@@ -212,5 +212,14 @@ describe DummyShell do
       subject.close
       expect(subject.shell_id).to be(nil)
     end
+
+    context 'when shell was not found' do
+      it 'does not raise' do
+        subject.run(command, arguments)
+        expect(DummyShell).to receive(:close_shell)
+          .and_raise(WinRM::WinRMWSManFault.new('oops', '2150858843'))
+        expect { subject.close }.not_to raise_error
+      end
+    end
   end
 end
