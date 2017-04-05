@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 2.2.1
+- Ignore error 2150858843 during shell closing
+
 # 2.2.0
 - Allow run_wql to accept custom namespace
 - Allow enumeration of WQL result sets
