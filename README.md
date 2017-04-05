@@ -164,9 +164,22 @@ opts = {
 }
 conn = WinRM::Connection.new(opts)
 
-out = conn.run_wql('select * from Win32_OperatingSystem')
-output_caption = out[:win32_operating_system][0][:caption]
+conn.run_wql('select * from Win32_Process') do |type, item|
+  puts "***#{type}:"
+  item.each { |k,v| puts "#{k}: #{v}" }
+end
 ```
+
+This will output data for each process:
+
+```
+***win32_process:
+caption: svchost.exe
+command_line: C:\Windows\System32\svchost.exe -k termsvcs
+...
+```
+
+`run_wql` takes an optional second parameter in case you need to use a custom namespace. `root/cimv2/*` is the default.
 
 ## Create a self signed cert for WinRM
 You may want to create a self signed certificate for servicing https WinRM connections. You can use the following PowerShell script to create a cert and enable the WinRM HTTPS listener. Unless you are running windows server 2012 R2 or later, you must install makecert.exe from the Windows SDK, otherwise use `New-SelfSignedCertificate`.
