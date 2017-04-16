@@ -1,5 +1,9 @@
 # WinRM Gem Changelog
 
+# 2.2.2
+- Update PSRP buffer size
+- Close and cleanup should retry on error and never raise net errors
+
 # 2.2.1
 - Ignore error 2150858843 during shell closing
 
