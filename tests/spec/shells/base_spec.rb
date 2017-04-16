@@ -213,11 +213,11 @@ describe DummyShell do
       expect(subject.shell_id).to be(nil)
     end
 
-    context 'when shell was not found' do
+    context 'when connection is refused' do
       it 'does not raise' do
         subject.run(command, arguments)
         expect(DummyShell).to receive(:close_shell)
-          .and_raise(WinRM::WinRMWSManFault.new('oops', '2150858843'))
+          .and_raise(Errno::ECONNREFUSED.new)
         expect { subject.close }.not_to raise_error
       end
     end

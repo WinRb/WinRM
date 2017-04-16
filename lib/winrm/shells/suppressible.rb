@@ -1,7 +1,6 @@
 # -*- encoding: utf-8 -*-
 #
-# Copyright 2016 Shawn Neal <sneal@sneal.net>
-# Copyright 2015 Matt Wrock <matt@mattwrock.com>
+# Copyright 2017 Matt Wrock <matt@mattwrock.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,17 +18,13 @@ require_relative '../exceptions'
 
 module WinRM
   module Shells
-    # Shell mixin for retrying an operation
-    module Retryable
-      # Retries the operation a specified number of times with a delay between
-      # @param retries [Integer] The number of times to retry
-      # @param delay [Integer] The number of seconds to wait between retry attempts
-      def retryable(retries, delay)
+    # Shell mixin for suppressing a network exception
+    module Suppressible
+      # performs an operation and suppresses any network exceptions
+      def suppressible
         yield
-      rescue *WinRM::NETWORK_EXCEPTIONS.call
-        raise unless (retries -= 1) > 0
-        sleep(delay)
-        retry
+      rescue *WinRM::NETWORK_EXCEPTIONS.call => e
+        logger.info("[WinRM] Exception suppressed: #{e.message}")
       end
     end
   end
