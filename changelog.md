@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 2.2.3
+- Revert change made in 2.2.2 that retries network errors in Close and cleanup
+
 # 2.2.2
 - Update PSRP buffer size
 - Close and cleanup should retry on error and never raise net errors
