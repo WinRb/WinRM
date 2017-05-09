@@ -157,7 +157,7 @@ module WinRM
           shell_id: shell_id,
           command_id: command_id)
         suppressible do
-          retryable(connection_opts[:retry_limit], connection_opts[:retry_delay], 
+          retryable(connection_opts[:retry_limit], connection_opts[:retry_delay],
                     [ERROR_OPERATION_ABORTED, SHELL_NOT_FOUND]) do
             transport.send_request(cleanup_msg.build)
           end
