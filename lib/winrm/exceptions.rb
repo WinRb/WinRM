@@ -15,15 +15,6 @@
 # limitations under the License.
 
 module WinRM
-  NETWORK_EXCEPTIONS = lambda do
-    [
-      Errno::EACCES, Errno::EADDRINUSE, Errno::ECONNREFUSED, Errno::ETIMEDOUT,
-      Errno::ECONNRESET, Errno::ENETUNREACH, Errno::EHOSTUNREACH, ::WinRM::WinRMWSManFault,
-      ::WinRM::WinRMHTTPTransportError, ::WinRM::WinRMAuthorizationError,
-      HTTPClient::KeepAliveDisconnected, HTTPClient::ConnectTimeoutError
-    ].freeze
-  end
-
   # WinRM base class for errors
   class WinRMError < StandardError; end
 
