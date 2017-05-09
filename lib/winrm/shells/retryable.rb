@@ -24,13 +24,15 @@ module WinRM
       # Retries the operation a specified number of times with a delay between
       # @param retries [Integer] The number of times to retry
       # @param delay [Integer] The number of seconds to wait between retry attempts
-      def retryable(retries, delay)
+      # @param no_retry [Array of fault codes] Errors that are expected or unrecoverable. Don't retry
+      def retryable(retries, delay, no_retry = [])
         yield
-      rescue *WinRM::NETWORK_EXCEPTIONS.call
-        raise unless (retries -= 1) > 0
+      rescue *WinRM::NETWORK_EXCEPTIONS.call => e
+        raise if no_retry.include?(e.fault_code) || (retries -= 1) <= 0
         sleep(delay)
         retry
       end
     end
   end
 end
+
