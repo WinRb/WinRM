@@ -21,12 +21,21 @@ module WinRM
   module Shells
     # Shell mixin for retrying an operation
     module Retryable
+      RETRYABLE_EXCEPTIONS = lambda do
+        [
+          Errno::EACCES, Errno::EADDRINUSE, Errno::ECONNREFUSED, Errno::ETIMEDOUT,
+          Errno::ECONNRESET, Errno::ENETUNREACH, Errno::EHOSTUNREACH, ::WinRM::WinRMWSManFault,
+          ::WinRM::WinRMHTTPTransportError, ::WinRM::WinRMAuthorizationError,
+          HTTPClient::KeepAliveDisconnected, HTTPClient::ConnectTimeoutError
+        ].freeze
+      end
+
       # Retries the operation a specified number of times with a delay between
       # @param retries [Integer] The number of times to retry
       # @param delay [Integer] The number of seconds to wait between retry attempts
       def retryable(retries, delay)
         yield
-      rescue *WinRM::NETWORK_EXCEPTIONS.call
+      rescue *RETRYABLE_EXCEPTIONS.call
         raise unless (retries -= 1) > 0
         sleep(delay)
         retry

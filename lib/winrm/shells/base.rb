@@ -15,7 +15,6 @@
 # limitations under the License.
 
 require_relative 'retryable'
-require_relative 'suppressible'
 require_relative '../http/transport'
 require_relative '../wsmv/cleanup_command'
 require_relative '../wsmv/close_shell'
@@ -32,16 +31,14 @@ module WinRM
       TOO_MANY_COMMANDS = '2150859174'.freeze
       ERROR_OPERATION_ABORTED = '995'.freeze
       SHELL_NOT_FOUND = '2150858843'.freeze
-      ERROR_READING_REGISTRY_KEY = '2147943418'.freeze
 
       FAULTS_FOR_RESET = [
-        SHELL_NOT_FOUND,
-        ERROR_READING_REGISTRY_KEY,
+        '2150858843', # Shell has been closed
+        '2147943418', # Error reading registry key
         TOO_MANY_COMMANDS, # Maximum commands per user exceeded
       ].freeze
 
       include Retryable
-      include Suppressible
 
       # Create a new Cmd shell
       # @param connection_opts [ConnectionOpts] The WinRM connection options
@@ -89,10 +86,10 @@ module WinRM
       # Closes the shell if one is open
       def close
         return unless shell_id
-        suppressible do
-          retryable(connection_opts[:retry_limit], connection_opts[:retry_delay]) do
-            self.class.close_shell(connection_opts, transport, shell_id)
-          end
+        begin
+          self.class.close_shell(connection_opts, transport, shell_id)
+        rescue WinRMWSManFault => e
+          raise unless [ERROR_OPERATION_ABORTED, SHELL_NOT_FOUND].include?(e.fault_code)
         end
         remove_finalizer
         @shell_id = nil
@@ -156,11 +153,12 @@ module WinRM
           shell_uri: shell_uri,
           shell_id: shell_id,
           command_id: command_id)
-        suppressible do
-          retryable(connection_opts[:retry_limit], connection_opts[:retry_delay]) do
-            transport.send_request(cleanup_msg.build)
-          end
-        end
+        transport.send_request(cleanup_msg.build)
+      rescue WinRMWSManFault => e
+        raise unless [ERROR_OPERATION_ABORTED, SHELL_NOT_FOUND].include?(e.fault_code)
+      rescue WinRMHTTPTransportError => t
+        # dont let the cleanup raise so we dont lose any errors from the command
+        logger.info("[WinRM] #{t.status_code} returned in cleanup with error: #{t.message}")
       end
 
       def open
