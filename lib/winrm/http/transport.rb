@@ -241,10 +241,21 @@ module WinRM
           raise WinRMHTTPTransportError.new(msg, r.status_code)
         end
         itok = auth_header.split.last
-        cert = OpenSSL::X509::Certificate.new(r.peer_cert.cert.getEncoded())
-        binding = r.peer_cert.nil? ? nil : Net::NTLM::ChannelBinding.create(cert)
-        auth3 = @ntlmcli.init_context(itok, binding)
+        auth3 = @ntlmcli.init_context(itok, channel_binding(r))
         issue_challenge_response(auth3)
+      end
+
+      def channel_binding(response)
+        if response.peer_cert.nil?
+          nil
+        else
+          cert = if RUBY_PLATFORM == 'java'
+                   OpenSSL::X509::Certificate.new(response.peer_cert.cert.getEncoded)
+                 else
+                   response.peer_cert
+                 end
+          Net::NTLM::ChannelBinding.create(OpenSSL::X509::Certificate.new(cert))
+        end
       end
     end
 
