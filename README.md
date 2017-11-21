@@ -72,7 +72,7 @@ The `:negotiate` transport uses the [rubyntlm gem](https://github.com/WinRb/ruby
 ### `:ssl`
 ```ruby
 WinRM::Connection.new( 
-  endpoint: 'https://myhost:59856/wsman',
+  endpoint: 'https://myhost:5986/wsman',
   transport: :ssl,
   user: 'administrator',
   password: 'Pass@word1'
