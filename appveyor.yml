@@ -40,7 +40,6 @@ install:
   - ps: Write-Host $env:PATH
   - ps: ruby --version
   - ps: gem --version
-  - ps: gem install bundler --quiet --no-ri --no-rdoc
   - ps: bundler --version
 
 build_script:
