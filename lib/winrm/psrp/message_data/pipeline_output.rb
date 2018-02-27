@@ -31,7 +31,8 @@ module WinRM
             text = ''
             if node.text
               text << node.text.gsub(/(_x\h\h\h\h_)+/) do |match|
-                match.scan(/_x(\h\h\h\h)_/).flatten.map { |utf16| utf16.hex }.pack('S*').force_encoding('utf-16le').encode('utf-8')
+                match.scan(/_x(\h\h\h\h)_/).flatten.map(&:hex)
+                     .pack('S*').force_encoding('utf-16le').encode('utf-8')
               end.chomp
             end
             text << "\r\n"
