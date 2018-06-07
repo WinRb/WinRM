@@ -39,12 +39,13 @@ def parse_options
 
   # Get the password
   print 'Password: '
-  options[:pass] = STDIN.noecho(&:gets).chomp
+  options[:password] = STDIN.noecho(&:gets).chomp
   puts
 
   # Set some defaults required by WinRM WS
-  options[:auth_type] = :plaintext
+  options[:transport] = :plaintext
   options[:basic_auth_only] = true
+  options[:operation_timeout] = 3600
 
   options
 rescue StandardError => e
@@ -54,31 +55,22 @@ rescue StandardError => e
 end
 
 def repl(options)
-  client = WinRM::WinRMWebService.new(
-    options[:endpoint],
-    options[:auth_type].to_sym,
-    options)
+  shell = nil
 
-  client.set_timeout(3600)
-  shell_id = client.open_shell
-  command_id = client.run_command(shell_id, 'cmd', "/K prompt [#{ARGV[0]}]$P$G")
+  client = WinRM::Connection.new(options)
+  shell = client.shell(:powershell)
+  prompt = "PS #{ARGV[0]}> "
 
-  read_thread = Thread.new do
-    client.get_command_output(shell_id, command_id) do |stdout, stderr|
-      STDOUT.write stdout
-      STDERR.write stderr
-    end
-  end
-  read_thread.abort_on_exception = true
-
-  while (buf = Readline.readline('', true))
+  while (buf = Readline.readline(prompt, true))
     if buf =~ /^exit/
-      read_thread.exit
-      client.cleanup_command(shell_id, command_id)
-      client.close_shell(shell_id)
+      shell.close
+      shell = nil
       exit 0
     else
-      client.write_stdin(shell_id, command_id, "#{buf}\r\n")
+      shell.run(buf) do |stdout, stderr|
+        $stdout.write stdout
+        $stderr.write stderr
+      end
     end
   end
 rescue Interrupt
@@ -90,6 +82,8 @@ rescue WinRM::WinRMAuthorizationError
 rescue StandardError => e
   puts e.message
   exit 1
+ensure
+  shell.close unless shell.nil?
 end
 
 repl(parse_options)
