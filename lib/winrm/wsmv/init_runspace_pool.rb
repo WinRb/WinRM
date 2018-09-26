@@ -35,7 +35,10 @@ module WinRM
       end
 
       def create_body(body)
-        body.tag!("#{NS_WIN_SHELL}:Shell", 'ShellId' => shell_id) { |s| s << Gyoku.xml(shell_body) }
+        # OMI server requires a Name for the Shell
+        body.tag!("#{NS_WIN_SHELL}:Shell", 'ShellId' => shell_id, 'Name' => 'Runspace') do |s|
+          s << Gyoku.xml(shell_body)
+        end
       end
 
       private

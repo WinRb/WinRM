@@ -24,7 +24,7 @@ describe WinRM::WSMV::InitRunspacePool do
         '<w:Option Name="protocolversion" MustComply="true">2.3</w:Option></w:OptionSet>')
       expect(xml).to include('<rsp:InputStreams>stdin pr</rsp:InputStreams>')
       expect(xml).to include('<rsp:OutputStreams>stdout</rsp:OutputStreams>')
-      expect(xml).to include("<rsp:Shell ShellId=\"#{subject.shell_id}\">")
+      expect(xml).to include("<rsp:Shell ShellId=\"#{subject.shell_id}\" Name=\"Runspace\">")
       expect(xml).to include(
         '<w:ResourceURI mustUnderstand="true">' \
         'http://schemas.microsoft.com/powershell/Microsoft.PowerShell')
