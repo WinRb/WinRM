@@ -181,7 +181,7 @@ module WinRM
           send_request(message)
         else
           @retryable = true
-          decrypted_body = winrm_decrypt(resp.body)
+          decrypted_body = winrm_decrypt(resp)
           log_soap_message(decrypted_body)
           WinRM::ResponseHandler.new(decrypted_body, resp.status).parse_to_xml
         end
@@ -195,9 +195,11 @@ module WinRM
         "\x10\x00\x00\x00#{signature}#{emessage}"
       end
 
-      def winrm_decrypt(str)
-        return '' if str.empty?
-        str.force_encoding('BINARY')
+      def winrm_decrypt(resp)
+        # OMI server doesn't always respond to encrypted messages with encrypted responses over SSL
+        return resp.body if resp.header['Content-Type'].first =~ %r{\Aapplication\/soap\+xml}i
+        return '' if resp.body.empty?
+        str = resp.body.force_encoding('BINARY')
         str.sub!(%r{^.*Content-Type: application\/octet-stream\r\n(.*)--Encrypted.*$}m, '\1')
 
         signature = str[4..19]
