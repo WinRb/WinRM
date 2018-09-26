@@ -86,6 +86,8 @@ module WinRM
             # appropriate max length when that info is available
             raise unless e.fault_code == '5'
             WinRM::PSRP::MessageFragmenter::DEFAULT_BLOB_LENGTH
+          rescue WinRMSoapFault
+            WinRM::PSRP::MessageFragmenter::DEFAULT_BLOB_LENGTH
           end
         end
       end
@@ -151,6 +153,8 @@ module WinRM
           msg = config_msg.build
           resp_doc = transport.send_request(msg)
           REXML::XPath.first(resp_doc, "//*[local-name() = 'MaxEnvelopeSizekb']").text.to_i
+        ensure
+          logger.debug("[WinRM] Endpoint doesn't support config request for MaxEnvelopsizekb")
         end
       end
 

@@ -1,0 +1,45 @@
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope"
+    xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing"
+    xmlns:wsen="http://schemas.xmlsoap.org/ws/2004/09/enumeration"
+    xmlns:e="http://schemas.xmlsoap.org/ws/2004/08/eventing"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:wsmb="http://schemas.dmtf.org/wbem/wsman/1/cimbinding.xsd"
+    xmlns:wsman="http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd"
+    xmlns:wxf="http://schemas.xmlsoap.org/ws/2004/09/transfer"
+    xmlns:cim="http://schemas.dmtf.org/wbem/wscim/1/common"
+    xmlns:msftwinrm="http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd"
+    xmlns:wsmid="http://schemas.dmtf.org/wbem/wsman/identity/1/wsmanidentity.xsd">
+    <SOAP-ENV:Header>
+        <wsa:To>
+                http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous
+        </wsa:To>
+        <wsa:Action>
+                http://schemas.dmtf.org/wbem/wsman/1/wsman/fault
+        </wsa:Action>
+        <wsa:MessageID>
+                uuid:5825BEA8-76AB-0005-0000-000001A80000
+        </wsa:MessageID>
+        <wsa:RelatesTo>
+                uuid:01022086-C0D6-45DA-85F2-21FA2B476FCA
+        </wsa:RelatesTo>
+    </SOAP-ENV:Header>
+    <SOAP-ENV:Body>
+        <SOAP-ENV:Fault>
+            <SOAP-ENV:Code>
+                <SOAP-ENV:Value>
+                        SOAP-ENV:Receiver
+                </SOAP-ENV:Value>
+                <SOAP-ENV:Subcode>
+                    <SOAP-ENV:Value>
+                            wsman:InternalError
+                    </SOAP-ENV:Value>
+                </SOAP-ENV:Subcode>
+            </SOAP-ENV:Code>
+            <SOAP-ENV:Reason>
+                <SOAP-ENV:Text xml:lang="en-US">
+                        get-instance: instance name parameter is missing
+                </SOAP-ENV:Text>
+            </SOAP-ENV:Reason>
+        </SOAP-ENV:Fault>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
