@@ -1,0 +1,23 @@
+<SOAP-ENV:Envelope xmlns:SOAP-ENV='http://www.w3.org/2003/05/soap-envelope'
+    xmlns:wsa='http://schemas.xmlsoap.org/ws/2004/08/addressing'
+    xmlns:wsen='http://schemas.xmlsoap.org/ws/2004/09/enumeration'
+    xmlns:e='http://schemas.xmlsoap.org/ws/2004/08/eventing'
+    xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+    xmlns:wsmb='http://schemas.dmtf.org/wbem/wsman/1/cimbinding.xsd'
+    xmlns:wsman='http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd'
+    xmlns:wxf='http://schemas.xmlsoap.org/ws/2004/09/transfer'
+    xmlns:cim='http://schemas.dmtf.org/wbem/wscim/1/common'
+    xmlns:msftwinrm='http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd'
+    xmlns:wsmid='http://schemas.dmtf.org/wbem/wsman/identity/1/wsmanidentity.xsd'>
+    <SOAP-ENV:Header>
+        <wsa:To>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</wsa:To>
+        <wsa:Action>http://schemas.microsoft.com/wbem/wsman/1/windows/shell/ReceiveResponse</wsa:Action>
+        <wsa:MessageID>uuid:5825BEA8-76AB-0005-0000-000000640000</wsa:MessageID>
+        <wsa:RelatesTo>uuid:E22E9766-0817-4056-99F8-EB5997BC2138</wsa:RelatesTo>
+    </SOAP-ENV:Header>
+    <SOAP-ENV:Body>
+        <p:ReceiveResponse xmlns:p='http://schemas.microsoft.com/wbem/wsman/1/windows/shell'>
+            <p:CommandState State='http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandState/Done'/>
+        </p:ReceiveResponse>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>

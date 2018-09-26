@@ -42,7 +42,7 @@ module WinRM
           arguments: arguments
         )
         resp_doc = transport.send_request(cmd_msg.build)
-        command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
+        command_id = REXML::XPath.first(resp_doc, "//*[local-name() = 'CommandId']").text
         logger.debug("[WinRM] Command created for #{command} with id: #{command_id}")
         command_id
       end

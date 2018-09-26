@@ -62,28 +62,28 @@ module WinRM
     def raise_if_wsman_fault
       soap_errors = REXML::XPath.match(
         response_xml,
-        "//#{WinRM::WSMV::SOAP::NS_SOAP_ENV}:Body/#{WinRM::WSMV::SOAP::NS_SOAP_ENV}:Fault/*")
+        "//*[local-name() = 'Envelope']/*[local-name() = 'Body']/*[local-name() = 'Fault']/*")
       return if soap_errors.empty?
       fault = REXML::XPath.first(
         soap_errors,
-        "//#{WinRM::WSMV::SOAP::NS_WSMAN_FAULT}:WSManFault")
+        "//*[local-name() = 'WSManFault']")
       raise WinRMWSManFault.new(fault.to_s, fault.attributes['Code']) unless fault.nil?
     end
 
     def raise_if_wmi_error
       soap_errors = REXML::XPath.match(
         response_xml,
-        "//#{WinRM::WSMV::SOAP::NS_SOAP_ENV}:Body/#{WinRM::WSMV::SOAP::NS_SOAP_ENV}:Fault/*")
+        "//*[local-name() = 'Envelope']/*[local-name() = 'Body']/*[local-name() = 'Fault']/*")
       return if soap_errors.empty?
 
       error = REXML::XPath.first(
         soap_errors,
-        "//#{WinRM::WSMV::SOAP::NS_WSMAN_MSFT}:MSFT_WmiError")
+        "//*[local-name() = 'MSFT_WmiError']")
       return if error.nil?
 
       error_code = REXML::XPath.first(
         error,
-        "//#{WinRM::WSMV::SOAP::NS_WSMAN_MSFT}:error_Code").text
+        "//*[local-name() = 'error_Code']").text
       raise WinRMWMIError.new(error.to_s, error_code)
     end
 
