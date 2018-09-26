@@ -51,6 +51,7 @@ module WinRM
       raise_if_auth_error
       raise_if_wsman_fault
       raise_if_wmi_error
+      raise_if_soap_fault
       raise_transport_error
     end
 
@@ -84,6 +85,25 @@ module WinRM
         error,
         "//#{WinRM::WSMV::SOAP::NS_WSMAN_MSFT}:error_Code").text
       raise WinRMWMIError.new(error.to_s, error_code)
+    end
+
+    def raise_if_soap_fault
+      soap_errors = REXML::XPath.match(
+        response_xml,
+        "//*[local-name() = 'Envelope']/*[local-name() = 'Body']/*[local-name() = 'Fault']/*")
+      return if soap_errors.empty?
+      code = REXML::XPath.first(
+        soap_errors,
+        "//*[local-name() = 'Code']/*[local-name() = 'Value']/text()")
+      subcode = REXML::XPath.first(
+        soap_errors,
+        "//*[local-name() = 'Subcode']/*[local-name() = 'Value']/text()")
+      reason = REXML::XPath.first(
+        soap_errors,
+        "//*[local-name() = 'Reason']/*[local-name() = 'Text']/text()")
+
+      raise WinRMSoapFault.new(code, subcode, reason) unless
+        code.nil? && subcode.nil? && reason.nil?
     end
 
     def raise_transport_error

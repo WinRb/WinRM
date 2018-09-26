@@ -52,6 +52,20 @@ module WinRM
     end
   end
 
+  # A Fault returned in the SOAP response. The XML node contains Code, SubCode and Reason
+  class WinRMSoapFault < WinRMError
+    attr_reader :code
+    attr_reader :subcode
+    attr_reader :reason
+
+    def initialize(code, subcode, reason)
+      @code = code
+      @subcode = subcode
+      @reason = reason
+      super("[SOAP ERROR CODE: #{code} (#{subcode})]: #{reason}")
+    end
+  end
+
   # A Fault returned in the SOAP response. The XML node is a MSFT_WmiError
   class WinRMWMIError < WinRMError
     attr_reader :error_code
