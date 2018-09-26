@@ -163,22 +163,22 @@ module WinRM
         @httpcli.ssl_config.set_trust_ca(opts[:ca_trust_path]) if opts[:ca_trust_path]
       end
 
-      def send_request(message, auth_header = nil)
+      def send_request(message)
         ssl_peer_fingerprint_verification!
-        auth_header = init_auth if @ntlmcli.session.nil?
+        init_auth if @ntlmcli.session.nil?
         log_soap_message(message)
 
         hdr = {
           'Content-Type' => 'multipart/encrypted;'\
             'protocol="application/HTTP-SPNEGO-session-encrypted";boundary="Encrypted Boundary"'
         }
-        hdr.merge!(auth_header) if auth_header
 
         resp = @httpcli.post(@endpoint, body(seal(message), message.bytesize), hdr)
         verify_ssl_fingerprint(resp.peer_cert)
         if resp.status == 401 && @retryable
           @retryable = false
-          send_request(message, init_auth)
+          init_auth
+          send_request(message)
         else
           @retryable = true
           decrypted_body = winrm_decrypt(resp.body)
@@ -209,6 +209,21 @@ module WinRM
         end
       end
 
+      def issue_challenge_response(negotiate)
+        auth_header = {
+          'Authorization' => "Negotiate #{negotiate.encode64}",
+          'Content-Type' => 'application/soap+xml;charset=UTF-8'
+        }
+
+        # OMI Server on Linux requires an empty payload with the new auth header to proceed
+        # because the config check for max payload size will otherwise break the auth handshake
+        # given the OMI server does not support that check
+        @httpcli.post(@endpoint, '', auth_header)
+
+        # return an empty hash of headers for subsequent requests to use
+        {}
+      end
+
       def init_auth
         @logger.debug "Initializing Negotiate for #{@endpoint}"
         auth1 = @ntlmcli.init_context
@@ -227,7 +242,7 @@ module WinRM
         itok = auth_header.split.last
         binding = r.peer_cert.nil? ? nil : Net::NTLM::ChannelBinding.create(r.peer_cert)
         auth3 = @ntlmcli.init_context(itok, binding)
-        { 'Authorization' => "Negotiate #{auth3.encode64}" }
+        issue_challenge_response(auth3)
       end
     end
 
