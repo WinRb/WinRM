@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-#
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -112,7 +110,8 @@ module WinRM
         REXML::XPath.match(
           resp_doc,
           "//*[@State='http://schemas.microsoft.com/wbem/wsman/1/windows/shell/" \
-          "CommandState/Done']").any?
+          "CommandState/Done']"
+        ).any?
       end
 
       def read_streams(response_document)
@@ -120,6 +119,7 @@ module WinRM
         path = "#{body_path}/*[local-name() = 'ReceiveResponse']/*[local-name() = 'Stream']"
         REXML::XPath.match(response_document, path).each do |stream|
           next if stream.text.nil? || stream.text.empty?
+
           yield type: stream.attributes['Name'].to_sym, text: stream.text
         end
       end

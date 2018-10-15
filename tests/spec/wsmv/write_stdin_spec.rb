@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'base64'
 require 'winrm/wsmv/write_stdin'
 

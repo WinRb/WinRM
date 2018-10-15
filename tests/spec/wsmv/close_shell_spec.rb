@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/wsmv/close_shell'
 
 describe WinRM::WSMV::CloseShell do

@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/psrp/message_data/base'
 require 'winrm/psrp/message_data/runspacepool_state'
 

@@ -1,4 +1,3 @@
-# encoding: UTF-8
 require_relative 'spec_helper'
 
 describe 'winrm client powershell' do
@@ -75,10 +74,10 @@ describe 'winrm client powershell' do
 
   describe 'capturing output from Write-Host and Write-Error' do
     subject(:output) do
-      script = <<-eos
+      script = <<-EOS
       Write-Host 'Hello'
       $host.ui.WriteErrorLine(', world!')
-      eos
+      EOS
 
       @captured_stdout = ''
       @captured_stderr = ''
@@ -105,10 +104,10 @@ describe 'winrm client powershell' do
 
   describe 'capturing output from pipeline followed by Host' do
     subject(:output) do
-      script = <<-eos
+      script = <<-EOS
       Write-Output 'output'
       $host.UI.Writeline('host')
-      eos
+      EOS
 
       @captured_stdout = ''
       @captured_stderr = ''

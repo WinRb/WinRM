@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/wsmv/create_pipeline'
 
 describe WinRM::WSMV::CreatePipeline do
@@ -22,7 +20,8 @@ describe WinRM::WSMV::CreatePipeline do
       expect(xml).to include('<w:OperationTimeout>PT60S</w:OperationTimeout>')
       expect(xml).to include(
         '<w:SelectorSet><w:Selector Name="ShellId">' \
-        "#{shell_id}</w:Selector></w:SelectorSet>")
+        "#{shell_id}</w:Selector></w:SelectorSet>"
+      )
       expect(xml).to include("<rsp:CommandLine CommandId=\"#{command_id}\">")
       expect(xml).to include('<rsp:Command>Invoke-Expression</rsp:Command>')
       expect(xml).to include("<rsp:Arguments>#{pipeline}</rsp:Arguments>")

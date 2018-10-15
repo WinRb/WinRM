@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-#
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -66,6 +64,7 @@ module WinRM
 
     def validate_required_fields
       raise 'endpoint is a required option' unless self[:endpoint]
+
       if self[:client_cert]
         raise 'path to client key is required' unless self[:client_key]
       else

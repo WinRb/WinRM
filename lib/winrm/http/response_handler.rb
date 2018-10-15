@@ -1,5 +1,3 @@
-# encoding: UTF-8
-#
 # Copyright 2014 Shawn Neal <sneal@sneal.net>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,11 +41,13 @@ module WinRM
       @response_xml ||= REXML::Document.new(@response_body)
     rescue REXML::ParseException => e
       raise WinRMHTTPTransportError.new(
-        "Unable to parse WinRM response: #{e.message}", @status_code)
+        "Unable to parse WinRM response: #{e.message}", @status_code
+      )
     end
 
     def raise_if_error
       return if @status_code == 200
+
       raise_if_auth_error
       raise_if_wsman_fault
       raise_if_wmi_error
@@ -62,45 +62,56 @@ module WinRM
     def raise_if_wsman_fault
       soap_errors = REXML::XPath.match(
         response_xml,
-        "//*[local-name() = 'Envelope']/*[local-name() = 'Body']/*[local-name() = 'Fault']/*")
+        "//*[local-name() = 'Envelope']/*[local-name() = 'Body']/*[local-name() = 'Fault']/*"
+      )
       return if soap_errors.empty?
+
       fault = REXML::XPath.first(
         soap_errors,
-        "//*[local-name() = 'WSManFault']")
+        "//*[local-name() = 'WSManFault']"
+      )
       raise WinRMWSManFault.new(fault.to_s, fault.attributes['Code']) unless fault.nil?
     end
 
     def raise_if_wmi_error
       soap_errors = REXML::XPath.match(
         response_xml,
-        "//*[local-name() = 'Envelope']/*[local-name() = 'Body']/*[local-name() = 'Fault']/*")
+        "//*[local-name() = 'Envelope']/*[local-name() = 'Body']/*[local-name() = 'Fault']/*"
+      )
       return if soap_errors.empty?
 
       error = REXML::XPath.first(
         soap_errors,
-        "//*[local-name() = 'MSFT_WmiError']")
+        "//*[local-name() = 'MSFT_WmiError']"
+      )
       return if error.nil?
 
       error_code = REXML::XPath.first(
         error,
-        "//*[local-name() = 'error_Code']").text
+        "//*[local-name() = 'error_Code']"
+      ).text
       raise WinRMWMIError.new(error.to_s, error_code)
     end
 
     def raise_if_soap_fault
       soap_errors = REXML::XPath.match(
         response_xml,
-        "//*[local-name() = 'Envelope']/*[local-name() = 'Body']/*[local-name() = 'Fault']/*")
+        "//*[local-name() = 'Envelope']/*[local-name() = 'Body']/*[local-name() = 'Fault']/*"
+      )
       return if soap_errors.empty?
+
       code = REXML::XPath.first(
         soap_errors,
-        "//*[local-name() = 'Code']/*[local-name() = 'Value']/text()")
+        "//*[local-name() = 'Code']/*[local-name() = 'Value']/text()"
+      )
       subcode = REXML::XPath.first(
         soap_errors,
-        "//*[local-name() = 'Subcode']/*[local-name() = 'Value']/text()")
+        "//*[local-name() = 'Subcode']/*[local-name() = 'Value']/text()"
+      )
       reason = REXML::XPath.first(
         soap_errors,
-        "//*[local-name() = 'Reason']/*[local-name() = 'Text']/text()")
+        "//*[local-name() = 'Reason']/*[local-name() = 'Text']/text()"
+      )
 
       raise WinRMSoapFault.new(code, subcode, reason) unless
         code.nil? && subcode.nil? && reason.nil?

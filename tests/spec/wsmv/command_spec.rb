@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/wsmv/command'
 
 describe WinRM::WSMV::Command do

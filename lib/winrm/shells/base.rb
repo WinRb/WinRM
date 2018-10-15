@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-#
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -86,6 +84,7 @@ module WinRM
       # Closes the shell if one is open
       def close
         return unless shell_id
+
         begin
           self.class.close_shell(connection_opts, transport, shell_id)
         rescue WinRMWSManFault => e
@@ -132,6 +131,7 @@ module WinRM
         yield shell_id, command_id
       rescue WinRMWSManFault => e
         raise unless FAULTS_FOR_RESET.include?(e.fault_code) && (tries -= 1) > 0
+
         reset_on_error(e)
         retry
       ensure
@@ -152,7 +152,8 @@ module WinRM
           connection_opts,
           shell_uri: shell_uri,
           shell_id: shell_id,
-          command_id: command_id)
+          command_id: command_id
+        )
         transport.send_request(cleanup_msg.build)
       rescue WinRMWSManFault => e
         raise unless [ERROR_OPERATION_ABORTED, SHELL_NOT_FOUND].include?(e.fault_code)
@@ -174,7 +175,8 @@ module WinRM
       def add_finalizer
         ObjectSpace.define_finalizer(
           self,
-          self.class.finalize(connection_opts, transport, shell_id))
+          self.class.finalize(connection_opts, transport, shell_id)
+        )
       end
 
       def remove_finalizer

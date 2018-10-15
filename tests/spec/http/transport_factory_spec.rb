@@ -1,4 +1,3 @@
-# encoding: UTF-8
 require 'winrm/exceptions'
 require 'winrm/http/transport_factory'
 
@@ -6,8 +5,7 @@ module WinRM
   module HTTP
     # Remove the gssapi stuff in kerberos init for tests
     class HttpGSSAPI < HttpTransport
-      def initialize(endpoint, realm, opts, service = nil)
-      end
+      def initialize(endpoint, realm, opts, service = nil) end
     end
   end
 end

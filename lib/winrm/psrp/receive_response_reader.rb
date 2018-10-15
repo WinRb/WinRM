@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-#
 # Copyright 2016 Matt Wrock <matt@mattwrock.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,6 +39,7 @@ module WinRM
         read_response(wsmv_message, wait_for_done_state) do |stream|
           message = defragmenter.defragment(stream[:text])
           next unless message
+
           if block_given?
             yield message
           else
@@ -62,6 +61,7 @@ module WinRM
             output.exitcode = exit_code if exit_code
             decoded_text = @output_decoder.decode(message)
             next unless decoded_text
+
             out = { stream_type(message) => decoded_text }
             output << out
             yield [out[:stdout], out[:stderr]] if block_given?
@@ -79,9 +79,7 @@ module WinRM
         when WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_host_call]
           type = :stderr if message.data.include?('WriteError')
         when WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_state]
-          if message.parsed_data.pipeline_state == WinRM::PSRP::MessageData::PipelineState::FAILED
-            type = :stderr
-          end
+          type = :stderr if message.parsed_data.pipeline_state == WinRM::PSRP::MessageData::PipelineState::FAILED
         end
         type
       end

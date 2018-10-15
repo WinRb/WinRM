@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/shells/cmd'
 
 describe WinRM::Shells::Cmd do
@@ -24,9 +22,11 @@ describe WinRM::Shells::Cmd do
       .and_return(cleanup_payload)
     allow_any_instance_of(WinRM::WSMV::ReceiveResponseReader).to receive(:read_output)
       .and_return(output)
-    allow(transport).to receive(:send_request).with(create_shell_payload)
+    allow(transport).to receive(:send_request)
+      .with(create_shell_payload)
       .and_return(REXML::Document.new("<blah Name='ShellId'>#{shell_id}</blah>"))
-    allow(transport).to receive(:send_request).with(/#{command}/)
+    allow(transport).to receive(:send_request)
+      .with(/#{command}/)
       .and_return(REXML::Document.new(command_response))
   end
 

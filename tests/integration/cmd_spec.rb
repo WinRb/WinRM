@@ -1,4 +1,3 @@
-# encoding: UTF-8
 require_relative 'spec_helper'
 
 describe 'winrm client cmd' do
@@ -21,7 +20,7 @@ describe 'winrm client cmd' do
   end
 
   describe 'codepage' do
-    let(:options) { Hash.new }
+    let(:options) { {} }
     let(:shell) { winrm_connection.shell(:cmd, options) }
 
     after { shell.close }
@@ -98,7 +97,7 @@ describe 'winrm client cmd' do
   end
 
   describe 'ipconfig with /all argument' do
-    subject(:output) { @cmd_shell.run('ipconfig', %w(/all)) }
+    subject(:output) { @cmd_shell.run('ipconfig', %w[/all]) }
     it { should have_exit_code 0 }
     it { should have_stdout_match(/Windows IP Configuration/) }
     it { should have_no_stderr }

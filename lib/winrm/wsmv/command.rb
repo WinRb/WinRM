@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-#
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -85,12 +83,13 @@ module WinRM
 
       def command_header_opts
         return {} if @shell_uri != RESOURCE_URI_CMD
+
         # this is only needed for the regular Windows shell
         {
           "#{NS_WSMAN_DMTF}:OptionSet" => {
             "#{NS_WSMAN_DMTF}:Option" => [@consolemode, @skipcmd], :attributes! => {
               "#{NS_WSMAN_DMTF}:Option" => {
-                'Name' => %w(WINRS_CONSOLEMODE_STDIN WINRS_SKIP_CMD_SHELL)
+                'Name' => %w[WINRS_CONSOLEMODE_STDIN WINRS_SKIP_CMD_SHELL]
               }
             }
           }

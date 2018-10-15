@@ -1,5 +1,3 @@
-# encoding: UTF-8
-#
 # Copyright 2010 Dan Wanek <dan.wanek@gmail.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -73,7 +71,7 @@ module WinRM
 
       # SSL Peer Fingerprint Verification prior to connecting
       def ssl_peer_fingerprint_verification!
-        return unless @ssl_peer_fingerprint && ! @ssl_peer_fingerprint_verified
+        return unless @ssl_peer_fingerprint && !@ssl_peer_fingerprint_verified
 
         with_untrusted_ssl_connection do |connection|
           connection_cert = connection.peer_cert_chain.last
@@ -101,8 +99,10 @@ module WinRM
       # compare @ssl_peer_fingerprint to current ssl context
       def verify_ssl_fingerprint(cert)
         return unless @ssl_peer_fingerprint
+
         conn_fingerprint = OpenSSL::Digest::SHA1.new(cert.to_der).to_s
         return unless @ssl_peer_fingerprint.casecmp(conn_fingerprint) != 0
+
         raise "ssl fingerprint mismatch!!!!\n"
       end
 
@@ -199,16 +199,15 @@ module WinRM
         # OMI server doesn't always respond to encrypted messages with encrypted responses over SSL
         return resp.body if resp.header['Content-Type'].first =~ %r{\Aapplication\/soap\+xml}i
         return '' if resp.body.empty?
+
         str = resp.body.force_encoding('BINARY')
         str.sub!(%r{^.*Content-Type: application\/octet-stream\r\n(.*)--Encrypted.*$}m, '\1')
 
         signature = str[4..19]
         message = @ntlmcli.session.unseal_message str[20..-1]
-        if @ntlmcli.session.verify_signature(signature, message)
-          message
-        else
-          raise WinRMHTTPTransportError, 'Could not decrypt NTLM message.'
-        end
+        return message if @ntlmcli.session.verify_signature(signature, message)
+
+        raise WinRMHTTPTransportError, 'Could not decrypt NTLM message.'
       end
 
       def issue_challenge_response(negotiate)
@@ -368,12 +367,14 @@ module WinRM
           GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_FLAG_ALLOCATE)
 
         iov1 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(
-          FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 1)))
+          FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 1))
+        )
         iov1[:type] = GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA
         iov1[:buffer].value = str
 
         iov2 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(
-          FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 2)))
+          FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 2))
+        )
         iov2[:type] = (GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_PADDING | \
           GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_FLAG_ALLOCATE)
 
@@ -387,7 +388,8 @@ module WinRM
           GSSAPI::LibGSSAPI::GSS_C_QOP_DEFAULT,
           conf_state,
           iov,
-          iov_cnt)
+          iov_cnt
+        )
 
         token = [iov0[:buffer].length].pack('L')
         token += iov0[:buffer].value
@@ -408,11 +410,13 @@ module WinRM
           GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_FLAG_ALLOCATE)
 
         iov1 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(
-          FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 1)))
+          FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 1))
+        )
         iov1[:type] = GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA
 
         iov2 = GSSAPI::LibGSSAPI::GssIOVBufferDesc.new(
-          FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 2)))
+          FFI::Pointer.new(iov.address + (GSSAPI::LibGSSAPI::GssIOVBufferDesc.size * 2))
+        )
         iov2[:type] = GSSAPI::LibGSSAPI::GSS_IOV_BUFFER_TYPE_DATA
 
         str.force_encoding('BINARY')
@@ -430,7 +434,8 @@ module WinRM
         qop_state.write_int(0)
 
         maj_stat = GSSAPI::LibGSSAPI.gss_unwrap_iov(
-          min_stat, @gsscli.context, conf_state, qop_state, iov, iov_cnt)
+          min_stat, @gsscli.context, conf_state, qop_state, iov, iov_cnt
+        )
 
         @logger.debug "SOAP message decrypted (MAJ: #{maj_stat}, " \
           "MIN: #{min_stat.read_int}):\n#{iov1[:buffer].value}"
@@ -441,4 +446,5 @@ module WinRM
       # rubocop:enable Metrics/AbcSize
     end
   end
-end # WinRM
+end
+# WinRM

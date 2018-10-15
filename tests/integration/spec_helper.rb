@@ -1,4 +1,3 @@
-# encoding: UTF-8
 require 'rubygems'
 require 'bundler/setup'
 require 'winrm'
@@ -12,8 +11,8 @@ module ConnectionHelper
   end
 
   def connection_opts
-    @config ||= begin
-      cfg = symbolize_keys(YAML.load(File.read(winrm_config_path)))
+    @connection_opts ||= begin
+      cfg = symbolize_keys(YAML.safe_load(File.read(winrm_config_path)))
       merge_environment(cfg)
     end
   end
@@ -22,9 +21,7 @@ module ConnectionHelper
     merge_config_option_from_environment(config, 'user')
     merge_config_option_from_environment(config, 'password')
     merge_config_option_from_environment(config, 'no_ssl_peer_verification')
-    if ENV['use_ssl_peer_fingerprint']
-      config[:ssl_peer_fingerprint] = ENV['winrm_cert']
-    end
+    config[:ssl_peer_fingerprint] = ENV['winrm_cert'] if ENV['use_ssl_peer_fingerprint']
     config[:endpoint] = ENV['winrm_endpoint'] if ENV['winrm_endpoint']
     config
   end

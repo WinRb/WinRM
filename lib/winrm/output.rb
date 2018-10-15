@@ -1,5 +1,3 @@
-# encoding: UTF-8
-#
 # Copyright 2014 Max Lincoln <max@devopsy.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,6 +46,7 @@ module WinRM
     # Sets the exitcode
     def exitcode=(code)
       raise WinRM::InvalidExitCode unless code.is_a? Integer
+
       @exitcode = code
     end
 

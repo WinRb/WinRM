@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/wsmv/cleanup_command'
 
 describe WinRM::WSMV::CleanupCommand do

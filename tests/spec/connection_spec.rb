@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm'
 require 'winrm/shells/cmd'
 require 'winrm/shells/power_shell'

@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/psrp/receive_response_reader'
 
 describe WinRM::PSRP::ReceiveResponseReader do

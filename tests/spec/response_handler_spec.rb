@@ -1,8 +1,7 @@
-# encoding: UTF-8
 require 'winrm/http/response_handler'
 
 describe 'response handler', unit: true do
-  %w(v1 v2 omi).each do |winrm_version|
+  %w[v1 v2 omi].each do |winrm_version|
     context "winrm_version #{winrm_version}" do
       let(:soap_fault) { stubbed_response("soap_fault_#{winrm_version}.xml") }
       let(:open_shell) { stubbed_response("open_shell_#{winrm_version}.xml") }
@@ -39,13 +38,15 @@ describe 'response handler', unit: true do
           rescue WinRM::WinRMWSManFault => e
             expect(e.fault_code).to eq('2150858778')
             expect(e.fault_description).to include(
-              'The specified class does not exist in the given namespace')
+              'The specified class does not exist in the given namespace'
+            )
           # OMI
           rescue WinRM::WinRMSoapFault => e
             expect(e.code).to eq('SOAP-ENV:Receiver')
             expect(e.subcode).to eq('wsman:InternalError')
             expect(e.reason).to eq(
-              'get-instance: instance name parameter is missing')
+              'get-instance: instance name parameter is missing'
+            )
           end
         end
       end

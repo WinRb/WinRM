@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/wsmv/command_output'
 require 'winrm/wsmv/header'
 
@@ -28,7 +26,7 @@ describe WinRM::WSMV::CommandOutput do
         shell_id: 'F4A2622B-B842-4EB8-8A78-0225C8A993DF',
         command_id: 'A2A2622B-B842-4EB8-8A78-0225C8A993DF',
         shell_uri: WinRM::WSMV::Header::RESOURCE_URI_POWERSHELL,
-        out_streams: %w(stdout)
+        out_streams: %w[stdout]
       }
     end
     subject { described_class.new(default_connection_opts, cmd_out_opts) }

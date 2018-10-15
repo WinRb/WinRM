@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/psrp/message'
 
 describe WinRM::PSRP::Message do
@@ -10,7 +8,8 @@ describe WinRM::PSRP::Message do
         'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
         WinRM::PSRP::Message::MESSAGE_TYPES[:pipeline_output],
         payload,
-        '4218a578-0f18-4b19-82c3-46b433319126')
+        '4218a578-0f18-4b19-82c3-46b433319126'
+      )
     end
 
     it 'sets the destination to server LE' do
@@ -21,11 +20,13 @@ describe WinRM::PSRP::Message do
     end
     it 'sets the runspace pool id' do
       expect(subject.bytes[8..23]).to eq(
-        [186, 251, 27, 188, 21, 130, 4, 74, 178, 223, 122, 58, 192, 49, 14, 22])
+        [186, 251, 27, 188, 21, 130, 4, 74, 178, 223, 122, 58, 192, 49, 14, 22]
+      )
     end
     it 'sets the pipeline id' do
       expect(subject.bytes[24..39]).to eq(
-        [120, 165, 24, 66, 24, 15, 25, 75, 130, 195, 70, 180, 51, 49, 145, 38])
+        [120, 165, 24, 66, 24, 15, 25, 75, 130, 195, 70, 180, 51, 49, 145, 38]
+      )
     end
     it 'prefixes the blob with BOM' do
       expect(subject.bytes[40..42]).to eq([239, 187, 191])
@@ -45,7 +46,8 @@ describe WinRM::PSRP::Message do
           'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
           0x00000000,
           %(<Obj RefId="0"/>),
-          '4218a578-0f18-4b19-82c3-46b433319126')
+          '4218a578-0f18-4b19-82c3-46b433319126'
+        )
       end.to raise_error(RuntimeError)
     end
   end
@@ -60,7 +62,8 @@ describe WinRM::PSRP::Message do
       WinRM::PSRP::Message.new(
         'bc1bfbba-8215-4a04-b2df-7a3ac0310e16',
         WinRM::PSRP::Message::MESSAGE_TYPES[:session_capability],
-        payload)
+        payload
+      )
     end
 
     it 'sets the pipeline id to empty' do

@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-#
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,11 +21,12 @@ module WinRM
       def initialize(session_opts, command_out_opts)
         raise 'command_out_opts[:shell_id] is required' unless command_out_opts[:shell_id]
         raise 'command_out_opts[:command_id] is required' unless command_out_opts[:command_id]
+
         @session_opts = session_opts
         @shell_id = command_out_opts[:shell_id]
         @command_id = command_out_opts[:command_id]
         @shell_uri = command_out_opts[:shell_uri] || RESOURCE_URI_CMD
-        @out_streams = command_out_opts[:out_streams] || %w(stdout stderr)
+        @out_streams = command_out_opts[:out_streams] || %w[stdout stderr]
       end
 
       protected

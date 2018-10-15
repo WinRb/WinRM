@@ -1,4 +1,3 @@
-# encoding: UTF-8
 describe WinRM::Output do
   subject { WinRM::Output.new }
 
@@ -87,7 +86,8 @@ describe WinRM::Output do
     describe '#stdout' do
       it 'is equal to that line' do
         expect(subject.stdout).to eq(
-          'I can have a newline\nanywhere, or stdout or nothing! (above)')
+          'I can have a newline\nanywhere, or stdout or nothing! (above)'
+        )
       end
     end
 
@@ -101,7 +101,8 @@ describe WinRM::Output do
       it 'is equal to stdout + stderr' do
         expect(subject.output).to eq(
           'I can have a newline\nanywhere, I can also have stderror stdout ' \
-            'and stderr or nothing! (above)')
+            'and stderr or nothing! (above)'
+        )
       end
     end
   end

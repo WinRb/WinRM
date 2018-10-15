@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-#
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -66,6 +64,7 @@ module WinRM
 
       def process_items(items, &block)
         return if items.nil?
+
         items.each_pair do |k, v|
           # Normalize items so the type always has an array even if it's just a single item.
           v_ary = v.is_a?(Array) ? v : [v]

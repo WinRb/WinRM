@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-#
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -58,7 +56,7 @@ module WinRM
       end
 
       def out_streams
-        %w(stdout stderr)
+        %w[stdout stderr]
       end
     end
   end

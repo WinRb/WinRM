@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/shells/base'
 
 # Dummy shell class
@@ -28,7 +26,7 @@ class DummyShell < WinRM::Shells::Base
   end
 
   def out_streams
-    %w(std)
+    %w[std]
   end
 end
 
@@ -47,7 +45,8 @@ describe DummyShell do
 
   before do
     allow(subject).to receive(:response_reader).and_return(reader)
-    allow(subject).to receive(:command_output_message).with(shell_id, command_id)
+    allow(subject).to receive(:command_output_message)
+      .with(shell_id, command_id)
       .and_return(output_message)
     allow(reader).to receive(:read_output).with(output_message).and_return(output)
     allow(transport).to receive(:send_request)
@@ -144,6 +143,7 @@ describe DummyShell do
         allow(subject).to receive(:send_command) do
           @times_called += 1
           raise WinRM::WinRMWSManFault.new('oops', fault) if @times_called == 1
+
           command_id
         end
       end
@@ -179,13 +179,15 @@ describe DummyShell do
 
       it 'retries and returns shell on success' do
         @times = 0
-        allow(subject).to receive(:command_output_message).with('shell_id 2', command_id)
+        allow(subject).to receive(:command_output_message)
+          .with('shell_id 2', command_id)
           .and_return(output_message2)
         allow(reader).to receive(:read_output)
           .with(output_message2).and_return(output)
         allow(subject).to receive(:open_shell) do
           @times += 1
           raise(Errno::ECONNREFUSED) if @times == 1
+
           "shell_id #{@times}"
         end
 

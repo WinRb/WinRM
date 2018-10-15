@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-#
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -62,9 +60,7 @@ module WinRM
           "#{NS_WIN_SHELL}:OutputStreams" => @o_stream
         }
         body["#{NS_WIN_SHELL}:WorkingDirectory"] = @working_directory if @working_directory
-        if @idle_timeout
-          body["#{NS_WIN_SHELL}:IdleTimeOut"] = format_idle_timeout(@idle_timeout)
-        end
+        body["#{NS_WIN_SHELL}:IdleTimeOut"] = format_idle_timeout(@idle_timeout) if @idle_timeout
         body["#{NS_WIN_SHELL}:Environment"] = environment_vars_body if @env_vars
         body
       end
@@ -108,7 +104,7 @@ module WinRM
           "#{NS_WSMAN_DMTF}:OptionSet" => {
             "#{NS_WSMAN_DMTF}:Option" => [@noprofile, @codepage], :attributes! => {
               "#{NS_WSMAN_DMTF}:Option" => {
-                'Name' => %w(WINRS_NOPROFILE WINRS_CODEPAGE)
+                'Name' => %w[WINRS_NOPROFILE WINRS_CODEPAGE]
               }
             }
           }

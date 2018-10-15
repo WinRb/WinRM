@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/psrp/fragment'
 
 describe WinRM::PSRP::Fragment do

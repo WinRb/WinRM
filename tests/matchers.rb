@@ -1,4 +1,3 @@
-# encoding: UTF-8
 require 'rspec/expectations'
 
 # rspec matchers
@@ -23,7 +22,7 @@ end
 RSpec::Matchers.define :have_no_stdout do
   match do |actual_output|
     stdout = actual_output.stdout
-    stdout == '\r\n' || stdout == ''
+    ['\r\n', ''].include?(stdout)
   end
   failure_message do |actual_output|
     "expected that '#{actual_output.stdout}' would have no stdout"
@@ -33,7 +32,7 @@ end
 RSpec::Matchers.define :have_no_stderr do
   match do |actual_output|
     stderr = actual_output.stderr
-    stderr == '\r\n' || stderr == ''
+    ['\r\n', ''].include?(stderr)
   end
   failure_message do |actual_output|
     "expected that '#{actual_output.stderr}' would have no stderr"
