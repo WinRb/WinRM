@@ -85,7 +85,7 @@ module WinRM
 
         out = { stream[:type] => decoded_text }
         output << out
-        if (code = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:ExitCode"))
+        if (code = REXML::XPath.first(resp_doc, "//*[local-name() = 'ExitCode']"))
           output.exitcode = code.text.to_i
         end
         [out[:stdout], out[:stderr]]
@@ -116,7 +116,9 @@ module WinRM
       end
 
       def read_streams(response_document)
-        REXML::XPath.match(response_document, "//#{NS_WIN_SHELL}:Stream").each do |stream|
+        body_path = "/*[local-name() = 'Envelope']/*[local-name() = 'Body']"
+        path = "#{body_path}/*[local-name() = 'ReceiveResponse']/*[local-name() = 'Stream']"
+        REXML::XPath.match(response_document, path).each do |stream|
           next if stream.text.nil? || stream.text.empty?
           yield type: stream.attributes['Name'].to_sym, text: stream.text
         end

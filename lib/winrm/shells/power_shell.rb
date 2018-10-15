@@ -86,6 +86,8 @@ module WinRM
             # appropriate max length when that info is available
             raise unless e.fault_code == '5'
             WinRM::PSRP::MessageFragmenter::DEFAULT_BLOB_LENGTH
+          rescue WinRMSoapFault
+            WinRM::PSRP::MessageFragmenter::DEFAULT_BLOB_LENGTH
           end
         end
       end
@@ -104,7 +106,7 @@ module WinRM
           command_args = [connection_opts, shell_id, command_id, fragment]
           if fragment.start_fragment
             resp_doc = transport.send_request(WinRM::WSMV::CreatePipeline.new(*command_args).build)
-            command_id = REXML::XPath.first(resp_doc, "//#{NS_WIN_SHELL}:CommandId").text
+            command_id = REXML::XPath.first(resp_doc, "//*[local-name() = 'CommandId']").text
           else
             transport.send_request(WinRM::WSMV::SendData.new(*command_args).build)
           end
@@ -150,7 +152,9 @@ module WinRM
           config_msg = WinRM::WSMV::Configuration.new(connection_opts)
           msg = config_msg.build
           resp_doc = transport.send_request(msg)
-          REXML::XPath.first(resp_doc, "//#{NS_WSMAN_CONF}:MaxEnvelopeSizekb").text.to_i
+          REXML::XPath.first(resp_doc, "//*[local-name() = 'MaxEnvelopeSizekb']").text.to_i
+        ensure
+          logger.debug("[WinRM] Endpoint doesn't support config request for MaxEnvelopsizekb")
         end
       end
 

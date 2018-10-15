@@ -163,25 +163,25 @@ module WinRM
         @httpcli.ssl_config.set_trust_ca(opts[:ca_trust_path]) if opts[:ca_trust_path]
       end
 
-      def send_request(message, auth_header = nil)
+      def send_request(message)
         ssl_peer_fingerprint_verification!
-        auth_header = init_auth if @ntlmcli.session.nil?
+        init_auth if @ntlmcli.session.nil?
         log_soap_message(message)
 
         hdr = {
           'Content-Type' => 'multipart/encrypted;'\
             'protocol="application/HTTP-SPNEGO-session-encrypted";boundary="Encrypted Boundary"'
         }
-        hdr.merge!(auth_header) if auth_header
 
         resp = @httpcli.post(@endpoint, body(seal(message), message.bytesize), hdr)
         verify_ssl_fingerprint(resp.peer_cert)
         if resp.status == 401 && @retryable
           @retryable = false
-          send_request(message, init_auth)
+          init_auth
+          send_request(message)
         else
           @retryable = true
-          decrypted_body = winrm_decrypt(resp.body)
+          decrypted_body = winrm_decrypt(resp)
           log_soap_message(decrypted_body)
           WinRM::ResponseHandler.new(decrypted_body, resp.status).parse_to_xml
         end
@@ -195,9 +195,11 @@ module WinRM
         "\x10\x00\x00\x00#{signature}#{emessage}"
       end
 
-      def winrm_decrypt(str)
-        return '' if str.empty?
-        str.force_encoding('BINARY')
+      def winrm_decrypt(resp)
+        # OMI server doesn't always respond to encrypted messages with encrypted responses over SSL
+        return resp.body if resp.header['Content-Type'].first =~ %r{\Aapplication\/soap\+xml}i
+        return '' if resp.body.empty?
+        str = resp.body.force_encoding('BINARY')
         str.sub!(%r{^.*Content-Type: application\/octet-stream\r\n(.*)--Encrypted.*$}m, '\1')
 
         signature = str[4..19]
@@ -207,6 +209,21 @@ module WinRM
         else
           raise WinRMHTTPTransportError, 'Could not decrypt NTLM message.'
         end
+      end
+
+      def issue_challenge_response(negotiate)
+        auth_header = {
+          'Authorization' => "Negotiate #{negotiate.encode64}",
+          'Content-Type' => 'application/soap+xml;charset=UTF-8'
+        }
+
+        # OMI Server on Linux requires an empty payload with the new auth header to proceed
+        # because the config check for max payload size will otherwise break the auth handshake
+        # given the OMI server does not support that check
+        @httpcli.post(@endpoint, '', auth_header)
+
+        # return an empty hash of headers for subsequent requests to use
+        {}
       end
 
       def init_auth
@@ -227,7 +244,7 @@ module WinRM
         itok = auth_header.split.last
         binding = r.peer_cert.nil? ? nil : Net::NTLM::ChannelBinding.create(r.peer_cert)
         auth3 = @ntlmcli.init_context(itok, binding)
-        { 'Authorization' => "Negotiate #{auth3.encode64}" }
+        issue_challenge_response(auth3)
       end
     end
 
