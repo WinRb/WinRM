@@ -1,5 +1,3 @@
-# encoding: UTF-8
-#
 # Copyright 2016 Matt Wrock <matt@mattwrock.com>
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
@@ -45,7 +43,7 @@ module WinRM
             object_id,
             message.bytes[bytes_fragmented..last_byte - 1],
             fragment_id,
-            bytes_fragmented == 0,
+            bytes_fragmented.zero?,
             last_byte == message_bytes.length
           )
           fragment_id += 1

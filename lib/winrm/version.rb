@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 # WinRM module
 module WinRM
   # The version of the WinRM library

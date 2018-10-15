@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-#
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +20,7 @@ module WinRM
     class CloseShell < Base
       def initialize(session_opts, shell_opts)
         raise 'shell_opts[:shell_id] is required' unless shell_opts[:shell_id]
+
         @session_opts = session_opts
         @shell_id = shell_opts[:shell_id]
         @shell_uri = shell_opts[:shell_uri] || RESOURCE_URI_CMD

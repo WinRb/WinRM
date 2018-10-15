@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/wsmv/configuration'
 
 describe WinRM::WSMV::Configuration do

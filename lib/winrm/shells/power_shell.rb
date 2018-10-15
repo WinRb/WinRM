@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-#
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -85,6 +83,7 @@ module WinRM
             # we will assin a small default and adjust to a protocol
             # appropriate max length when that info is available
             raise unless e.fault_code == '5'
+
             WinRM::PSRP::MessageFragmenter::DEFAULT_BLOB_LENGTH
           rescue WinRMSoapFault
             WinRM::PSRP::MessageFragmenter::DEFAULT_BLOB_LENGTH
@@ -130,7 +129,7 @@ module WinRM
       end
 
       def out_streams
-        %w(stdout)
+        %w[stdout]
       end
 
       private
@@ -148,6 +147,7 @@ module WinRM
       end
 
       def max_envelope_size_kb
+        # rubocop:disable Layout/RescueEnsureAlignment
         @max_envelope_size_kb ||= begin
           config_msg = WinRM::WSMV::Configuration.new(connection_opts)
           msg = config_msg.build
@@ -156,6 +156,7 @@ module WinRM
         ensure
           logger.debug("[WinRM] Endpoint doesn't support config request for MaxEnvelopsizekb")
         end
+        # rubocop:enable Layout/RescueEnsureAlignment
       end
 
       def open_shell_payload(shell_id)

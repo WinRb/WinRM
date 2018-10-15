@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/wsmv/send_data'
 
 describe WinRM::WSMV::SendData do
@@ -22,9 +20,11 @@ describe WinRM::WSMV::SendData do
       expect(xml).to include('<w:OperationTimeout>PT60S</w:OperationTimeout>')
       expect(xml).to include(
         '<w:SelectorSet><w:Selector Name="ShellId">' \
-        "#{shell_id}</w:Selector></w:SelectorSet>")
+        "#{shell_id}</w:Selector></w:SelectorSet>"
+      )
       expect(xml).to include(
-        "<rsp:Stream Name=\"stdin\" CommandId=\"#{command_id}\">#{pipeline}</rsp:Stream>")
+        "<rsp:Stream Name=\"stdin\" CommandId=\"#{command_id}\">#{pipeline}</rsp:Stream>"
+      )
     end
   end
 end

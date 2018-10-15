@@ -1,5 +1,3 @@
-# encoding: UTF-8
-#
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -65,7 +63,8 @@ module WinRM
         # @api private
         def render(template, context = nil)
           template_path = File.expand_path(
-            "#{File.dirname(__FILE__)}/#{template}.xml.erb")
+            "#{File.dirname(__FILE__)}/#{template}.xml.erb"
+          )
           template = File.read(template_path)
           Erubis::Eruby.new(template).result(context)
         end

@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/wsmv/command_output_decoder'
 
 describe WinRM::WSMV::CommandOutputDecoder do

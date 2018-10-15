@@ -1,5 +1,3 @@
-# encoding: UTF-8
-#
 # Copyright 2016 Matt Wrock <matt@mattwrock.com>
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 #

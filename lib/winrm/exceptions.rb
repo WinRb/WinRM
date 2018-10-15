@@ -1,5 +1,3 @@
-# encoding: UTF-8
-#
 # Copyright 2010 Dan Wanek <dan.wanek@gmail.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");

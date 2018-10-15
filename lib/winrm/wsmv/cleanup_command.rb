@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-#
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,6 +21,7 @@ module WinRM
       def initialize(session_opts, opts)
         raise 'opts[:shell_id] is required' unless opts[:shell_id]
         raise 'opts[:command_id] is required' unless opts[:command_id]
+
         @session_opts = session_opts
         @shell_id = opts[:shell_id]
         @command_id = opts[:command_id]

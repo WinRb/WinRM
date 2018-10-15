@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/psrp/message'
 require 'winrm/psrp/message_data'
 

@@ -10,14 +10,26 @@ Style/Encoding:
 Style/NumericLiterals:
   Enabled: false
 
+Layout/EndOfLine:
+  Enabled: false
+
+Layout/IndentHeredoc:
+  Enabled: false
+
+Metrics/BlockLength:
+  Max: 200
+
 Metrics/LineLength:
-  Max: 100
+  Max: 120
 
 Metrics/MethodLength:
   Max: 20
 
 ModuleLength:
   Max: 250
+
+Naming/HeredocDelimiterNaming:
+  Enabled: false
 
 ClassLength:
   Max: 250

@@ -1,4 +1,3 @@
-# encoding: UTF-8
 require 'rubyntlm'
 require 'winrm/http/transport'
 

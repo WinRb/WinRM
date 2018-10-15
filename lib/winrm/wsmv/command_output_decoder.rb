@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-#
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,6 +37,7 @@ module WinRM
 
       def handle_invalid_encoding(decoded_text)
         return decoded_text if decoded_text.valid_encoding?
+
         if decoded_text.respond_to?(:scrub)
           decoded_text.scrub
         else

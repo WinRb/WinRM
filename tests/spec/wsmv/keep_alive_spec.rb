@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/wsmv/keep_alive'
 
 describe WinRM::WSMV::KeepAlive do
@@ -11,10 +9,12 @@ describe WinRM::WSMV::KeepAlive do
       expect(xml).to include('<w:OperationTimeout>PT60S</w:OperationTimeout>')
       expect(xml).to include(
         '<w:OptionSet><w:Option Name="WSMAN_CMDSHELL_OPTION_KEEPALIVE">' \
-        'TRUE</w:Option></w:OptionSet>')
+        'TRUE</w:Option></w:OptionSet>'
+      )
       expect(xml).to include(
         '<w:SelectorSet><w:Selector Name="ShellId">' \
-        "#{shell_id}</w:Selector></w:SelectorSet>")
+        "#{shell_id}</w:Selector></w:SelectorSet>"
+      )
       expect(xml).to include('<rsp:DesiredStream>stdout</rsp:DesiredStream>')
     end
   end

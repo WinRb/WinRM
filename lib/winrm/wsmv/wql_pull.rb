@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-
 require 'nori'
 require_relative 'base'
 

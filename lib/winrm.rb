@@ -1,5 +1,3 @@
-# encoding: UTF-8
-#
 # Copyright 2010 Dan Wanek <dan.wanek@gmail.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,9 +28,9 @@ module WinRM
       Logging.logger.root.appenders = Logging.appenders.stderr
     rescue ArgumentError
       # This means that the logging level wasn't valid
-      $stderr.puts "Invalid WINRM_LOG level is set: #{ENV['WINRM_LOG']}"
-      $stderr.puts ''
-      $stderr.puts 'Please use one of the standard log levels: ' \
+      warn "Invalid WINRM_LOG level is set: #{ENV['WINRM_LOG']}"
+      warn ''
+      warn 'Please use one of the standard log levels: ' \
         'debug, info, warn, or error'
     end
   end

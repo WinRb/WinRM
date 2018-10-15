@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/wsmv/wql_query'
 
 describe WinRM::WSMV::WqlQuery do

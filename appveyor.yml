@@ -11,7 +11,7 @@ environment:
   user_key: c:\projects\winrm\key.pem
 
   matrix:
-    - ruby_version: "21"
+    - ruby_version: "22"
       winrm_endpoint: http://localhost:5985/wsman
 
 clone_folder: c:\projects\winrm

@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/shells/power_shell'
 
 describe WinRM::Shells::Powershell do
@@ -74,7 +72,8 @@ describe WinRM::Shells::Powershell do
         test_data_xml_template = ERB.new(stubbed_response(response[:keepalive_template_path]))
 
         allow(SecureRandom).to receive(:uuid).and_return(command_id)
-        allow(subject).to receive(:command_output_message).with(shell_id, command_id)
+        allow(subject).to receive(:command_output_message)
+          .with(shell_id, command_id)
           .and_return(output_message)
         allow_any_instance_of(WinRM::WSMV::CreatePipeline).to receive(:build)
           .and_return(command_payload)
@@ -95,11 +94,14 @@ describe WinRM::Shells::Powershell do
           WinRM::ResponseHandler.new(config_response, 500).parse_to_xml if server_type == 'omi'
           REXML::Document.new(config_response)
         end
-        allow(transport).to receive(:send_request).with(create_shell_payload)
+        allow(transport).to receive(:send_request)
+          .with(create_shell_payload)
           .and_return(REXML::Document.new("<blah Name='ShellId'>#{shell_id}</blah>"))
-        allow(transport).to receive(:send_request).with(command_payload)
+        allow(transport).to receive(:send_request)
+          .with(command_payload)
           .and_return(REXML::Document.new(command_response))
-        allow(transport).to receive(:send_request).with(keepalive_payload)
+        allow(transport).to receive(:send_request)
+          .with(keepalive_payload)
           .and_return(REXML::Document.new(test_data_xml_template.result(binding)))
       end
 
@@ -138,7 +140,8 @@ describe WinRM::Shells::Powershell do
         # OMI server doesn't respond to configuration so these tests are irrelevant there
         context 'non admin user', if: server_type == 'powershell' do
           before do
-            allow(transport).to receive(:send_request).with(configuration_payload)
+            allow(transport).to receive(:send_request)
+              .with(configuration_payload)
               .and_raise(WinRM::WinRMWSManFault.new('no access for you', '5'))
           end
 

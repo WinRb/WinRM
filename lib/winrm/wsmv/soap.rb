@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-#
 # Copyright 2010 Dan Wanek <dan.wanek@gmail.com>
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 #

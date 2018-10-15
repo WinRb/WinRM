@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/wsmv/receive_response_reader'
 
 describe WinRM::WSMV::ReceiveResponseReader do

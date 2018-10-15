@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-#
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -59,9 +57,7 @@ module WinRM
                 .select { |m| m.to_s.start_with?('init_') && m.to_s.end_with?('_transport') }
                 .map { |tm| tm.to_s.split('_')[1] }
 
-        unless valid.include?(transport.to_s)
-          raise WinRM::InvalidTransportError.new(transport, valid)
-        end
+        raise WinRM::InvalidTransportError.new(transport, valid) unless valid.include?(transport.to_s)
       end
     end
   end

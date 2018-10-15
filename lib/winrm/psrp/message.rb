@@ -1,5 +1,3 @@
-# encoding: UTF-8
-#
 # Copyright 2015 Matt Wrock <matt@mattwrock.com>
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 #
@@ -81,7 +79,7 @@ module WinRM
         pipeline_id = nil,
         destination = SERVER_DESTINATION
       )
-        raise 'invalid message type' unless MESSAGE_TYPES.values.include?(type)
+        raise 'invalid message type' unless MESSAGE_TYPES.value?(type)
 
         @data = data
         @destination = destination

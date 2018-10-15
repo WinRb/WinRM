@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-#
 # Copyright 2016 Shawn Neal <sneal@sneal.net>
 # Copyright 2015 Matt Wrock <matt@mattwrock.com>
 #
@@ -37,6 +35,7 @@ module WinRM
         yield
       rescue *RETRYABLE_EXCEPTIONS.call
         raise unless (retries -= 1) > 0
+
         sleep(delay)
         retry
       end

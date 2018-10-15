@@ -1,5 +1,3 @@
-# encoding: UTF-8
-#
 # Copyright 2016 Matt Wrock <matt@mattwrock.com>
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
@@ -31,11 +29,13 @@ module WinRM
         @messages[fragment.object_id] ||= []
         @messages[fragment.object_id].push fragment
 
+        # rubocop:disable Style/GuardClause
         if fragment.end_fragment
           blob = []
           @messages.delete(fragment.object_id).each { |frag| blob += frag.blob }
           return message_from(blob.pack('C*'))
         end
+        # rubocop:enable Style/GuardClause
       end
 
       def fragment_from(byte_string)

@@ -1,4 +1,3 @@
-# encoding: UTF-8
 require 'winrm/connection_opts'
 
 describe WinRM::ConnectionOpts do

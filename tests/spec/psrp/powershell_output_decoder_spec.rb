@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'winrm/psrp/powershell_output_decoder'
 
 describe WinRM::PSRP::PowershellOutputDecoder do
