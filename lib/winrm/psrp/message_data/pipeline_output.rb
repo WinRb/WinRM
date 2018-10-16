@@ -30,13 +30,9 @@ module WinRM
           doc.root.get_elements('//S').map do |node|
             text = ''
             if node.text
-              text << node.text.gsub(/_x(\h\h\h\h)_/) do
-                decoded_text = Regexp.last_match[1].hex.chr.force_encoding('utf-8')
-                if decoded_text.respond_to?(:scrub)
-                  decoded_text.scrub
-                else
-                  decoded_text.encode('utf-16', invalid: :replace, undef: :replace).encode('utf-8')
-                end
+              text << node.text.gsub(/(_x\h\h\h\h_)+/) do |match|
+                match.scan(/_x(\h\h\h\h)_/).flatten.map(&:hex)
+                     .pack('S*').force_encoding('utf-16le').encode('utf-8')
               end.chomp
             end
             text << "\r\n"
