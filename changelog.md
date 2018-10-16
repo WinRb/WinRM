@@ -1,5 +1,10 @@
 # WinRM Gem Changelog
 
+# 2.3.0
+- Fixes rwinrm command
+- Use pack('S*') instead of .chr so full utf-16 can be supported
+- Omi Server compatibility fixes
+
 # 2.2.3
 - Revert change made in 2.2.2 that retries network errors in Close and cleanup
 
