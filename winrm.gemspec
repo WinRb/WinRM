@@ -38,7 +38,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'logging', ['>= 1.6.1', '< 3.0']
   s.add_runtime_dependency 'nori', '~> 2.0'
   s.add_development_dependency 'pry'
-  s.add_development_dependency 'rake', '~> 10.3'
+  s.add_development_dependency 'rake', '>= 10.3', '< 13'
   s.add_development_dependency 'rb-readline'
   s.add_development_dependency 'rspec', '~> 3.2'
   s.add_development_dependency 'rubocop', '~> 0.51'
