@@ -3,6 +3,7 @@ AllCops:
     - 'appveyor.yml'
     - 'Vagrantfile'
     - 'scripts/**/*'
+    - 'vendor/**/*'
 
 Style/Encoding:
   Enabled: true

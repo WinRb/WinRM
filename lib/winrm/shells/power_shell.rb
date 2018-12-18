@@ -147,7 +147,6 @@ module WinRM
       end
 
       def max_envelope_size_kb
-        # rubocop:disable Layout/RescueEnsureAlignment
         @max_envelope_size_kb ||= begin
           config_msg = WinRM::WSMV::Configuration.new(connection_opts)
           msg = config_msg.build
