@@ -22,7 +22,7 @@ Gem::Specification.new do |s|
   EOF
   s.license = 'Apache-2.0'
 
-  s.files = `git ls-files`.split(/\n/)
+  s.files = Dir.glob('{bin,lib}/**/*') + %w[LICENSE README.md]
   s.require_path = 'lib'
   s.rdoc_options = %w[-x test/ -x examples/]
   s.extra_rdoc_files = %w[README.md LICENSE]
@@ -38,9 +38,9 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'logging', ['>= 1.6.1', '< 3.0']
   s.add_runtime_dependency 'nori', '~> 2.0'
   s.add_development_dependency 'pry'
-  s.add_development_dependency 'rake', '~> 10.3'
+  s.add_development_dependency 'rake', '>= 10.3', '< 13'
   s.add_development_dependency 'rb-readline'
   s.add_development_dependency 'rspec', '~> 3.2'
-  s.add_development_dependency 'rubocop', '~> 0.51'
+  s.add_development_dependency 'rubocop', '~> 0.51.0'
   s.add_runtime_dependency 'rubyntlm', '~> 0.6.0', '>= 0.6.1'
 end
