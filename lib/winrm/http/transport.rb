@@ -74,7 +74,7 @@ module WinRM
         return unless @ssl_peer_fingerprint && !@ssl_peer_fingerprint_verified
 
         with_untrusted_ssl_connection do |connection|
-          connection_cert = connection.peer_cert_chain.last
+          connection_cert = connection.peer_cert
           verify_ssl_fingerprint(connection_cert)
         end
         @logger.info("initial ssl fingerprint #{@ssl_peer_fingerprint} verified\n")
