@@ -1,5 +1,9 @@
 # WinRM Gem Changelog
 
+# 2.3.1
+- Limit the files that are shipped in the gem artifact
+- Use peer_cert for validation to prevent validating the signing cert
+
 # 2.3.0
 - Fixes rwinrm command
 - Use pack('S*') instead of .chr so full utf-16 can be supported
