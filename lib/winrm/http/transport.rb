@@ -435,7 +435,7 @@ module WinRM
         str.sub!(%r{^.*Content-Type: application\/octet-stream\r\n(.*)--Encrypted.*$}m, '\1')
 
         len = str.unpack('L').first
-        iov_data = str.unpack("LA#{len}A*")
+        iov_data = str.unpack("La#{len}a*")
         iov0[:buffer].value = iov_data[1]
         iov1[:buffer].value = iov_data[2]
 
