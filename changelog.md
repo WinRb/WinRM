@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 2.3.2
+- Fix Kerberos decryption corruption
+
 # 2.3.1
 - Limit the files that are shipped in the gem artifact
 - Use peer_cert for validation to prevent validating the signing cert
