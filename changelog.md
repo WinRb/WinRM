@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 2.3.3
+- Replace erubis with erubi
+
 # 2.3.2
 - Fix Kerberos decryption corruption
 
