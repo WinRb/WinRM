@@ -48,6 +48,8 @@ module WinRM
 
         def property_hash(prop_name)
           prop_nodes = REXML::XPath.first(doc, "//*[@N='#{prop_name}']/Props")
+          return {} if prop_nodes.nil?
+
           prop_nodes.elements.each_with_object({}) do |node, props|
             name = node.attributes['N']
             props[underscore(name).to_sym] = node.text if node.text
