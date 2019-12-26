@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 2.3.4
+- Fix ErrorRecord.invocation crash when InvocationInfo is empty
+
 # 2.3.3
 - Replace erubis with erubi
 
