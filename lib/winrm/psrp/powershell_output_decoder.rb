@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'base64'
+require 'base64' unless defined?(Base64)
 require_relative 'message'
 require_relative 'message_data/pipeline_state'
 
