@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'rexml/document'
+require 'rexml/document' unless defined?(REXML::Document)
 require_relative '../wsmv/soap'
 
 module WinRM

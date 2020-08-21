@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'securerandom'
+require 'securerandom' unless defined?(SecureRandom)
 require_relative 'base'
 require_relative '../psrp/message_fragmenter'
 require_relative '../psrp/receive_response_reader'
