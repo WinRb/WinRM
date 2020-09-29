@@ -147,6 +147,7 @@ module WinRM
       end
 
       def cleanup_command(command_id)
+        return unless shell_id
         logger.debug("[WinRM] cleaning up command_id: #{command_id} on shell_id #{shell_id}")
         cleanup_msg = WinRM::WSMV::CleanupCommand.new(
           connection_opts,
