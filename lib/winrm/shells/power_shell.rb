@@ -152,8 +152,9 @@ module WinRM
           msg = config_msg.build
           resp_doc = transport.send_request(msg)
           REXML::XPath.first(resp_doc, "//*[local-name() = 'MaxEnvelopeSizekb']").text.to_i
-        ensure
+        rescue REXML::ParseException
           logger.debug("[WinRM] Endpoint doesn't support config request for MaxEnvelopeSizekb")
+          raise
         end
         # rubocop:enable Layout/RescueEnsureAlignment
       end
