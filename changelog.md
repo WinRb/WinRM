@@ -1,5 +1,11 @@
 # WinRM Gem Changelog
 
+# 2.3.5
+- Do not print debug msg about trouble getting MaxEnvelopeSizekb when succesful
+- Do not cleanup command if there is no shell
+- Optimize our requires
+- Fix typo in error message
+
 # 2.3.4
 - Fix ErrorRecord.invocation crash when InvocationInfo is empty
 
