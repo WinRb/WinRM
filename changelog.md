@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 2.3.6
+- Add compatibility with ruby 3.0.0
+
 # 2.3.5
 - Do not print debug msg about trouble getting MaxEnvelopeSizekb when succesful
 - Do not cleanup command if there is no shell
