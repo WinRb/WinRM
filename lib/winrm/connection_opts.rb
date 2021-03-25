@@ -68,8 +68,8 @@ module WinRM
       if self[:client_cert]
         raise 'path to client key is required' unless self[:client_key]
       else
-        raise 'user is a required option' unless self[:user]
-        raise 'password is a required option' unless self[:password]
+        raise 'user is a required option' unless self[:transport] == :kerberos 
+        raise 'password is a required option' unless self[:transport] == :kerberos
       end
     end
 
