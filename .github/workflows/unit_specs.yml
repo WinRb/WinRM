@@ -1,0 +1,24 @@
+---
+name: unit_specs
+
+"on":
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  unit:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2016]
+        ruby: ['3.0', '3.1']
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby }}
+        bundler-cache: true
+    - run: bundle exec rake test
