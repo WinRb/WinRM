@@ -1,4 +1,6 @@
 AllCops:
+  TargetRubyVersion: 2.5
+
   Exclude:
     - 'appveyor.yml'
     - 'Vagrantfile'
@@ -14,26 +16,87 @@ Style/NumericLiterals:
 Layout/EndOfLine:
   Enabled: false
 
-Layout/IndentHeredoc:
+Layout/HeredocIndentation:
   Enabled: false
 
 Metrics/BlockLength:
   Max: 200
 
-Metrics/LineLength:
+Layout/LineLength:
   Max: 120
 
 Metrics/MethodLength:
   Max: 20
 
-ModuleLength:
+Metrics/ModuleLength:
   Max: 250
 
 Naming/HeredocDelimiterNaming:
   Enabled: false
 
-ClassLength:
+Metrics/ClassLength:
   Max: 250
 
 Metrics/AbcSize:
-  Max: 25
+  Max: 26
+
+###################################################
+# Disabled these breaking cops since upgrading
+# rubocop for ruby 3.1. Should eventually fix them.
+###################################################
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/SafeNavigation:
+  Enabled: false
+
+Style/AccessorGrouping:
+  Enabled: false
+
+Style/NumericPredicate:
+  Enabled: false
+
+Style/UnpackFirst:
+  Enabled: false
+
+Style/OptionalBooleanParameter:
+  Enabled: false
+
+Style/RedundantRegexpEscape:
+  Enabled: false
+
+Lint/HashCompareByIdentity:
+  Enabled: false
+
+Style/RedundantReturn:
+  Enabled: false
+
+Lint/RedundantCopDisableDirective:
+  Enabled: false
+
+Style/RedundantBegin:
+  Enabled: false
+
+Style/TrailingCommaInArrayLiteral:
+  Enabled: false
+
+Layout/EmptyLineAfterGuardClause:
+  Enabled: false
+
+Naming/RescuedExceptionsVariableName:
+  Enabled: false
+
+Lint/MissingSuper:
+  Enabled: false
+
+Style/RedundantAssignment:
+  Enabled: false
+
+Style/StringConcatenation:
+  Enabled: false
+
+Style/CommentAnnotation:
+  Enabled: false
+
+Style/SlicingWithRange:
+  Enabled: false

@@ -156,7 +156,6 @@ module WinRM
           logger.debug("[WinRM] Endpoint doesn't support config request for MaxEnvelopeSizekb")
           raise
         end
-        # rubocop:enable Layout/RescueEnsureAlignment
       end
 
       def open_shell_payload(shell_id)

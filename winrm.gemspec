@@ -29,7 +29,7 @@ Gem::Specification.new do |s|
 
   s.bindir = 'bin'
   s.executables = ['rwinrm']
-  s.required_ruby_version = '>= 2.2.0'
+  s.required_ruby_version = '>= 2.5.0'
   s.add_runtime_dependency 'builder', '>= 2.1.2'
   s.add_runtime_dependency 'erubi', '~> 1.8'
   s.add_runtime_dependency 'gssapi', '~> 1.2'
@@ -42,6 +42,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rb-readline'
   s.add_development_dependency 'rexml'
   s.add_development_dependency 'rspec', '~> 3.2'
-  s.add_development_dependency 'rubocop', '~> 0.51.0'
+  s.add_development_dependency 'rubocop', '~> 1.26.0'
   s.add_runtime_dependency 'rubyntlm', '~> 0.6.0', '>= 0.6.3'
 end
