@@ -25,10 +25,10 @@ module WinRM
 
       def initialize(endpoint, options)
         @endpoint = endpoint.is_a?(String) ? URI.parse(endpoint) : endpoint
-        @httpcli = HTTPClient.new()
+        @httpcli = HTTPClient.new
         @logger = Logging.logger[self]
         @httpcli.receive_timeout = options[:receive_timeout]
-        @httpcli.default_header = {'User-Agent': options[:user_agent]}
+        @httpcli.default_header = { 'User-Agent': options[:user_agent] }
       end
 
       # Sends the SOAP payload to the WinRM service and returns the service's
