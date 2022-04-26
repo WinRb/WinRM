@@ -23,6 +23,7 @@ module WinRM
     DEFAULT_LOCALE = 'en-US'.freeze
     DEFAULT_RETRY_DELAY = 10
     DEFAULT_RETRY_LIMIT = 3
+    DEFAULT_USER_AGENT = 'Ruby WinRM Client'.freeze
 
     class << self
       def create_with_defaults(overrides)
@@ -51,6 +52,7 @@ module WinRM
         config[:receive_timeout] = DEFAULT_RECEIVE_TIMEOUT
         config[:retry_delay] = DEFAULT_RETRY_DELAY
         config[:retry_limit] = DEFAULT_RETRY_LIMIT
+        config[:user_agent] = DEFAULT_USER_AGENT
         config
       end
     end

@@ -47,6 +47,7 @@ There are various connection options you can specify upon initializing a WinRM c
 * `:operation_timeout` - The maximum amount of time to wait for a response from the endpoint. This defaults to 60 seconds. Note that this will not "timeout" commands that exceed this amount of time to process, it just requires the endpoint to report the status of the command before the given amount of time passes.
 * `:receive_timeout` - The amount of time given to the underlying HTTP connection to respond before timing out. The defaults to 10 seconds longer than the `:operation_timeout`.
 * `:retry_limit` - the maximum number of times to retry opening a shell after failure. This defaults to 3.
+* `:user_agent` - the user-agent used in the http connection, default to 'Ruby WinRM Client'
 * `:retry_delay` - the amount of time to wait between retries and defaults to 10 seconds
 * `:user` - username used to authenticate over the `:transport`
 * `:password` - password used to authenticate over the `:transport`
