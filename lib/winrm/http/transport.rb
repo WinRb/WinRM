@@ -162,6 +162,7 @@ module WinRM
         no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
         @ssl_peer_fingerprint = opts[:ssl_peer_fingerprint]
         @httpcli.ssl_config.set_trust_ca(opts[:ca_trust_path]) if opts[:ca_trust_path]
+        @httpcli.ssl_config.cert_store = opts[:cert_store] if opts[:cert_store]
       end
 
       def send_request(message)
@@ -269,6 +270,7 @@ module WinRM
         no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
         @ssl_peer_fingerprint = opts[:ssl_peer_fingerprint]
         @httpcli.ssl_config.set_trust_ca(opts[:ca_trust_path]) if opts[:ca_trust_path]
+        @httpcli.ssl_config.cert_store = opts[:cert_store] if opts[:cert_store]
       end
     end
 
@@ -281,6 +283,7 @@ module WinRM
         no_ssl_peer_verification! if opts[:no_ssl_peer_verification]
         @ssl_peer_fingerprint = opts[:ssl_peer_fingerprint]
         @httpcli.ssl_config.set_trust_ca(opts[:ca_trust_path]) if opts[:ca_trust_path]
+        @httpcli.ssl_config.cert_store = opts[:cert_store] if opts[:cert_store]
       end
     end
 
