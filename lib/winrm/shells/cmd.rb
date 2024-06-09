@@ -20,10 +20,6 @@ module WinRM
     class Cmd < Base
       include WinRM::WSMV::SOAP
       class << self
-        def finalize(connection_opts, transport, shell_id)
-          proc { Cmd.close_shell(connection_opts, transport, shell_id) }
-        end
-
         def close_shell(connection_opts, transport, shell_id)
           msg = WinRM::WSMV::CloseShell.new(connection_opts, shell_id: shell_id)
           transport.send_request(msg.build)

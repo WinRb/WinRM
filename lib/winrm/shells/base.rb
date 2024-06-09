@@ -183,6 +183,10 @@ module WinRM
       def remove_finalizer
         ObjectSpace.undefine_finalizer(self)
       end
+
+      def self.finalize(connection_opts, transport, shell_id)
+        proc { Thread.new { close_shell(connection_opts, transport, shell_id) } }
+      end
     end
   end
 end
