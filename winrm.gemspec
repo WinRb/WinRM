@@ -29,7 +29,7 @@ Gem::Specification.new do |s|
 
   s.bindir = 'bin'
   s.executables = ['rwinrm']
-  s.required_ruby_version = '>= 2.5.0'
+  s.required_ruby_version = '>= 3.0'
   s.add_runtime_dependency 'builder', '>= 2.1.2'
   s.add_runtime_dependency 'erubi', '~> 1.8'
   s.add_runtime_dependency 'gssapi', '~> 1.2'
