@@ -11,7 +11,7 @@ site](http://msdn.microsoft.com/en-us/library/aa384426.aspx).
 As of version 2.0, this gem retains the WinRM name but all powershell calls use the more modern [Powershell Remoting Protocol (PSRP)](https://msdn.microsoft.com/en-us/library/dd357801.aspx) for initializing runspace pools as well as creating and processing powershell pipelines.
 
 ## Supported Ruby Versions
-Ruby 2.0 or higher is required. If you need to use an older version of Ruby you'll need to use a 1.x version of this gem.
+Ruby 3.0 or higher is required. If you need to use an older version of Ruby you'll need to use a previous version of this gem.
 
 ## Supported WinRM Versions
 WinRM 1.1 is supported, however 2.0 and higher is recommended. [See MSDN](http://technet.microsoft.com/en-us/library/ff520073.aspx) for information about WinRM versions and supported operating systems.

@@ -44,4 +44,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rspec', '~> 3.2'
   s.add_development_dependency 'rubocop', '~> 1.26.0'
   s.add_runtime_dependency 'rubyntlm', '~> 0.6.0', '>= 0.6.3'
+
+  s.metadata['rubygems_mfa_required'] = 'true'
 end
