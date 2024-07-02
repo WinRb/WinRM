@@ -79,7 +79,7 @@ WinRM::Connection.new(
 )
 ```
 
-The `:ssl` transport establishes a connection to the winrm endpoint over a secure sockets layer transport encrypting the entire message. Here are some additional connecion options available to `:ssl` connections:
+The `:ssl` transport establishes a connection to the winrm endpoint over a secure sockets layer transport encrypting the entire message. Here are some additional connection options available to `:ssl` connections:
 
 * `:client_cert` - Either a string path to a certificate `.pem` file or a `X509::Certificate` object. This along with an accompanying `:client_key` can be used in lieu of a `:user` and `:password`.
 * `:client_key` - the path to the private key file accompanying the above mentioned `:client_cert` or an `PKey::Pkey` object.

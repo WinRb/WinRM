@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 2.3.8
+* Add cert_store option by @ussu in https://github.com/WinRb/WinRM/pull/330
+
 # 2.3.7
 * Add ruby-3.1 test by @skeshari12 in https://github.com/WinRb/WinRM/pull/332
 * move from travis to GH actions and test ruby 3.1 by @mwrock in https://github.com/WinRb/WinRM/pull/335
