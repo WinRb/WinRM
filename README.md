@@ -87,6 +87,7 @@ The `:ssl` transport establishes a connection to the winrm endpoint over a secur
 * `:no_ssl_peer_verification` - when set to `true` ssl certificate validation is not performed. With a self signed cert, its a match made in heaven!
 * `:ssl_peer_fingerprint` - when this is provided, normal certificate validation is skipped and instead the given fingerprint is matched against the certificate of the endpoint for verification.
 * `:ca_trust_path` - the path to a certificate `.pem` file to trust. Its similar to the `:ssl_peer_fingerprint` but contains the entire certificate to trust.
+* `:cert_store` - an OpenSSL::X509::X509::Store object used for certificate verification.
 
 ### `:kerberos`
 ```ruby
