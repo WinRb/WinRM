@@ -15,7 +15,7 @@ module WinRM
         parser = Nori.new(
           parser: :rexml,
           advanced_typecasting: false,
-          convert_tags_to: ->(tag) { tag.snakecase.to_sym },
+          convert_tags_to: ->(tag) { Nori::StringUtils.snakecase(tag).to_sym },
           strip_namespaces: true
         )
         parser.parse(response.to_s)[:envelope][:body]
