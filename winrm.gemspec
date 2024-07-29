@@ -36,7 +36,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'gyoku', '~> 1.0'
   s.add_runtime_dependency 'httpclient', '~> 2.2', '>= 2.2.0.2'
   s.add_runtime_dependency 'logging', ['>= 1.6.1', '< 3.0']
-  s.add_runtime_dependency 'nori', '~> 2.0'
+  s.add_runtime_dependency 'nori', '~> 2.0', '>= 2.7.1'
   s.add_runtime_dependency 'rexml', '~> 3.0'
   s.add_development_dependency 'pry'
   s.add_development_dependency 'rake', '>= 10.3', '< 13'
