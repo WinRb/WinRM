@@ -1,5 +1,8 @@
 # WinRM Gem Changelog
 
+# 2.3.9
+* Fix snakecase `NoMethodError` by @ripa1995 in https://github.com/WinRb/WinRM/pull/347
+
 # 2.3.8
 * Add cert_store option by @ussu in https://github.com/WinRb/WinRM/pull/330
 
