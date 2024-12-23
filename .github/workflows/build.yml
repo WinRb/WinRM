@@ -12,8 +12,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, windows-2019]
-        ruby: ['2.6', '2.7', '3.0', '3.1']
+        os: [ubuntu-24.04, windows-2019]
+        ruby: ['3.0', '3.1']
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
