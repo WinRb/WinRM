@@ -19,27 +19,27 @@ module WinRM
     # PowerShell Remoting Protocol message fragment.
     class Fragment
       # Creates a new PSRP message fragment
-      # @param object_id [Integer] The id of the fragmented message.
+      # @param message_id [Integer] The id of the fragmented message.
       # @param blob [Array] Array of fragmented bytes.
       # @param fragment_id [Integer] The id of this fragment
       # @param start_fragment [Boolean] If the fragment is the first fragment
       # @param end_fragment [Boolean] If the fragment is the last fragment
-      def initialize(object_id, blob, fragment_id = 0, start_fragment = true, end_fragment = true)
-        @object_id = object_id
+      def initialize(message_id, blob, fragment_id = 0, start_fragment = true, end_fragment = true)
+        @message_id = message_id
         @blob = blob
         @fragment_id = fragment_id
         @start_fragment = start_fragment
         @end_fragment = end_fragment
       end
 
-      attr_reader :object_id, :fragment_id, :end_fragment, :start_fragment, :blob
+      attr_reader :message_id, :fragment_id, :end_fragment, :start_fragment, :blob
 
       # Returns the raw PSRP message bytes ready for transfer to Windows inside a
       # WinRM message.
       # @return [Array<Byte>] Unencoded raw byte array of the PSRP message.
       def bytes
         [
-          int64be(object_id),
+          int64be(message_id),
           int64be(fragment_id),
           end_start_fragment,
           int16be(blob.length),
