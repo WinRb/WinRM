@@ -94,6 +94,10 @@ module WinRM
         @shell_id = nil
       end
 
+      def self.finalize(connection_opts, transport, shell_id)
+        proc { Thread.new { close_shell(connection_opts, transport, shell_id) } }
+      end
+
       protected
 
       def send_command(_command, _arguments)

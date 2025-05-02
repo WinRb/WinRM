@@ -26,13 +26,13 @@ module WinRM
       def defragment(base64_bytes)
         fragment = fragment_from(Base64.decode64(base64_bytes))
 
-        @messages[fragment.object_id] ||= []
-        @messages[fragment.object_id].push fragment
+        @messages[fragment.message_id] ||= []
+        @messages[fragment.message_id].push fragment
 
         # rubocop:disable Style/GuardClause
         if fragment.end_fragment
           blob = []
-          @messages.delete(fragment.object_id).each { |frag| blob += frag.blob }
+          @messages.delete(fragment.message_id).each { |frag| blob += frag.blob }
           return message_from(blob.pack('C*'))
         end
         # rubocop:enable Style/GuardClause

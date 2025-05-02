@@ -35,9 +35,9 @@ describe WinRM::WSMV::ReceiveResponseReader do
         # OMI server messages do not appear to include stdout when CommandState/Done
         it 'does not raise an ArgumentError: invalid byte sequence in UTF-8' do
           begin
-            expect(
+            expect do
               subject.read_output(output_message)
-            ).not_to raise_error
+            end.not_to raise_error
           rescue RSpec::Expectations::ExpectationNotMetError => e
             expect(e.message).not_to include 'ArgumentError'
           end

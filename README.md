@@ -1,7 +1,6 @@
 # Windows Remote Management (WinRM) for Ruby
-[![Build Status](https://travis-ci.org/WinRb/WinRM.svg?branch=master)](https://travis-ci.org/WinRb/WinRM)
+[![build](https://github.com/WinRb/WinRM/actions/workflows/build.yml/badge.svg)](https://github.com/WinRb/WinRM/actions/workflows/build.yml)
 [![Gem Version](https://badge.fury.io/rb/winrm.svg)](http://badge.fury.io/rb/winrm)
-[![Build status](https://ci.appveyor.com/api/projects/status/ods9tvos78k5c15h?svg=true)](https://ci.appveyor.com/project/winrb/winrm)
 
 This is a SOAP library that uses the functionality in Windows Remote
 Management(WinRM) to call native object in Windows.  This includes, but is
@@ -12,7 +11,7 @@ site](http://msdn.microsoft.com/en-us/library/aa384426.aspx).
 As of version 2.0, this gem retains the WinRM name but all powershell calls use the more modern [Powershell Remoting Protocol (PSRP)](https://msdn.microsoft.com/en-us/library/dd357801.aspx) for initializing runspace pools as well as creating and processing powershell pipelines.
 
 ## Supported Ruby Versions
-Ruby 2.0 or higher is required. If you need to use an older version of Ruby you'll need to use a 1.x version of this gem.
+Ruby 3.0 or higher is required. If you need to use an older version of Ruby you'll need to use a previous version of this gem.
 
 ## Supported WinRM Versions
 WinRM 1.1 is supported, however 2.0 and higher is recommended. [See MSDN](http://technet.microsoft.com/en-us/library/ff520073.aspx) for information about WinRM versions and supported operating systems.
@@ -80,7 +79,7 @@ WinRM::Connection.new(
 )
 ```
 
-The `:ssl` transport establishes a connection to the winrm endpoint over a secure sockets layer transport encrypting the entire message. Here are some additional connecion options available to `:ssl` connections:
+The `:ssl` transport establishes a connection to the winrm endpoint over a secure sockets layer transport encrypting the entire message. Here are some additional connection options available to `:ssl` connections:
 
 * `:client_cert` - Either a string path to a certificate `.pem` file or a `X509::Certificate` object. This along with an accompanying `:client_key` can be used in lieu of a `:user` and `:password`.
 * `:client_key` - the path to the private key file accompanying the above mentioned `:client_cert` or an `PKey::Pkey` object.
@@ -88,6 +87,7 @@ The `:ssl` transport establishes a connection to the winrm endpoint over a secur
 * `:no_ssl_peer_verification` - when set to `true` ssl certificate validation is not performed. With a self signed cert, its a match made in heaven!
 * `:ssl_peer_fingerprint` - when this is provided, normal certificate validation is skipped and instead the given fingerprint is matched against the certificate of the endpoint for verification.
 * `:ca_trust_path` - the path to a certificate `.pem` file to trust. Its similar to the `:ssl_peer_fingerprint` but contains the entire certificate to trust.
+* `:cert_store` - an OpenSSL::X509::X509::Store object used for certificate verification.
 
 ### `:kerberos`
 ```ruby

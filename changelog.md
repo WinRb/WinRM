@@ -1,5 +1,19 @@
 # WinRM Gem Changelog
 
+# 2.3.9
+* Fix snakecase `NoMethodError` by @ripa1995 in https://github.com/WinRb/WinRM/pull/347
+
+# 2.3.8
+* Add cert_store option by @ussu in https://github.com/WinRb/WinRM/pull/330
+
+# 2.3.7
+* Add ruby-3.1 test by @skeshari12 in https://github.com/WinRb/WinRM/pull/332
+* move from travis to GH actions and test ruby 3.1 by @mwrock in https://github.com/WinRb/WinRM/pull/335
+* Add rexml as an explicit dependency for Ruby 3.x by @postmodern in https://github.com/WinRb/WinRM/pull/334
+* Adding user-agent option by @laxa in https://github.com/WinRb/WinRM/pull/337
+* Update CI to use ruby 3.X by @fwininger in https://github.com/WinRb/WinRM/pull/343
+* Create thread in shell finalizer by @akihikodaki in https://github.com/WinRb/WinRM/pull/339
+
 # 2.3.6
 - Add compatibility with ruby 3.0.0
 

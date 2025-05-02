@@ -29,10 +29,6 @@ module WinRM
       include WinRM::WSMV::SOAP
 
       class << self
-        def finalize(connection_opts, transport, shell_id)
-          proc { Powershell.close_shell(connection_opts, transport, shell_id) }
-        end
-
         def close_shell(connection_opts, transport, shell_id)
           return false unless Thread.current.alive?
 

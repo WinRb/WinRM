@@ -17,7 +17,7 @@ end
 
 RSpec::Core::RakeTask.new(:spec) do |task|
   task.pattern = 'tests/spec/**/*_spec.rb'
-  task.rspec_opts = ['--color', '-f documentation', '-r ./tests/spec/spec_helper']
+  task.rspec_opts = ['--color', '-r ./tests/spec/spec_helper']
 end
 
 # Run the integration test suite

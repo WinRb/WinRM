@@ -1,14 +1,14 @@
 require 'winrm/connection_opts'
 
 describe WinRM::ConnectionOpts do
-  shared_examples 'invalid options' do
+  shared_examples 'invalid options' do |error_type|
     it 'throws a validation error' do
-      expect { WinRM::ConnectionOpts.create_with_defaults(overrides) }.to raise_error
+      expect { WinRM::ConnectionOpts.create_with_defaults(overrides) }.to raise_error error_type
     end
   end
 
   context 'when there are no overrides' do
-    it_behaves_like 'invalid options'
+    it_behaves_like 'invalid options', NameError
   end
 
   context 'when there are only username and password' do
@@ -19,7 +19,7 @@ describe WinRM::ConnectionOpts do
       }
     end
 
-    it_behaves_like 'invalid options'
+    it_behaves_like 'invalid options', RuntimeError
   end
 
   context 'when there are only username and endpoint' do
@@ -30,7 +30,7 @@ describe WinRM::ConnectionOpts do
       }
     end
 
-    it_behaves_like 'invalid options'
+    it_behaves_like 'invalid options', RuntimeError
   end
 
   context 'when there are only password and endpoint' do
@@ -41,7 +41,7 @@ describe WinRM::ConnectionOpts do
       }
     end
 
-    it_behaves_like 'invalid options'
+    it_behaves_like 'invalid options', RuntimeError
   end
 
   context 'when there are only certificate and key' do
@@ -52,7 +52,7 @@ describe WinRM::ConnectionOpts do
       }
     end
 
-    it_behaves_like 'invalid options'
+    it_behaves_like 'invalid options', RuntimeError
   end
 
   context 'when there are only certificate and endpoint' do
@@ -63,7 +63,7 @@ describe WinRM::ConnectionOpts do
       }
     end
 
-    it_behaves_like 'invalid options'
+    it_behaves_like 'invalid options', RuntimeError
   end
 
   context 'when there are only key and endpoint' do
@@ -74,7 +74,7 @@ describe WinRM::ConnectionOpts do
       }
     end
 
-    it_behaves_like 'invalid options'
+    it_behaves_like 'invalid options', RuntimeError
   end
 
   context 'when username, password, and endpoint are given' do
@@ -176,7 +176,7 @@ describe WinRM::ConnectionOpts do
     end
     describe '#create_with_defaults' do
       it 'raises an error' do
-        expect { WinRM::ConnectionOpts.create_with_defaults(overrides) }.to raise_error
+        expect { WinRM::ConnectionOpts.create_with_defaults(overrides) }.to raise_error ArgumentError
       end
     end
   end
