@@ -22,7 +22,7 @@ require_relative 'message_data/runspacepool_state'
 require_relative 'message_data/session_capability'
 
 module WinRM
-  # PowerShell Remoting Protcol module
+  # PowerShell Remoting Protocol module
   module PSRP
     # PowerShell Remoting Protocol message data.
     module MessageData

@@ -18,9 +18,9 @@ describe 'winrm client powershell' do
   end
 
   describe 'throw' do
-    subject(:output) { @powershell.run("throw 'an error occured'") }
+    subject(:output) { @powershell.run("throw 'an error occurred'") }
     it { should have_exit_code 0 }
-    it { should have_stderr_match(/an error occured/) }
+    it { should have_stderr_match(/an error occurred/) }
   end
 
   describe 'exit' do

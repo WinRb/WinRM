@@ -52,7 +52,7 @@ module WinRM
     # @param wql [String] The wql query
     # @param namespace [String] namespace for query - default is root/cimv2/*
     # @return [Hash] Hash representation of wql query response (Hash is empty if a block is given)
-    # @yeild [type, item] Yields the time name and item for every item
+    # @yield [type, item] Yields the time name and item for every item
     def run_wql(wql, namespace = 'root/cimv2/*', &block)
       query = WinRM::WSMV::WqlQuery.new(transport, @connection_opts, wql, namespace)
       query.process_response(transport.send_request(query.build), &block)

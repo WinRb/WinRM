@@ -15,7 +15,7 @@
 require_relative 'fragment'
 
 module WinRM
-  # PowerShell Remoting Protcol module
+  # PowerShell Remoting Protocol module
   module PSRP
     # PowerShell Remoting Protocol message fragmenter.
     class MessageDefragmenter
