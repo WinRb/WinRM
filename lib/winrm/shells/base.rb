@@ -110,20 +110,17 @@ module WinRM
             # Attempt normal cleanup in a new thread (preserves existing behavior)
             Thread.new { close_shell(connection_opts, transport, shell_id) }
           rescue ThreadError => e
-            # Handle only the specific Ruby 3.1+ GC finalizer threading restriction
-            if e.message.include?("can't alloc thread")
-              # Defer cleanup to at_exit when thread allocation is permitted
-              at_exit do
-                begin
-                  close_shell(connection_opts, transport, shell_id)
-                rescue StandardError => cleanup_error
-                  # Warn about cleanup failures in deferred context only
-                  warn "[WinRM] Deferred shell cleanup failed: #{cleanup_error.class}: #{cleanup_error.message}"
-                end
+            # Only handle the specific Ruby 3.1+ GC thread allocation restriction
+            raise unless e.message.include?("can't alloc thread")
+
+            # Defer cleanup to at_exit when thread allocation is permitted
+            at_exit do
+              begin
+                close_shell(connection_opts, transport, shell_id)
+              rescue StandardError => cleanup_error
+                # Warn about cleanup failures in deferred context only
+                warn "[WinRM] Deferred shell cleanup failed: #{cleanup_error.class}: #{cleanup_error.message}"
               end
-            else
-              # Re-raise all other ThreadErrors to preserve existing error handling
-              raise
             end
           end
         end
