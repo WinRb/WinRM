@@ -94,8 +94,39 @@ module WinRM
         @shell_id = nil
       end
 
+      # Ruby 3.1+ introduced a change where finalizers cannot allocate new threads.
+      # This can raise a ThreadError when the WinRM shell cleanup tries to run in a Thread
+      # during garbage collection. Previously, the gem used Thread.new in finalizers.
+      #
+      # Our solution preserves original behavior safely:
+      # 1. Attempt cleanup in a new thread (same as before) for normal execution.
+      # 2. If a ThreadError occurs specifically due to "can't alloc thread",
+      #    defer cleanup to an at_exit block to ensure the shell is closed properly
+      #    without crashing the program.
+      # 3. Any other ThreadError is re-raised to avoid hiding unexpected issues.
       def self.finalize(connection_opts, transport, shell_id)
-        proc { Thread.new { close_shell(connection_opts, transport, shell_id) } }
+        proc do
+          begin
+            # Attempt normal cleanup in a new thread (preserves existing behavior)
+            Thread.new { close_shell(connection_opts, transport, shell_id) }
+          rescue ThreadError => e
+            # Handle only the specific Ruby 3.1+ GC finalizer threading restriction
+            if e.message.include?("can't alloc thread")
+              # Defer cleanup to at_exit when thread allocation is permitted
+              at_exit do
+                begin
+                  close_shell(connection_opts, transport, shell_id)
+                rescue StandardError => cleanup_error
+                  # Warn about cleanup failures in deferred context only
+                  warn "[WinRM] Deferred shell cleanup failed: #{cleanup_error.class}: #{cleanup_error.message}"
+                end
+              end
+            else
+              # Re-raise all other ThreadErrors to preserve existing error handling
+              raise
+            end
+          end
+        end
       end
 
       protected
