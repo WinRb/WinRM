@@ -1,4 +1,5 @@
 # Windows Remote Management (WinRM) for Ruby
+
 [![build](https://github.com/WinRb/WinRM/actions/workflows/build.yml/badge.svg)](https://github.com/WinRb/WinRM/actions/workflows/build.yml)
 [![Gem Version](https://badge.fury.io/rb/winrm.svg)](http://badge.fury.io/rb/winrm)
 
@@ -11,18 +12,21 @@ site](http://msdn.microsoft.com/en-us/library/aa384426.aspx).
 As of version 2.0, this gem retains the WinRM name but all powershell calls use the more modern [Powershell Remoting Protocol (PSRP)](https://msdn.microsoft.com/en-us/library/dd357801.aspx) for initializing runspace pools as well as creating and processing powershell pipelines.
 
 ## Supported Ruby Versions
+
 Ruby 3.0 or higher is required. If you need to use an older version of Ruby you'll need to use a previous version of this gem.
 
 ## Supported WinRM Versions
+
 WinRM 1.1 is supported, however 2.0 and higher is recommended. [See MSDN](http://technet.microsoft.com/en-us/library/ff520073.aspx) for information about WinRM versions and supported operating systems.
 
 ## Install
 `gem install -r winrm` then on the server `Enable-PSRemoting -Force` (already enabled on server operating systems 2012 and above) as admin
 
 ## Example
+
 ```ruby
 require 'winrm'
-opts = { 
+opts = {
   endpoint: 'http://myhost:5985/wsman',
   user: 'administrator',
   password: 'Pass@word1'
@@ -38,11 +42,12 @@ end
 ```
 
 ## Connection Options
+
 There are various connection options you can specify upon initializing a WinRM connection object:
 
 * `:transport` - The type of underlying connection transport to use (more on this below). Defaults to `:negotiate`
 * `:locale` - The locale requested for response text formatting. This is the value sent in the `DataLocale` and `Locale` header values and defaults to `en-us`
-* `:max_envelope_size` - mazimum number of bytes expected for WinRM responses. This defaults to 153600
+* `:max_envelope_size` - maximum number of bytes expected for WinRM responses. This defaults to 153600
 * `:operation_timeout` - The maximum amount of time to wait for a response from the endpoint. This defaults to 60 seconds. Note that this will not "timeout" commands that exceed this amount of time to process, it just requires the endpoint to report the status of the command before the given amount of time passes.
 * `:receive_timeout` - The amount of time given to the underlying HTTP connection to respond before timing out. The defaults to 10 seconds longer than the `:operation_timeout`.
 * `:retry_limit` - the maximum number of times to retry opening a shell after failure. This defaults to 3.
@@ -58,8 +63,9 @@ There are other options that may apply depending on the type of `:transport` use
 The transport used governs the authentication method used and the encryption level used for the underlying HTTP communication with the endpoint. The WinRM gem supports the following transport types:
 
 ### `:negotiate`
+
 ```ruby
-WinRM::Connection.new( 
+WinRM::Connection.new(
   endpoint: 'http://myhost:5985/wsman',
   transport: :negotiate,
   user: 'administrator',
@@ -70,8 +76,9 @@ WinRM::Connection.new(
 The `:negotiate` transport uses the [rubyntlm gem](https://github.com/WinRb/rubyntlm) to authenticate with the endpoint using the NTLM protocol. This uses an HTTP based connection but the SOAP message payloads are encrypted. If using HTTP (as opposed to HTTPS) this is the recommended transport. This is also the default transport used if none is specified in the connection options.
 
 ### `:ssl`
+
 ```ruby
-WinRM::Connection.new( 
+WinRM::Connection.new(
   endpoint: 'https://myhost:5986/wsman',
   transport: :ssl,
   user: 'administrator',
@@ -90,8 +97,9 @@ The `:ssl` transport establishes a connection to the winrm endpoint over a secur
 * `:cert_store` - an OpenSSL::X509::X509::Store object used for certificate verification.
 
 ### `:kerberos`
+
 ```ruby
-WinRM::Connection.new( 
+WinRM::Connection.new(
   endpoint: 'http://myhost:5985/wsman',
   transport: :kerberos,
   realm: 'kerberos_realm'
@@ -104,9 +112,11 @@ Uses `:kerberos` to authenticate with the endpoint. These additional connection 
 * `:realm` - Kerberos realm to authenticate against.
 
 ### `:plaintext`
+
 Note: It is strongly recommended that you use `:negotiate` instead of `:plaintext`. As the name infers, the `:plaintext` transport includes authentication credentials in plain text.
+
 ```ruby
-WinRM::Connection.new( 
+WinRM::Connection.new(
   endpoint: 'http://myhost:5985/wsman',
   transport: :plaintext,
   user: 'administrator',
@@ -131,7 +141,7 @@ Both shells support the same public methods: `:open`, `:close`, and `run`. Note 
 
 ### Shell options supported by the `:cmd` shell
 
-```
+```ruby
 shell_opts = {
   env_vars: { 'FOO' => 'BAR' }
 }
@@ -152,13 +162,14 @@ The `:cmd` shell supports a number of shell options that you can specify for the
 
 ### `:codepage` and working with legacy Windows versions
 
-When using the `:cmd` shell, the default codepage used is `65001`. This works best accross locales on "modern" versions of Windows (Windows 7/Server 2008 R2 and later). Older versions may exhibit undesirable behavior under the 65001 codepage. The most common symptom is that commands invoking executables will return immediately with no output or errors.
+When using the `:cmd` shell, the default codepage used is `65001`. This works best across locales on "modern" versions of Windows (Windows 7/Server 2008 R2 and later). Older versions may exhibit undesirable behavior under the 65001 codepage. The most common symptom is that commands invoking executables will return immediately with no output or errors.
 
 When using these older versions of Windows, its best to use the native code page of the server's locale. For example, en-US servers will have a codepage of `437`. The `chcp` command can be used to determine the value of the native codepage.
 
 ## Executing a WQL Query
+
 ```ruby
-opts = { 
+opts = {
   endpoint: 'http://myhost:5985/wsman',
   user: 'administrator',
   password: 'Pass@word1'
@@ -183,13 +194,14 @@ command_line: C:\Windows\System32\svchost.exe -k termsvcs
 `run_wql` takes an optional second parameter in case you need to use a custom namespace. `root/cimv2/*` is the default.
 
 ## Create a self signed cert for WinRM
+
 You may want to create a self signed certificate for servicing https WinRM connections. You can use the following PowerShell script to create a cert and enable the WinRM HTTPS listener. Unless you are running windows server 2012 R2 or later, you must install makecert.exe from the Windows SDK, otherwise use `New-SelfSignedCertificate`.
 
 ```powershell
 $hostname = $Env:ComputerName
- 
+
 C:\"Program Files"\"Microsoft SDKs"\Windows\v7.1\Bin\makecert.exe -r -pe -n "CN=$hostname,O=vagrant" -eku 1.3.6.1.5.5.7.3.1 -ss my -sr localMachine -sky exchange -sp "Microsoft RSA SChannel Cryptographic Provider" -sy 12 "$hostname.cer"
- 
+
 $thumbprint = (& ls cert:LocalMachine/my).Thumbprint
 
 # Windows 2012R2 and above can use New-SelfSignedCertificate
@@ -200,6 +212,7 @@ iex $cmd
 ```
 
 ## Setting up Certificate based authentication
+
 Perform the following steps to authenticate with a certificate instead of a username and password:
 
 1. Generate a certificate with an Extended Key Usage of Client Authentication and a Subject Alternative Name with the UPN of the user. See this [powershell function](https://github.com/WinRb/WinRM/blob/master/WinrmAppveyor.psm1#L1) as an example of using `openssl` to create a self signed user certificate in `.pem` and `.pfx` formats along with the private key file.
@@ -215,7 +228,9 @@ Perform the following steps to authenticate with a certificate instead of a user
 See [this post](http://www.hurryupandwait.io/blog/certificate-password-less-based-authentication-in-winrm) for more details on certificate authentication.
 
 ## Logging
+
 The `WinRM::Connection` exposes a `logger` attribute and uses the [logging](https://rubygems.org/gems/logging) gem to manage logging behavior. By default this appends to `STDOUT` and has a level of `:warn`, but one can adjust the level or add additional appenders.
+
 ```ruby
 conn = WinRM::Connection.new(opts)
 
@@ -227,11 +242,13 @@ conn.logger.add_appenders(Logging.appenders.file('error.log'))
 ```
 
 If a consuming application uses its own logger that complies to the logging API, you can simply swap it in:
+
 ```ruby
 conn.logger = my_logger
 ```
 
 ## Troubleshooting
+
 You may have some errors like ```WinRM::WinRMAuthorizationError```. See [this post](http://www.hurryupandwait.io/blog/understanding-and-troubleshooting-winrm-connection-and-authentication-a-thrill-seekers-guide-to-adventure) for tips and troubleshooting steps related to winrm connection and authentication issues.
 
 ## Contributing
@@ -241,20 +258,20 @@ You may have some errors like ```WinRM::WinRMAuthorizationError```. See [this po
 3. Run the unit and integration tests (bundle exec rake integration)
 4. Commit your changes (git commit -am "Added a sweet feature")
 5. Push to the branch (git push origin my_feature_branch)
-6. Create a pull requst from your branch into master (Please be sure to provide enough detail for us to cipher what this change is doing)
+6. Create a pull request from your branch into master (Please be sure to provide enough detail for us to cipher what this change is doing)
 
 ### Running the tests
 
 We use Bundler to manage dependencies during development.
 
-```
-$ bundle install
+```shell
+bundle install
 ```
 
 Once you have the dependencies, you can run the unit tests with `rake`:
 
-```
-$ bundle exec rake spec
+```shell
+bundle exec rake spec
 ```
 
 To run the integration tests you will need a Windows box with the WinRM service properly configured. Its easiest to use a Vagrant Windows box (mwrock/Windows2012R2 is public on [atlas](https://atlas.hashicorp.com/mwrock/boxes/Windows2012R2) with an evaluation version of Windows 2012 R2). You can also use `mwrock/WindowsNano` provided in this repo's `Vagrantfile`.
@@ -264,12 +281,14 @@ To run the integration tests you will need a Windows box with the WinRM service 
 3. Run `bundle exec rake integration`
 
 ## WinRM Author
+
 * Twitter: [@zentourist](https://twitter.com/zentourist)
 * BLOG:  [http://distributed-frostbite.blogspot.com/](http://distributed-frostbite.blogspot.com/)
 * Add me in LinkedIn:  [http://www.linkedin.com/in/danwanek](http://www.linkedin.com/in/danwanek)
 * Find me on irc.freenode.net in #ruby-lang (zenChild)
 
 ## Maintainers
+
 * Paul Morton (https://github.com/pmorton)
 * Shawn Neal (https://github.com/sneal)
 * Matt Wrock (https://github.com/mwrock)

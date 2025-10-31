@@ -6,9 +6,9 @@ describe WinRM::PSRP::MessageData::PipelineState do
     ERB.new(stubbed_clixml('pipeline_state.xml.erb'))
   end
   let(:pipeline_state) { WinRM::PSRP::MessageData::PipelineState::FAILED }
-  let(:error_message) { 'an error occured' }
+  let(:error_message) { 'an error occurred' }
   let(:category_message) { 'category message' }
-  let(:error_id) { 'an error occured' }
+  let(:error_id) { 'an error occurred' }
   let(:raw_data) { test_data_xml_template.result(binding) }
   subject { described_class.new(raw_data) }
 

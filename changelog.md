@@ -18,7 +18,7 @@
 - Add compatibility with ruby 3.0.0
 
 # 2.3.5
-- Do not print debug msg about trouble getting MaxEnvelopeSizekb when succesful
+- Do not print debug msg about trouble getting MaxEnvelopeSizekb when successful
 - Do not cleanup command if there is no shell
 - Optimize our requires
 - Fix typo in error message
@@ -73,7 +73,7 @@
 
 # 2.0.2
 - Constrain to rubyntlm `>= 0.6.1` to avoid mutating frozen strings
-- When using certificate authentication, do not validate presense of user and password
+- When using certificate authentication, do not validate presence of user and password
 - Handle failed `PIPELINE_STATE` messages so that `throw` errors are not swallowed
 
 # 2.0.1
@@ -114,8 +114,8 @@
 # 1.5.0
 - Deprecating `WinRM::WinRMWebService` methods `cmd`, `run_cmd`, `powershell`, and `run_powershell_script` in favor of the `run_cmd` and `run_powershell_script` methods of the `WinRM::CommandExecutor` class. The `CommandExecutor` allows multiple commands to be run from the same WinRM shell providing a significant performance improvement when issuing multiple calls.
 - Added an `:ssl_peer_fingerprint` option to be used instead of `:no_ssl_peer_verification` and allows a specific certificate to be verified.
-- Opening a winrm shell is retriable with configurable delay and retry limit.
-- Logging apends to `stdout` by default and can be replaced with a logger from a consuming application.
+- Opening a winrm shell is retryable with configurable delay and retry limit.
+- Logging appends to `stdout` by default and can be replaced with a logger from a consuming application.
 
 # 1.4.0
 - Added WinRM::Version so the gem version is available at runtime for consumers.

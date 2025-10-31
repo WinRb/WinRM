@@ -26,7 +26,7 @@ module WinRM
       #   BYTE  Data4[8];
       # } GUID;
       #
-      # @param uuid [String] Canonical hex format with hypens.
+      # @param uuid [String] Canonical hex format with hyphens.
       # @return [Array<byte>] UUID in a Windows GUID compatible byte array layout.
       def uuid_to_windows_guid_bytes(uuid)
         return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] unless uuid
