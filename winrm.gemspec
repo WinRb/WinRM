@@ -29,7 +29,8 @@ Gem::Specification.new do |s|
 
   s.bindir = 'bin'
   s.executables = ['rwinrm']
-  s.required_ruby_version = '>= 3.0'
+  s.required_ruby_version = '>= 3.2'
+  s.add_runtime_dependency 'base64', '~> 0.2'
   s.add_runtime_dependency 'builder', '>= 2.1.2'
   s.add_runtime_dependency 'erubi', '~> 1.8'
   s.add_runtime_dependency 'gssapi', '~> 1.2'
@@ -39,10 +40,10 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'nori', '~> 2.0', '>= 2.7.1'
   s.add_runtime_dependency 'rexml', '~> 3.0'
   s.add_development_dependency 'pry'
-  s.add_development_dependency 'rake', '>= 10.3', '< 13'
+  s.add_development_dependency 'rake', '~> 13.0'
   s.add_development_dependency 'rb-readline'
   s.add_development_dependency 'rspec', '~> 3.2'
-  s.add_development_dependency 'rubocop', '~> 1.26.0'
+  s.add_development_dependency 'rubocop', '~> 1.87'
   s.add_runtime_dependency 'rubyntlm', '~> 0.6.0', '>= 0.6.3'
 
   s.metadata['rubygems_mfa_required'] = 'true'
