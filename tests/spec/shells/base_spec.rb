@@ -52,7 +52,7 @@ describe DummyShell do
     allow(transport).to receive(:send_request)
   end
 
-  subject { described_class.new(connection_options, transport, Logging.logger['test']) }
+  subject { described_class.new(connection_options, transport, Logger.new(IO::NULL)) }
 
   shared_examples 'retry shell command' do
     it 'only closes the shell if there are too many' do
