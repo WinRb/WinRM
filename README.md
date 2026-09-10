@@ -233,6 +233,8 @@ If a consuming application uses its own logger that complies to the stdlib `Logg
 conn.logger = my_logger
 ```
 
+Upgrading from the `logging` gem: the one `logging`-specific call that used to work, `conn.logger.add_appenders(...)`, is still accepted but logs a deprecation warning and has no effect. Configure the stdlib logger directly (or inject your own) instead.
+
 ## Troubleshooting
 You may have some errors like ```WinRM::WinRMAuthorizationError```. See [this post](http://www.hurryupandwait.io/blog/understanding-and-troubleshooting-winrm-connection-and-authentication-a-thrill-seekers-guide-to-adventure) for tips and troubleshooting steps related to winrm connection and authentication issues.
 
