@@ -1,6 +1,6 @@
 # WinRM Gem Changelog
 
-# Unreleased
+# 2.4.0
 * Replace the unmaintained `logging` gem (which depends on `syslog`, no longer a default gem in modern Ruby) with the Ruby standard library `Logger`. `Connection#logger` is now a stdlib `Logger` subclass, so the standard logging API is unchanged and injecting a custom logger via `conn.logger=` still works. `logging`-specific calls like `add_appenders` are still accepted but emit a deprecation warning; `WINRM_LOG` is still honored.
 
 # 2.3.9
