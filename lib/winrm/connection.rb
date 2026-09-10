@@ -65,7 +65,7 @@ module WinRM
     end
 
     def configure_logger
-      @logger = Logger.new($stdout, progname: 'WinRM', level: WinRM.default_log_level)
+      @logger = WinRM::CompatLogger.new($stdout, progname: 'WinRM', level: WinRM.default_log_level)
     end
 
     def shell_factory
