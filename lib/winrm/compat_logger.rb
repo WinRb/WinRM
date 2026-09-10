@@ -23,7 +23,7 @@ module WinRM
 
     def deprecate_appenders
       @appenders_deprecated = true
-      warn '[DEPRECATION] WinRM: `logger.add_appenders` is deprecated and has no effect. ' \
+      Kernel.warn '[DEPRECATION] WinRM: `logger.add_appenders` is deprecated and has no effect. ' \
            'Configure the stdlib logger directly or inject your own via `Connection#logger=`.'
     end
   end
