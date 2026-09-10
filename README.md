@@ -1,5 +1,5 @@
 # Windows Remote Management (WinRM) for Ruby
-[![build](https://github.com/WinRb/WinRM/actions/workflows/build.yml/badge.svg)](https://github.com/WinRb/WinRM/actions/workflows/build.yml)
+[![build](https://github.com/WinRb/WinRM/actions/workflows/ci.yml/badge.svg)](https://github.com/WinRb/WinRM/actions/workflows/ci.yml)
 [![Gem Version](https://badge.fury.io/rb/winrm.svg)](http://badge.fury.io/rb/winrm)
 
 This is a SOAP library that uses the functionality in Windows Remote
@@ -202,7 +202,7 @@ iex $cmd
 ## Setting up Certificate based authentication
 Perform the following steps to authenticate with a certificate instead of a username and password:
 
-1. Generate a certificate with an Extended Key Usage of Client Authentication and a Subject Alternative Name with the UPN of the user. See this [powershell function](https://github.com/WinRb/WinRM/blob/master/WinrmAppveyor.psm1#L1) as an example of using `openssl` to create a self signed user certificate in `.pem` and `.pfx` formats along with the private key file.
+1. Generate a certificate with an Extended Key Usage of Client Authentication and a Subject Alternative Name with the UPN of the user. See this [powershell function](https://github.com/WinRb/WinRM/blob/main/WinrmAppveyor.psm1#L1) as an example of using `openssl` to create a self signed user certificate in `.pem` and `.pfx` formats along with the private key file.
 
 2. Import the pfx file into the `TrustedPeople` directory of the `LocalMachine` certificate store on the windows endpoint.
 
@@ -243,7 +243,7 @@ You may have some errors like ```WinRM::WinRMAuthorizationError```. See [this po
 3. Run the unit and integration tests (bundle exec rake integration)
 4. Commit your changes (git commit -am "Added a sweet feature")
 5. Push to the branch (git push origin my_feature_branch)
-6. Create a pull requst from your branch into master (Please be sure to provide enough detail for us to cipher what this change is doing)
+6. Create a pull request from your branch into main (Please be sure to provide enough detail for us to cipher what this change is doing)
 
 ### Running the tests
 
