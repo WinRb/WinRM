@@ -1,7 +1,7 @@
 # WinRM Gem Changelog
 
 # Unreleased
-* Replace the unmaintained `logging` gem (which depends on `syslog`, no longer a default gem in modern Ruby) with the Ruby standard library `Logger`. Breaking change: `Connection#logger` is now a stdlib `Logger`, so `logging`-specific calls like `add_appenders` no longer work; injecting a custom logger via `conn.logger=` is unchanged. `WINRM_LOG` is still honored.
+* Replace the unmaintained `logging` gem (which depends on `syslog`, no longer a default gem in modern Ruby) with the Ruby standard library `Logger`. `Connection#logger` is now a stdlib `Logger` subclass, so the standard logging API is unchanged and injecting a custom logger via `conn.logger=` still works. `logging`-specific calls like `add_appenders` are still accepted but emit a deprecation warning; `WINRM_LOG` is still honored.
 
 # 2.3.9
 * Fix snakecase `NoMethodError` by @ripa1995 in https://github.com/WinRb/WinRM/pull/347
