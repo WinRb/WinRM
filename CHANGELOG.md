@@ -3,7 +3,10 @@
 ## [Unreleased]
 
 ## 2.4.0
-* Replace the unmaintained `logging` gem (which depends on `syslog`, no longer a default gem in modern Ruby) with the Ruby standard library `Logger`. `Connection#logger` is now a stdlib `Logger` subclass, so the standard logging API is unchanged and injecting a custom logger via `conn.logger=` still works. `logging`-specific calls like `add_appenders` are still accepted but emit a deprecation warning; `WINRM_LOG` is still honored.
+* Fix WinRM shell finalizer for Ruby 3.1+ by safely handling `ThreadError` (#354)
+* Rename `object_id` to `message_id` (#352)
+* Replace the unmaintained `logging` gem (which depends on `syslog`, no longer a default gem in modern Ruby) with the Ruby standard library `Logger`. `Connection#logger` is now a stdlib `Logger` subclass, so the standard logging API is unchanged and injecting a custom logger via `conn.logger=` still works. `logging`-specific calls like `add_appenders` are still accepted but emit a deprecation warning; `WINRM_LOG` is still honored (#358, #360)
+* Modernize build chain (#357)
 
 ## 2.3.9
 * Fix snakecase `NoMethodError` by @ripa1995 in https://github.com/WinRb/WinRM/pull/347
