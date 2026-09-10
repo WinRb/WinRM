@@ -65,9 +65,7 @@ module WinRM
     end
 
     def configure_logger
-      @logger = Logging.logger[self]
-      logger.level = :warn
-      logger.add_appenders(Logging.appenders.stdout)
+      @logger = Logger.new($stdout, progname: 'WinRM', level: WinRM.default_log_level)
     end
 
     def shell_factory
@@ -77,7 +75,7 @@ module WinRM
     def transport
       @transport ||= begin
         transport_factory = WinRM::HTTP::TransportFactory.new
-        transport_factory.create_transport(@connection_opts)
+        transport_factory.create_transport(@connection_opts.merge(logger: logger))
       end
     end
   end

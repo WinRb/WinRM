@@ -105,7 +105,7 @@ describe WinRM::Shells::Powershell do
           .and_return(REXML::Document.new(test_data_xml_template.result(binding)))
       end
 
-      subject { described_class.new(connection_options, transport, Logging.logger['test']) }
+      subject { described_class.new(connection_options, transport, Logger.new(IO::NULL)) }
 
       describe '#run' do
         it 'opens a shell and gets shell id' do

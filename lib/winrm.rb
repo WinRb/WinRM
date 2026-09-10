@@ -12,26 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'logging'
+require 'logger'
 require_relative 'winrm/version'
 require_relative 'winrm/connection'
 require_relative 'winrm/exceptions'
 
 # Main WinRM module entry point
 module WinRM
-  # Enable logging if it is requested. We do this before
-  # anything else so that we can setup the output before
-  # any logging occurs.
-  if ENV['WINRM_LOG'] && ENV['WINRM_LOG'] != ''
-    begin
-      Logging.logger.root.level = ENV['WINRM_LOG']
-      Logging.logger.root.appenders = Logging.appenders.stderr
-    rescue ArgumentError
-      # This means that the logging level wasn't valid
-      warn "Invalid WINRM_LOG level is set: #{ENV['WINRM_LOG']}"
+  LOG_LEVELS = %w[debug info warn error fatal].freeze
+
+  # Default log level used by WinRM loggers, controlled by the
+  # WINRM_LOG environment variable. Falls back to :warn when unset
+  # or invalid.
+  # @return [Symbol] One of :debug, :info, :warn, :error or :fatal
+  def self.default_log_level
+    level = ENV.fetch('WINRM_LOG', '').downcase
+    return :warn if level.empty?
+
+    unless LOG_LEVELS.include?(level)
+      warn "Invalid WINRM_LOG level is set: #{ENV.fetch('WINRM_LOG', nil)}"
       warn ''
       warn 'Please use one of the standard log levels: ' \
         'debug, info, warn, or error'
+      return :warn
     end
+
+    level.to_sym
   end
 end
