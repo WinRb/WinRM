@@ -60,6 +60,9 @@ module WinRM
     end
 
     def raise_if_wsman_fault
+      # NB: search the document, not the soap_errors nodeset. A leading `//`
+      # is document-absolute in REXML anyway, and REXML >= 3.4.4 dropped
+      # nodeset support in XPath.first (it warns on every fault response).
       soap_errors = REXML::XPath.match(
         response_xml,
         "//*[local-name() = 'Envelope']/*[local-name() = 'Body']/*[local-name() = 'Fault']/*"
@@ -67,7 +70,7 @@ module WinRM
       return if soap_errors.empty?
 
       fault = REXML::XPath.first(
-        soap_errors,
+        response_xml,
         "//*[local-name() = 'WSManFault']"
       )
       raise WinRMWSManFault.new(fault.to_s, fault.attributes['Code']) unless fault.nil?
@@ -81,7 +84,7 @@ module WinRM
       return if soap_errors.empty?
 
       error = REXML::XPath.first(
-        soap_errors,
+        response_xml,
         "//*[local-name() = 'MSFT_WmiError']"
       )
       return if error.nil?
@@ -101,15 +104,15 @@ module WinRM
       return if soap_errors.empty?
 
       code = REXML::XPath.first(
-        soap_errors,
+        response_xml,
         "//*[local-name() = 'Code']/*[local-name() = 'Value']/text()"
       )
       subcode = REXML::XPath.first(
-        soap_errors,
+        response_xml,
         "//*[local-name() = 'Subcode']/*[local-name() = 'Value']/text()"
       )
       reason = REXML::XPath.first(
-        soap_errors,
+        response_xml,
         "//*[local-name() = 'Reason']/*[local-name() = 'Text']/text()"
       )
 
