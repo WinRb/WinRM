@@ -69,6 +69,9 @@ module WinRM
 
       if self[:client_cert]
         raise 'path to client key is required' unless self[:client_key]
+      elsif self[:transport] == :kerberos
+        raise 'realm is a required option' unless self[:realm]
+        raise 'service is a required option' unless self[:service]
       else
         raise 'user is a required option' unless self[:user]
         raise 'password is a required option' unless self[:password]
