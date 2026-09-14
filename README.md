@@ -202,7 +202,7 @@ iex $cmd
 ## Setting up Certificate based authentication
 Perform the following steps to authenticate with a certificate instead of a username and password:
 
-1. Generate a certificate with an Extended Key Usage of Client Authentication and a Subject Alternative Name with the UPN of the user. See this [powershell function](https://github.com/WinRb/WinRM/blob/main/WinrmAppveyor.psm1#L1) as an example of using `openssl` to create a self signed user certificate in `.pem` and `.pfx` formats along with the private key file.
+1. Generate a certificate with an Extended Key Usage of Client Authentication and a Subject Alternative Name with the UPN of the user. e.g. using `openssl` to create a self signed user certificate in `.pem` and `.pfx` formats along with the private key file.
 
 2. Import the pfx file into the `TrustedPeople` directory of the `LocalMachine` certificate store on the windows endpoint.
 
