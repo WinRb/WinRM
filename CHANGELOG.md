@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [2.4.1]
+* Fix SOAP fault handling for REXML 3.4.4 nodeset changes (#362)
+* Validate realm and service options for the Kerberos transport (#363)
+
 ## 2.4.0
 * Fix WinRM shell finalizer for Ruby 3.1+ by safely handling `ThreadError` (#354)
 * Rename `object_id` to `message_id` (#352)
