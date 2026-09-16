@@ -32,7 +32,6 @@ Gem::Specification.new do |s|
   s.required_ruby_version = '>= 3.2'
   s.add_runtime_dependency 'base64', '~> 0.2'
   s.add_runtime_dependency 'builder', '>= 2.1.2'
-  s.add_runtime_dependency 'erubi', '~> 1.8'
   s.add_runtime_dependency 'gssapi', '~> 1.2'
   s.add_runtime_dependency 'gyoku', '~> 1.0'
   s.add_runtime_dependency 'httpclient', '~> 2.2', '>= 2.2.0.2'
