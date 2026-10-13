@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [2.4.2]
+* Replace erubi with the Ruby standard library ERB; the erubi runtime dependency is gone (#366)
+* Allow the `logger` dependency at version 1.5, so Ruby 3.2 users can use the bundled gem (#367)
+
 ## [2.4.1]
 * Fix SOAP fault handling for REXML 3.4.4 nodeset changes (#362)
 * Validate realm and service options for the Kerberos transport (#363)
